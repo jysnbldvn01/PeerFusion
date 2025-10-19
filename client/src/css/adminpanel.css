@@ -1,0 +1,311 @@
+.adminPanel-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* Sidebar */
+.adminPanel-sidebar {
+  background: #1e293b;
+  color: white;
+  width: 250px;
+  min-height: 100vh;
+  transition: width 0.4s ease;
+  overflow: hidden;
+  position: relative;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.adminPanel-sidebar.collapsed {
+  width: 60px;
+}
+
+/* Sidebar header */
+.adminPanel-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+}
+
+.adminPanel-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.adminPanel-logo-img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+.adminPanel-logo-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity 0.3s;
+}
+
+.adminPanel-sidebar.collapsed .adminPanel-logo-text {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Toggle button stays visible */
+.adminPanel-toggle-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+}
+
+.adminPanel-toggle-btn.rotated {
+  transform: rotate(180deg);
+}
+
+/* Menu */
+.adminPanel-sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+  flex-grow: 1;
+}
+
+.adminPanel-sidebar-menu li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background 0.3s;
+  white-space: nowrap;
+}
+
+.adminPanel-sidebar-menu li:hover {
+  background: #334155;
+}
+
+.adminPanel-sidebar-menu li.active {
+  background: #0f172a;
+}
+
+.adminPanel-sidebar.collapsed .adminPanel-sidebar-menu span {
+  display: none;
+}
+
+/* ✅ Logout Section */
+.adminPanel-logout-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  cursor: pointer;
+  background: #1e293b;
+  transition: background 0.3s;
+  border-top: 1px solid #334155;
+}
+
+.adminPanel-logout-section:hover {
+  background: #334155;
+}
+
+.adminPanel-sidebar.collapsed .adminPanel-logout-section span {
+  display: none;
+}
+
+.adminPanel-logout-section .icon {
+  font-size: 1.3rem;
+}
+
+/* Main content */
+.adminPanel-main {
+  flex: 1;
+  transition: margin-left 0.4s ease;
+  padding: 20px;
+}
+
+.adminPanel-topbar {
+  background: white;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Subject Management Styles */
+.subject-management {
+  padding: 20px;
+}
+
+.admin-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+}
+
+.add-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.form-input, .form-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.category-card {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  padding: 15px;
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.category-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-edit, .btn-delete, .btn-cancel {
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.btn-edit { 
+  background: #ffc107; 
+  color: white; 
+}
+.btn-delete { 
+  background: #dc3545; 
+  color: white; 
+}
+.btn-cancel { 
+  background: #6c757d; 
+  color: white; 
+}
+
+.btn-edit:hover { background: #e0a800; }
+.btn-delete:hover { background: #c82333; }
+.btn-cancel:hover { background: #5a6268; }
+
+.btn-delete:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.subjects-list {
+  margin-left: 20px;
+}
+
+.subject-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.subject-item:last-child {
+  border-bottom: none;
+}
+
+.no-subjects, .no-data {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.1em;
+  color: #6c757d;
+}
+
+.edit-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .add-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .form-input, .form-select {
+    min-width: auto;
+  }
+  
+  .category-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .category-actions {
+    align-self: flex-end;
+  }
+}
+/* Responsive */
+@media (max-width: 768px) {
+  .adminPanel-sidebar {
+    position: fixed;
+    z-index: 100;
+    height: 100%;
+    left: 0;
+    top: 0;
+  }
+
+  .adminPanel-main {
+    padding: 15px;
+  }
+}

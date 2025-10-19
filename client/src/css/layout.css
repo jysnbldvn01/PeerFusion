@@ -1,0 +1,180 @@
+/* Base Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  background-color: #f8fafc;
+}
+
+.content-container {
+  flex: 1;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+/* Default expanded state */
+.main-content {
+  padding: 2rem;
+  margin-left: 290px;
+  transition: all 0.3s ease;
+  min-height: calc(100vh - 4rem);
+}
+
+/* Collapsed state */
+.sidebar-collapsed ~ .content-container .main-content {
+  margin-left: 110px;
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 110px !important;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+    padding: 1rem;
+    width: 100%;
+  }
+
+  .sidebar-expanded ~ .content-container {
+    position: relative;
+    left: 250px;
+    width: calc(100% - 250px);
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 0.75rem;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .app-container {
+    min-height: -webkit-fill-available;
+  }
+  
+  .main-content {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Android Chrome specific fixes */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .main-content {
+    padding: 1rem;
+  }
+}
+
+/* Notification Alert Banner */
+.notification-alert-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 20px;
+  z-index: 2000;
+  animation: slideDown 0.3s ease-out;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.alert-icon {
+  font-size: 1.2rem;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: absolute;
+  right: 20px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Online indicator for chat */
+.online-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  margin-left: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Pulsing dot for notifications */
+.pulse-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  animation: notificationPulse 2s infinite;
+}
+
+@keyframes notificationPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+}

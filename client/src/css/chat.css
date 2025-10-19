@@ -1,0 +1,463 @@
+.chat-container {
+  display: flex;
+  justify-content: left;
+  padding: 2rem;
+  background: #ffffff;
+  min-height: 100vh;
+  padding-top: 0px;
+}
+
+/* ---------- Left Panel (Peer Chats) ---------- */
+
+.chat-left {
+  width: 25%;
+  background: #B3CCAE;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+  border-right: 1px solid #ddd;
+}
+
+.chat-left .search-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 20px;
+  padding: 0.4rem 0.8rem;
+  margin: 0 1rem 1rem 1rem;
+}
+
+.chat-left .search-bar input {
+  border: none;
+  outline: none;
+  flex: 1;
+  padding-left: 0.5rem;
+  background: transparent;
+  font-size: 0.9rem;
+}
+
+.peer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.8rem 1rem;
+  margin: 0 1rem 0.5rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.2s ease;
+}
+
+.peer-item:hover {
+  background: #689d6db0;
+}
+
+.peer-item.active {
+  background: #689d6da8;
+}
+
+.peer-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.peer-name {
+  font-weight: bold;
+}
+
+.peer-message {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* ---------- Middle Panel (Chat Window) ---------- */
+.chat-middle {
+  width: 100%;
+  height: 93.5vh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-header {
+  background: #444;
+  color: #fff;
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  background: #efefef;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Row wrapper: controls alignment & avatar placement */
+.chat-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Left (received) messages align left */
+.chat-row.received {
+  justify-content: flex-start;
+}
+
+/* Right (sent) messages align right */
+.chat-row.sent {
+  justify-content: flex-end;
+}
+
+/* Reserve space for avatar (or show it) */
+.avatar-space {
+  width: 36px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+/* Avatar image (shown only for last received) */
+.chat-row img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+/* Bubble base */
+.chat-message {
+  display: inline-block;
+  max-width: 68%;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.92rem;
+  word-wrap: break-word;
+  position: relative;
+}
+
+/* Received bubble (left) */
+.chat-row.received .chat-message {
+  background: #e6e6e6;
+  color: #111;
+}
+
+/* Sent bubble (right) */
+.chat-row.sent .chat-message {
+  background: #38603A;
+  color: #fff;
+}
+
+/* Timestamp inside bubble */
+.chat-message .timestamp {
+  display: block;
+  font-size: 0.68rem;
+  margin-top: 0.35rem;
+  opacity: 0.75;
+  text-align: right;
+  color: inherit;
+}
+
+/* ---------- Border-radius variations for grouped bubbles ---------- */
+/* Received (left) group styles */
+.bubble.received.single { border-radius: 18px; }
+.bubble.received.first  { border-radius: 18px 18px 18px 6px; }   /* top item */
+.bubble.received.middle { border-radius: 6px 18px 18px 6px; }    /* middle item */
+.bubble.received.last   { border-radius: 6px 18px 18px 18px; }   /* bottom item */
+
+/* Sent (right) group styles (mirror) */
+.bubble.sent.single { border-radius: 18px; }
+.bubble.sent.first  { border-radius: 18px 18px 6px 18px; }
+.bubble.sent.middle { border-radius: 6px 18px 6px 18px; }
+.bubble.sent.last   { border-radius: 6px 18px 18px 18px; }
+
+/* Input */
+.chat-input {
+  display: flex;
+  padding: 0.8rem;
+  background: #fff;
+  border-top: 1px solid #ddd;
+}
+
+.chat-input input {
+  flex: 1;
+  border: 1px solid #ccc;
+  padding: 0.72rem;
+  border-radius: 20px;
+  margin-right: 0.6rem;
+}
+
+.chat-input input:focus {
+  outline: none;
+  border: 1px solid #c1dfe6;
+}
+
+.chat-input button {
+  background: #C3DA8A;
+  border: none;
+  padding: 0.7rem 1.4rem;
+  color: #fff;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.chat-input button:hover {
+  background: #689D6D;
+}
+
+
+/* ---------- Right Panel (User Info) ---------- */
+.chat-right {
+  width: 25%;
+  background: #f7f7f7;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-left: 1px solid #ddd;
+}
+
+.chat-right img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 0.8rem;
+  object-fit: cover;
+}
+
+.chat-right h3 {
+  margin: 0.5rem 0 1rem 0;
+  font-size: 1.2rem;
+}
+
+.chat-right .actions {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.chat-right .actions button {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+  text-align: left;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.chat-right .actions button:hover {
+  background: #eaeaea;
+}
+
+.chat-right .media-files {
+  width: 100%;
+}
+
+.chat-right .media-files h4 {
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.chat-right .media-files button {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 0.6rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+  text-align: left;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.chat-right .media-files button:hover {
+  background: #eaeaea;
+}
+
+.meeting-banner {
+  background: #2e2e2e;
+  border-top: 2px solid #444;
+  border-bottom: 2px solid #444;
+  padding: 12px 16px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.meeting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.calendar-icon {
+  font-size: 1.4rem;
+  color: #ccc;
+}
+
+.meeting-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #3a3a3a;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.meeting-reminder {
+  font-size: 0.9rem;
+  color: #ddd;
+}
+
+.join-button {
+  background: #00b84a;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.join-button:hover {
+  background: #00d455;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Meeting banner styles */
+.meeting-banner {
+  width: 95%;
+  border-radius: 4px;
+  background: #efefef;
+  margin: 12px 0;
+  box-shadow: none;
+  padding: 8px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #333;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+/* slightly darker when reminder active or within 5min */
+.meeting-banner.active {
+  background: #e6e6e6;
+}
+
+/* if started -> small accent */
+.meeting-banner.started {
+  background: #e8f8ea; /* pale green when started */
+  border-left: 4px solid #2e8b2e;
+}
+
+/* header row: partner + calendar icon */
+.meeting-banner .meeting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* partner name */
+.meeting-banner .meeting-partner {
+  font-weight: 600;
+  color: #333;
+}
+
+/* calendar icon (use emoji or add proper icon font in markup) */
+.meeting-banner .calendar-icon {
+  width: 20px;
+  height: 20px;
+  /*background-image: url("%PUBLIC_URL%/calendar.svg"); */
+  background-size: contain;
+  background-repeat: no-repeat;
+  display: inline-block;
+}
+
+/* body: reminder text + join button */
+.meeting-banner .meeting-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* reminder text */
+.meeting-banner .meeting-reminder {
+  font-size: 13px;
+  color: #ffffff;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* join button base */
+.meeting-banner .join-button {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: not-allowed;
+  min-width: 86px;
+  text-transform: uppercase;
+  box-shadow: none;
+  transition: all 180ms ease;
+  background: #cfcfcf;
+  color: #fff;
+}
+
+/* disabled style */
+.meeting-banner .join-button.disabled {
+  background: #cfcfcf;
+  color: #fff;
+  opacity: 0.9;
+}
+
+/* enabled style (green) */
+.meeting-banner .join-button.enabled {
+  background: #31b031; /* bright green */
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(49,176,49,0.25);
+  transform: translateY(0);
+}
+
+/* on hover when enabled */
+.meeting-banner .join-button.enabled:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(49,176,49,0.22);
+}
+
+/* small screen tweak */
+@media (max-width: 680px) {
+  .meeting-banner .meeting-reminder {
+    font-size: 12px;
+  }
+  .meeting-banner .join-button {
+    padding: 7px 10px;
+  }
+}

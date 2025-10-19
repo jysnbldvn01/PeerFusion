@@ -1,0 +1,28 @@
+/* Page Styles */
+.page-container {
+  width: 100%;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+}
+
+.menu-list li {
+  padding: 10px 15px;
+  margin: 5px 0;
+  border-radius: 4px;
+  background: #f8f9fa;
+}
+
+.menu-list li.active {
+  background: #ebf8ff;
+  color: #3182ce;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding-top: 20px;
+  }
+}
