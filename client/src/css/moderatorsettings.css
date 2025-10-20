@@ -1,0 +1,499 @@
+/* Moderator Settings Styles */
+.ms-container {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 24px;
+}
+
+/* Header */
+.ms-header {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.ms-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ms-title-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ms-header-icon {
+  color: #10b981;
+  width: 32px;
+  height: 32px;
+}
+
+.ms-main-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ms-subtitle {
+  color: #64748b;
+  margin: 4px 0 0 0;
+  font-size: 14px;
+}
+
+.ms-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ms-stat-card {
+  background: white;
+  color: #1e293b;
+  padding: 16px 20px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: 100px;
+}
+
+.ms-stat-icon {
+  color: #10b981;
+  width: 20px;
+  height: 20px;
+}
+
+.ms-stat-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ms-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Content */
+.ms-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Cards */
+.ms-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.ms-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ms-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ms-card-title-icon {
+  color: #10b981;
+  width: 18px;
+  height: 18px;
+}
+
+.ms-card-badge {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ms-card-description {
+  color: #64748b;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Forms */
+.ms-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ms-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ms-form-label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.ms-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ms-input-icon {
+  position: absolute;
+  left: 12px;
+  color: #6b7280;
+  width: 16px;
+  height: 16px;
+}
+
+.ms-form-input {
+  width: 35%;
+  padding: 12px 12px 12px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.ms-form-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Password Toggle */
+.ms-password-toggle {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  position: absolute;
+  left: 530px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ms-password-toggle:hover {
+  color: #374151;
+}
+
+/* Password Strength */
+.ms-password-strength {
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.ms-password-weak {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.ms-password-fair {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.ms-password-good {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.ms-password-strong {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+/* Password Requirements */
+.ms-password-requirements {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
+}
+
+.ms-password-requirements strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.ms-password-requirements ul {
+  margin: 0;
+  padding-left: 16px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.ms-password-requirements li {
+  margin-bottom: 4px;
+}
+
+.ms-requirement-met {
+  color: #16a34a;
+  text-decoration: line-through;
+}
+
+/* Error Text */
+.ms-error-text {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Form Actions */
+.ms-form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Buttons */
+.ms-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ms-btn-primary {
+  background: #10b981;
+  color: white;
+}
+
+.ms-btn-primary:hover:not(:disabled) {
+  background: #059669;
+}
+
+.ms-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ms-btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.ms-btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.ms-btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Security Info */
+.ms-security-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ms-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.ms-info-label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.ms-info-value {
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Badges */
+.ms-role-badge,
+.ms-security-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ms-role-badge {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ms-security-badge {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Security Tips */
+.ms-security-tips {
+  padding: 16px;
+  background: #fffbeb;
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+}
+
+.ms-tips-title {
+  margin: 0 0 12px 0;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ms-tips-list {
+  margin: 0;
+  padding-left: 16px;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.ms-tips-list li {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* Messages */
+.ms-message-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+.ms-message-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.ms-message-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.ms-message-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.ms-message-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: auto;
+  border-radius: 4px;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.2s ease;
+}
+
+.ms-message-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Loading */
+.ms-loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: ms-spin 1s linear infinite;
+}
+
+@keyframes ms-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ms-container {
+    padding: 16px;
+  }
+  
+  .ms-header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .ms-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .ms-form-actions {
+    flex-direction: column;
+  }
+  
+  .ms-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .ms-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}

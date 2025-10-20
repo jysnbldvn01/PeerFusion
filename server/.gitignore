@@ -4,7 +4,6 @@
 /.env
 /keys
 /node_modules
-server/ServiceAccountKey.json
 server/.env
 
 # testing

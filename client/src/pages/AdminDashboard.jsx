@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments } from 'react-icons/fa';
+import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaHistory } from 'react-icons/fa';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardOverview from '../components/admin/DashboardOverview';
 import Settings from '../components/admin/Settings';
 import SubjectManagement from '../components/admin/SubjectManagement';
 import ReportManagement from '../components/admin/ReportManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
+import ActivityLogs from '../components/admin/ActivityLogs'; // Add this import
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,24 +26,26 @@ export default function AdminDashboard() {
     navigate('/admin-login');
   };
 
-const renderContent = () => {
-  switch (activeTab) {
-    case 'dashboard':
-      return <DashboardOverview />;
-    case 'users':
-      return <UserManagement />;
-    case 'subjects':
-      return <SubjectManagement />;
-    case 'reports':
-      return <ReportManagement />;
-    case 'feedback':
-      return <FeedbackManagement />;
-    case 'settings':
-      return <Settings />;
-    default:
-      return <DashboardOverview />;
-  }
-};
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardOverview />;
+      case 'users':
+        return <UserManagement />;
+      case 'subjects':
+        return <SubjectManagement />;
+      case 'reports':
+        return <ReportManagement />;
+      case 'feedback':
+        return <FeedbackManagement />;
+      case 'settings':
+        return <Settings />;
+      case 'activity':
+        return <ActivityLogs />;
+      default:
+        return <DashboardOverview />;
+    }
+  };
 
   return (
     <div className="adminPanel-layout">
@@ -94,13 +97,21 @@ const renderContent = () => {
             <FaFlag className="icon" />
             {isSidebarOpen && <span>Report Management</span>}
           </li>
-            <li
-              className={activeTab === 'feedback' ? 'active' : ''}
-              onClick={() => setActiveTab('feedback')}
-            >
-              <FaComments className="icon" />
-              {isSidebarOpen && <span>Feedback Management</span>}
-            </li>
+          <li
+            className={activeTab === 'feedback' ? 'active' : ''}
+            onClick={() => setActiveTab('feedback')}
+          >
+            <FaComments className="icon" />
+            {isSidebarOpen && <span>Feedback Management</span>}
+          </li>
+          {/* Add Activity Logs menu item */}
+          <li
+            className={activeTab === 'activity' ? 'active' : ''}
+            onClick={() => setActiveTab('activity')}
+          >
+            <FaHistory className="icon" />
+            {isSidebarOpen && <span>Activity Logs</span>}
+          </li>
           <li
             className={activeTab === 'settings' ? 'active' : ''}
             onClick={() => setActiveTab('settings')}

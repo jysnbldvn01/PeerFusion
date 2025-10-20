@@ -10,7 +10,7 @@ const db = require('./config/db');
 
 const initializeFirebase = () => {
   const admin = require('firebase-admin');
-  const serviceAccount = require('./serviceAccountKey.json');
+  const serviceAccount = require('./keys/serviceAccountKey.json');
 
   if (!admin.apps.length) {
     admin.initializeApp({

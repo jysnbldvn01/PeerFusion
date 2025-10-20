@@ -5,6 +5,7 @@ const authenticateToken = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
 const adminCheckCache = new Map();
+const moderatorCheckCache = new Map();
 
 async function executeTransaction(operations) {
   const connection = await pool.getConnection();
@@ -96,8 +97,66 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-// GET all regular users (excluding admins and moderators)
-router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
+async function requireModeratorOrAdmin(req, res, next) {
+  try {
+    const userId = req.user.id;
+    
+    // Check cache first
+    if (moderatorCheckCache.has(userId)) {
+      const cached = moderatorCheckCache.get(userId);
+      if (cached.expires > Date.now()) {
+        if (cached.isModeratorOrAdmin) {
+          return next();
+        } else {
+          return res.status(403).json({ 
+            error: 'Moderator or Admin access required',
+            userRole: cached.role
+          });
+        }
+      } else {
+        moderatorCheckCache.delete(userId);
+      }
+    }
+
+    const [users] = await pool.query(
+      'SELECT role FROM users WHERE id = ?', 
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(403).json({ error: 'User not found' });
+    }
+    
+    const user = users[0];
+    const isModeratorOrAdmin = user.role === 'admin' || user.role === 'moderator';
+    
+    // Cache the result for 5 minutes
+    moderatorCheckCache.set(userId, {
+      isModeratorOrAdmin,
+      role: user.role,
+      expires: Date.now() + 300000 // 5 minutes
+    });
+    
+    if (isModeratorOrAdmin) {
+      next();
+    } else {
+      res.status(403).json({ 
+        error: 'Moderator or Admin access required',
+        userRole: user.role
+      });
+    }
+    
+  } catch (err) {
+    console.error('Moderator check error:', err);
+    res.status(500).json({ 
+      error: 'Database error during moderator check',
+      details: err.message
+    });
+  }
+}
+
+// GET all regular users (excluding admins and moderators) - Accessible by both admin and moderators
+router.get('/users', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT 
@@ -126,7 +185,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// GET all moderators
+// GET all moderators - Admin only
 router.get('/moderators', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const sql = `
@@ -149,7 +208,7 @@ router.get('/moderators', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// CREATE moderator account
+// CREATE moderator account - Admin only
 router.post('/moderators', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -218,7 +277,7 @@ router.post('/moderators', authenticateToken, requireAdmin, async (req, res) => 
   }
 });
 
-// UPDATE moderator account details
+// UPDATE moderator account details - Admin only
 router.put('/moderators/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const moderatorId = req.params.id;
@@ -305,7 +364,7 @@ router.put('/moderators/:id', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
-// RESET moderator password
+// RESET moderator password - Admin only
 router.post('/moderators/:id/reset-password', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const moderatorId = req.params.id;
@@ -393,8 +452,8 @@ const updateUserStatus = async (userId, status, action, req) => {
   });
 };
 
-// SOFT DELETE user (deactivate)
-router.patch('/users/:id/deactivate', authenticateToken, requireAdmin, async (req, res) => {
+// SOFT DELETE user (deactivate) - Accessible by both admin and moderators
+router.patch('/users/:id/deactivate', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
     
@@ -410,8 +469,8 @@ router.patch('/users/:id/deactivate', authenticateToken, requireAdmin, async (re
   }
 });
 
-// REACTIVATE user
-router.patch('/users/:id/reactivate', authenticateToken, requireAdmin, async (req, res) => {
+// REACTIVATE user - Accessible by both admin and moderators
+router.patch('/users/:id/reactivate', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
     
@@ -427,8 +486,8 @@ router.patch('/users/:id/reactivate', authenticateToken, requireAdmin, async (re
   }
 });
 
-// UPDATE user role
-router.put('/users/:id/role', authenticateToken, requireAdmin, async (req, res) => {
+// UPDATE user role - Accessible by both admin and moderators
+router.put('/users/:id/role', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
     const { role } = req.body;
@@ -483,7 +542,7 @@ router.put('/users/:id/role', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
-// RESET user password
+// RESET user password - Admin only
 router.post('/users/:id/reset-password', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
@@ -535,8 +594,8 @@ router.post('/users/:id/reset-password', authenticateToken, requireAdmin, async 
   }
 });
 
-// UPDATE admin password
-router.put('/change-password', authenticateToken, requireAdmin, async (req, res) => {
+// UPDATE admin password - Accessible by both admin and moderators
+router.put('/change-password', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const adminId = req.user.id;
@@ -586,6 +645,7 @@ router.put('/change-password', authenticateToken, requireAdmin, async (req, res)
 
     // Clear admin cache for this user
     adminCheckCache.delete(adminId);
+    moderatorCheckCache.delete(adminId);
 
     // Log admin action
     try {
@@ -607,7 +667,7 @@ router.put('/change-password', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// GET admin logs
+// GET admin logs - Admin only
 router.get('/logs', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const sql = `
@@ -640,8 +700,8 @@ router.get('/logs', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// GET all categories with their subjects
-router.get('/subjects', authenticateToken, requireAdmin, async (req, res) => {
+// GET all categories with their subjects - Accessible by both admin and moderators
+router.get('/subjects', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT 
@@ -694,7 +754,7 @@ const validateCategoryInput = (name) => {
   return name.trim();
 };
 
-// POST - Create new category
+// POST - Create new category - Admin only
 router.post('/categories', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const name = validateCategoryInput(req.body.name);
@@ -721,7 +781,7 @@ router.post('/categories', authenticateToken, requireAdmin, async (req, res) => 
   }
 });
 
-// POST - Create new subject
+// POST - Create new subject - Admin only
 router.post('/subjects', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { name, category_id } = req.body;
@@ -778,7 +838,7 @@ router.post('/subjects', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// PUT - Update category
+// PUT - Update category - Admin only
 router.put('/categories/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const categoryId = req.params.id;
@@ -809,7 +869,7 @@ router.put('/categories/:id', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
-// DELETE - Delete category
+// DELETE - Delete category - Admin only
 router.delete('/categories/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const categoryId = req.params.id;
@@ -847,7 +907,7 @@ router.delete('/categories/:id', authenticateToken, requireAdmin, async (req, re
   }
 });
 
-// DELETE - Delete subject
+// DELETE - Delete subject - Admin only
 router.delete('/subjects/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const subjectId = req.params.id;
@@ -871,7 +931,7 @@ router.delete('/subjects/:id', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// DELETE moderator account (HARD DELETE - permanently removed)
+// DELETE moderator account (HARD DELETE - permanently removed) - Admin only
 router.delete('/moderators/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const moderatorId = req.params.id;
@@ -925,7 +985,7 @@ router.delete('/moderators/:id', authenticateToken, requireAdmin, async (req, re
   }
 });
 
-// DELETE user account (HARD DELETE - permanently removed)
+// DELETE user account (HARD DELETE - permanently removed) - Admin only
 router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
@@ -993,10 +1053,10 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
-// Reports management routes
+// Reports management routes - Accessible by both admin and moderators
 
 // GET all reports with user details
-router.get('/reports', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT 
@@ -1039,8 +1099,8 @@ router.get('/reports', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// UPDATE report status
-router.patch('/reports/:id/status', authenticateToken, requireAdmin, async (req, res) => {
+// UPDATE report status - Accessible by both admin and moderators
+router.patch('/reports/:id/status', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const reportId = req.params.id;
     const { status, resolution_notes } = req.body;
@@ -1111,8 +1171,8 @@ router.patch('/reports/:id/status', authenticateToken, requireAdmin, async (req,
   }
 });
 
-// GET report statistics
-router.get('/reports/stats', authenticateToken, requireAdmin, async (req, res) => {
+// GET report statistics - Accessible by both admin and moderators
+router.get('/reports/stats', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT 
@@ -1160,8 +1220,8 @@ router.get('/reports/stats', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
-// GET single report details
-router.get('/reports/:id', authenticateToken, requireAdmin, async (req, res) => {
+// GET single report details - Accessible by both admin and moderators
+router.get('/reports/:id', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const reportId = req.params.id;
     
@@ -1205,8 +1265,8 @@ router.get('/reports/:id', authenticateToken, requireAdmin, async (req, res) => 
   }
 });
 
-// GET all feedback with user details
-router.get('/feedback', authenticateToken, requireAdmin, async (req, res) => {
+// GET all feedback with user details - Accessible by both admin and moderators
+router.get('/feedback', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT 
@@ -1245,8 +1305,8 @@ router.get('/feedback', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// GET feedback for specific user
-router.get('/feedback/user/:userId', authenticateToken, requireAdmin, async (req, res) => {
+// GET feedback for specific user - Accessible by both admin and moderators
+router.get('/feedback/user/:userId', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const userId = req.params.userId;
     
@@ -1290,8 +1350,8 @@ router.get('/feedback/user/:userId', authenticateToken, requireAdmin, async (req
   }
 });
 
-// GET feedback statistics
-router.get('/feedback/stats', authenticateToken, requireAdmin, async (req, res) => {
+// GET feedback statistics - Accessible by both admin and moderators
+router.get('/feedback/stats', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT 
@@ -1322,8 +1382,8 @@ router.get('/feedback/stats', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
-// GET unique users with their latest feedback for the main view
-router.get('/feedback/unique-users', authenticateToken, requireAdmin, async (req, res) => {
+// GET unique users with their latest feedback for the main view - Accessible by both admin and moderators
+router.get('/feedback/unique-users', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT DISTINCT 
@@ -1371,8 +1431,8 @@ router.get('/feedback/unique-users', authenticateToken, requireAdmin, async (req
   }
 });
 
-// GET unique users with their recommended status
-router.get('/feedback/unique-users-with-recommended', authenticateToken, requireAdmin, async (req, res) => {
+// GET unique users with their recommended status - Accessible by both admin and moderators
+router.get('/feedback/unique-users-with-recommended', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT DISTINCT 

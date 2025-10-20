@@ -204,6 +204,17 @@ const dashboardStyles = {
     alignItems: 'center',
     gap: '8px'
   },
+  warningContainer: {
+    backgroundColor: '#fffbeb',
+    border: '1px solid #fcd34d',
+    color: '#92400e',
+    padding: '16px',
+    borderRadius: '8px',
+    marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
   legendContainer: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -340,6 +351,11 @@ export default function DashboardOverview() {
   const [feedbackStats, setFeedbackStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [warnings, setWarnings] = useState([]);
+
+  // Get current user role
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const isModerator = currentUser?.role === 'moderator';
 
   const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -358,6 +374,7 @@ export default function DashboardOverview() {
     try {
       setLoading(true);
       setError('');
+      setWarnings([]);
       
       const token = localStorage.getItem('token');
       if (!token) {
@@ -371,20 +388,37 @@ export default function DashboardOverview() {
         'Content-Type': 'application/json'
       };
 
-      const [usersResponse, modsResponse, feedbackResponse, reportsResponse] = await Promise.all([
+      // For moderators, skip the moderators endpoint
+      const requests = [
         fetch(`${API_BASE}/admin/users`, { headers }),
-        fetch(`${API_BASE}/admin/moderators`, { headers }),
+        // Skip moderators endpoint for moderators
+        ...(isModerator ? [] : [fetch(`${API_BASE}/admin/moderators`, { headers })]),
         fetch(`${API_BASE}/admin/feedback/stats`, { headers }),
         fetch(`${API_BASE}/admin/reports/stats`, { headers })
-      ]);
+      ];
+
+      const [usersResponse, ...otherResponses] = await Promise.all(requests);
 
       if (!usersResponse.ok) throw new Error(`Users: ${usersResponse.status}`);
-      if (!modsResponse.ok) throw new Error(`Moderators: ${modsResponse.status}`);
+
+      // Handle responses based on user role
+      let moderatorsResponse, feedbackResponse, reportsResponse;
+      
+      if (isModerator) {
+        // For moderators: usersResponse, feedbackResponse, reportsResponse
+        [feedbackResponse, reportsResponse] = otherResponses;
+      } else {
+        // For admins: usersResponse, moderatorsResponse, feedbackResponse, reportsResponse
+        [moderatorsResponse, feedbackResponse, reportsResponse] = otherResponses;
+        
+        if (!moderatorsResponse.ok) throw new Error(`Moderators: ${moderatorsResponse.status}`);
+      }
+
       if (!feedbackResponse.ok) throw new Error(`Feedback: ${feedbackResponse.status}`);
       if (!reportsResponse.ok) throw new Error(`Reports: ${reportsResponse.status}`);
 
       const users = await usersResponse.json();
-      const moderators = await modsResponse.json();
+      const moderators = isModerator ? 0 : await moderatorsResponse.json();
       const feedbackStats = await feedbackResponse.json();
       const reportsStats = await reportsResponse.json();
 
@@ -392,15 +426,50 @@ export default function DashboardOverview() {
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError(`Failed to load dashboard data: ${error.message}`);
+      
+      // Check if it's a permission error for moderators
+      if (error.message.includes('403') && isModerator) {
+        setWarnings(['Some data is restricted for moderator accounts']);
+        // Try to fetch data without the restricted endpoints
+        fetchLimitedData();
+      } else {
+        setError(`Failed to load dashboard data: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Fallback function to fetch data without restricted endpoints
+  const fetchLimitedData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const [usersResponse, feedbackResponse, reportsResponse] = await Promise.all([
+        fetch(`${API_BASE}/admin/users`, { headers }),
+        fetch(`${API_BASE}/admin/feedback/stats`, { headers }),
+        fetch(`${API_BASE}/admin/reports/stats`, { headers })
+      ]);
+
+      if (usersResponse.ok && feedbackResponse.ok && reportsResponse.ok) {
+        const users = await usersResponse.json();
+        const feedbackStats = await feedbackResponse.json();
+        const reportsStats = await reportsResponse.json();
+        
+        processDashboardData(users, 0, feedbackStats, reportsStats);
+      }
+    } catch (error) {
+      console.error('Error fetching limited data:', error);
+    }
+  };
+
   const processDashboardData = (users, moderators, feedbackStats, reportsStats) => {
     const totalUsers = Array.isArray(users) ? users.length : 0;
-    const totalModerators = Array.isArray(moderators) ? moderators.length : 0;
+    const totalModerators = isModerator ? 0 : (Array.isArray(moderators) ? moderators.length : 0);
     
     const feedbackData = feedbackStats.stats || feedbackStats || {};
     const totalFeedback = Number(feedbackData.total_feedback) || 0;
@@ -503,6 +572,16 @@ export default function DashboardOverview() {
         <h1 style={dashboardStyles.title}>
           <FiBarChart style={{ color: '#3B82F6' }} />
           Analytics Dashboard
+          {isModerator && (
+            <span style={{ 
+              fontSize: '14px', 
+              color: '#6B7280', 
+              fontWeight: 'normal',
+              marginLeft: '12px'
+            }}>
+              (Moderator View)
+            </span>
+          )}
         </h1>
         <div style={{ fontSize: '14px', color: '#6B7280' }}>
           Auto-refreshes every 30 seconds
@@ -518,8 +597,22 @@ export default function DashboardOverview() {
         </div>
       )}
 
+      {warnings.length > 0 && (
+        <div style={dashboardStyles.warningContainer}>
+          <FiAlertCircle size={18} />
+          <div>
+            <strong>Note: </strong>{warnings.join(' ')}
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
-      <div style={dashboardStyles.statsGrid}>
+      <div style={{
+        ...dashboardStyles.statsGrid,
+        gridTemplateColumns: isModerator 
+          ? 'repeat(auto-fit, minmax(250px, 1fr))' 
+          : 'repeat(auto-fit, minmax(250px, 1fr))'
+      }}>
         <div style={statCardStyle('blue')}>
           <div style={dashboardStyles.statTitle}>
             <FiUsers size={18} />
@@ -529,14 +622,17 @@ export default function DashboardOverview() {
           <div style={dashboardStyles.statSubtitle}>Registered users</div>
         </div>
         
-        <div style={statCardStyle('green')}>
-          <div style={dashboardStyles.statTitle}>
-            <FiShield size={18} />
-            Moderators
+        {/* Moderators Card - Only show for admins */}
+        {!isModerator && (
+          <div style={statCardStyle('green')}>
+            <div style={dashboardStyles.statTitle}>
+              <FiShield size={18} />
+              Moderators
+            </div>
+            <div style={dashboardStyles.statValue}>{stats.moderators}</div>
+            <div style={dashboardStyles.statSubtitle}>Active moderators</div>
           </div>
-          <div style={dashboardStyles.statValue}>{stats.moderators}</div>
-          <div style={dashboardStyles.statSubtitle}>Active moderators</div>
-        </div>
+        )}
         
         <div style={statCardStyle('yellow')}>
           <div style={dashboardStyles.statTitle}>
