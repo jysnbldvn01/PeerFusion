@@ -11,7 +11,6 @@ async function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'No authorization header provided' });
   }
 
-  // Expecting header format: "Bearer <token>"
   const parts = authHeader.split(' ');
   if (parts.length !== 2 || parts[0] !== 'Bearer') {
     return res.status(401).json({ error: 'Invalid authorization header format. Expected: Bearer <token>' });

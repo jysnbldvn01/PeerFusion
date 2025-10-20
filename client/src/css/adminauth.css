@@ -165,6 +165,99 @@
   transition: background 160ms ease, transform 120ms ease;
   box-shadow: 0 8px 26px rgba(0,0,0,0.36);
 }
+
+/* Forgot Password Styles */
+.admin-info-text {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.admin-message {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.admin-message-success {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.admin-forgot-password-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.admin-back-btn {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.admin-back-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.admin-back-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-cancel-btn {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.admin-cancel-btn:hover:not(:disabled) {
+  background: #d32f2f;
+  color: white;
+}
+
+.admin-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-forgot-password-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.admin-forgot-password-btn {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.admin-forgot-password-btn:hover {
+  color: #b71c1c;
+}
 .admin-submit:disabled { opacity: 0.7; cursor: default; }
 .admin-submit:hover:not(:disabled) { background: var(--admin-accent-dark); transform: translateY(-2px); }
 
@@ -179,3 +272,185 @@
 
 /* animation */
 @keyframes admin-fadeIn { from { opacity: 0; transform: translateY(-8px);} to { opacity: 1; transform: translateY(0);} }
+
+/* ===== Forgot Password Styles (Dark Theme) ===== */
+
+/* Success Message */
+.admin-success {
+  background: rgba(0, 255, 153, 0.12);
+  color: #00ff99;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid rgba(0, 255, 153, 0.2);
+  animation: admin-fadeIn 320ms ease-in-out;
+}
+
+/* Input Hint */
+.admin-input-hint {
+  font-size: 0.8rem;
+  color: var(--admin-muted);
+  margin-top: 0.5rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+/* Code Input Specific Styling */
+.admin-code-input {
+  letter-spacing: 8px !important;
+  text-align: center !important;
+  font-size: 1.2rem !important;
+  font-weight: 600;
+  padding-left: 1rem !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 153, 0.1) !important;
+}
+
+.admin-code-input:focus {
+  border-color: rgba(0, 255, 153, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 153, 0.1) !important;
+}
+
+/* Form Actions (Back/Next buttons) */
+.admin-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.admin-secondary-btn {
+  flex: 1;
+  padding: 0.75rem 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--admin-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.admin-secondary-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.admin-secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Forgot Password Link */
+.admin-forgot-password {
+  background: none;
+  border: none;
+  color: var(--admin-accent);
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: none;
+  margin-top: 1rem;
+  display: inline-block;
+  transition: all 160ms ease;
+  font-weight: 600;
+}
+
+.admin-forgot-password:hover {
+  color: var(--admin-accent-dark);
+  text-decoration: underline;
+  transform: translateY(-1px);
+}
+
+/* Back to Login */
+.admin-back-to-login {
+  background: none;
+  border: none;
+  color: var(--admin-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.5rem auto 0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 160ms ease;
+  font-weight: 600;
+}
+
+.admin-back-to-login:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-1px);
+}
+
+.admin-auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Password Strength Indicator */
+.admin-password-strength {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-password-strength.weak { color: #ff6b6b; }
+.admin-password-strength.medium { color: #ffd93d; }
+.admin-password-strength.strong { color: #00ff99; }
+
+/* Loading States */
+.admin-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 520px) {
+  .admin-form-actions {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  
+  .admin-code-input {
+    font-size: 1.1rem !important;
+    letter-spacing: 6px !important;
+    padding: 0.6rem 0.8rem !important;
+  }
+  
+  .admin-secondary-btn,
+  .admin-submit {
+    padding: 0.7rem 0.8rem;
+  }
+}
+
+/* Animation for step transitions */
+@keyframes admin-slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.admin-auth-form {
+  animation: admin-slideIn 320ms ease-in-out;
+}

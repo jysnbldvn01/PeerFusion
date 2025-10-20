@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import '../css/adminauth.css'; // keep this import
+import '../css/adminauth.css';
+import AdminForgotPassword from '../components/AdminForgotPassword';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [roleType, setRoleType] = useState('admin');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -46,6 +48,15 @@ export default function AdminLogin() {
       setError(err.response?.data?.message || 'Login failed');
     }
   };
+
+  if (showForgotPassword) {
+    return (
+      <AdminForgotPassword 
+        onBackToLogin={() => setShowForgotPassword(false)}
+        roleType={roleType}
+      />
+    );
+  }
 
   return (
     <div className="admin-auth-container">
@@ -130,6 +141,16 @@ export default function AdminLogin() {
           <button type="submit" className="admin-submit" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+
+          <div className="admin-auth-footer">
+            <button 
+              type="button" 
+              className="admin-forgot-password"
+              onClick={() => setShowForgotPassword(true)}
+            >
+              <i className="fa-solid fa-key" /> Forgot Password?
+            </button>
+          </div>
         </form>
       </div>
     </div>
