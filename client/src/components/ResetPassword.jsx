@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import '../css/auth.css'; // Make sure this CSS file is in the same directory or update path
+import '../css/auth.css';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -35,51 +35,85 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h2>Set a New Password</h2>
-          <p>Your new password must be secure.</p>
+    <div 
+        className="auth-container"
+        style={{
+          background: `url('/background.svg') no-repeat center center fixed`,
+          backgroundSize: 'cover'
+        }}
+      >
+      <div className="auth-layout">
+        <div className="auth-form-section">
+          <div className="auth-card">
+            <div className="auth-header">
+              <img src="/logos.png" alt="PeerFusion Logo" className="logo" />
+              <h2>Set a New Password</h2>
+              <p>Your new password must be secure.</p>
+            </div>
+            <div className="auth-body">
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="password">New Password</label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm New Password</label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className={`error-message ${error ? 'show' : ''}`}>{error}</div>
+                {message && <div className="success-message">{message}</div>}
+
+                <button type="submit" className="submit-btn" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span className="button-loader"></span>
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
+                </button>
+              </form>
+
+              <div className="auth-footer">
+                <Link to="/login">Back to Login</Link>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="auth-body">
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="password">New Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                className="form-control"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+         <footer className="auth-page-footer">
+            <div className="footer-content">
+              <p>&copy; 2024 PeerFusion. All rights reserved.</p>
+                <div className="footer-links">
+                 <a href="/privacy">Privacy Policy</a>
+                 <a href="/terms">Terms of Service</a>
+                <a href="/help">Help Center</a>
+              </div>
             </div>
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm New Password</label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                className="form-control"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className={`error-message ${error ? 'show' : ''}`}>{error}</div>
-            {message && <div className="success-message">{message}</div>}
+          </footer>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? <span className="button-loader"></span> : 'Update Password'}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <Link to="/login">Back to Login</Link>
+        <div className="auth-graphics">
+          <div className="svg-container">
+            <img src="/LoginSvg.svg" alt="Password Reset Illustration" className="login-svg" />
           </div>
         </div>
       </div>

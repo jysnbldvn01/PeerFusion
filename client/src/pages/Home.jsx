@@ -44,13 +44,9 @@ const Home = () => {
           })
         ]);
 
-        console.log('Fetched users:', usersRes.data);
-        console.log('Recommended users:', recommendedRes.data);
-        // Process users with proper availability parsing
         const processedUsers = usersRes.data.map(user => {
           let parsedAvailability = [];
           
-          // Parse availability if it exists
           if (user.availability) {
             try {
               if (typeof user.availability === 'string') {
@@ -98,13 +94,11 @@ const Home = () => {
     
     if (!selectedCategory) return matchesSearch;
 
-    // Handle "Recommended" category
     if (selectedCategory.id === 'recommended') {
       const isRecommended = recommendedUsers.some(recUser => recUser.id === user.id);
       return matchesSearch && isRecommended;
     }
 
-    // Handle subject categories
     const userSubjects = user.subject?.split(',').map(s => s.trim()) || [];
     return matchesSearch && selectedCategory.subjects.some(subject =>
       userSubjects.includes(subject.name)
@@ -122,7 +116,6 @@ const Home = () => {
         const feedbacks = res.data.feedbacks || [];
         setAllFeedbacks(feedbacks);
         
-        // Group by sender_id to get unique users and their latest feedback
         const feedbackBySender = {};
         feedbacks.forEach(fb => {
           if (!feedbackBySender[fb.sender_id] || new Date(fb.created_at) > new Date(feedbackBySender[fb.sender_id].created_at)) {
@@ -130,7 +123,6 @@ const Home = () => {
           }
         });
 
-        // Convert to array and sort by date
         const uniqueFeedbacks = Object.values(feedbackBySender)
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -157,7 +149,6 @@ const Home = () => {
     setExpandedUsers({});
     fetchFeedback(user.id);
 
-    // Fetch unique partner count
     try {
       const countRes = await axios.get(
         `http://localhost:5000/api/session/unique-partners/${user.id}`,
@@ -190,92 +181,54 @@ const Home = () => {
       );
 
       if (response.data.success) {
-        alert(" Session request sent successfully!");
+        alert("Session request sent successfully!");
         setNotifications(prev => [
           {
             id: Date.now(),
             sender_id: me.user_id,
             receiver_id: selectedUser.id,
             session_request_id: response.data.requestId,
-            message: "📅 You have a new session request",
+            message: "You have a new session request",
             type: "session_request",
             status: "pending",
             created_at: new Date().toISOString(),
           },
           ...prev
         ]);
-      } else { alert("⚠️ Failed to send request."); }
+      } else { alert("Failed to send request."); }
     } catch (err) {
       console.error("Request session error:", err);
-      alert(`❌ Error: ${err.response?.data?.error || err.message}`);
+      alert(`Error: ${err.response?.data?.error || err.message}`);
     }
   };
 
   const RatingDisplay = ({ rating }) => {
     const numericRating = Number(rating) || 0;
-    return <span>⭐ {numericRating.toFixed(1)}</span>;
-  };
-
-  // Recommended Badge component
-  const RecommendedBadge = () => (
-    <span className="recommended-badge">Recommended</span>
-  );
-
-  // Availability Display Component for Modal
-  const AvailabilityDisplay = ({ availability }) => {
-    if (!availability || availability.length === 0) {
-      return <p className="no-availability">No availability set</p>;
-    }
-
-    let parsedAvailability = availability;
-    if (typeof availability === 'string') {
-      try {
-        parsedAvailability = JSON.parse(availability);
-      } catch (err) {
-        console.error('Error parsing availability:', err);
-        return <p className="no-availability">No availability set</p>;
-      }
-    }
-
-    const availableDays = parsedAvailability.filter(day => 
-      day && day.enabled && day.slots && day.slots.length > 0
-    );
-
-    if (availableDays.length === 0) {
-      return <p className="no-availability">No availability set</p>;
-    }
-
     return (
-      <div className="availability-display">
-        {availableDays.map((daySchedule) => (
-          <div key={daySchedule.day} className="availability-day">
-            <strong className="day-label">{daySchedule.day}:</strong>
-            <div className="time-slots-display">
-              {daySchedule.slots.map((slot, index) => (
-                <span key={index} className="time-slot-badge">
-                  {slot.start} - {slot.end}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="peerfusion-rating-display">
+        <span className="peerfusion-star-icon"></span>
+        {numericRating.toFixed(1)}
       </div>
     );
   };
 
-  // Get all feedbacks from a specific user
+  const RecommendedBadge = () => (
+    <span className="peerfusion-recommended-badge">
+      <span className="peerfusion-recommended-icon"></span>
+      Recommended
+    </span>
+  );
+
   const getUserFeedbacks = (senderId) => {
     return allFeedbacks
       .filter(fb => fb.sender_id === senderId)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   };
 
-  // Check if a user has multiple reviews (2 or more)
   const hasMultipleReviews = (senderId) => {
     return getUserFeedbacks(senderId).length >= 2;
   };
 
-  // Toggle expanded state for a specific user
   const toggleUserExpansion = (senderId) => {
     setExpandedUsers(prev => ({
       ...prev,
@@ -283,7 +236,6 @@ const Home = () => {
     }));
   };
 
-  // Get displayed feedback for the modal
   const getDisplayedFeedback = () => {
     const displayed = showAllFeedback ? feedbackList : feedbackList.slice(0, 2);
     
@@ -292,8 +244,6 @@ const Home = () => {
       const isExpanded = expandedUsers[userFeedback.sender_id];
       const hasMultiple = hasMultipleReviews(userFeedback.sender_id);
       
-      // If user has multiple reviews and is expanded, show all their reviews
-      // Otherwise, show only their latest review
       const reviewsToShow = (hasMultiple && isExpanded) ? userFeedbacks : [userFeedbacks[0]];
       
       return {
@@ -310,33 +260,33 @@ const Home = () => {
   const hasMoreFeedback = feedbackList.length > 2;
 
   return (
-    <div className="home-container">
-      <div className="header-section">
-        <h2>PeerFusion SkillShare</h2>
-        <div className="search-container">
+    <div className="peerfusion-home-container">
+      <div className="peerfusion-header-section">
+        <h2 className="peerfusion-header-title">PeerFusion SkillShare</h2>
+        <div className="peerfusion-search-container">
           <input
             type="text"
             placeholder="Search by name or subject..."
-            className="search-input"
+            className="peerfusion-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <span className="search-icon"></span>
+          <span className="chat-search-icon"></span>
         </div>
       </div>
 
       {/* Slide Banner */}
-      <div className="banner-container">
+      <div className="peerfusion-banner-container">
         {slides.map((slide, index) => (
-          <div key={index} className={`banner-slide ${index === currentSlide ? 'active' : ''}`}>
-            <img src={slide.image} alt={slide.alt} className="banner-image" />
+          <div key={index} className={`peerfusion-banner-slide ${index === currentSlide ? 'active' : ''}`}>
+            <img src={slide.image} alt={slide.alt} className="peerfusion-banner-image" />
           </div>
         ))}
-        <div className="banner-dots">
+        <div className="peerfusion-banner-dots">
           {slides.map((_, index) => (
             <button
               key={index}
-              className={`dot ${index === currentSlide ? 'active' : ''}`}
+              className={`peerfusion-dot ${index === currentSlide ? 'active' : ''}`}
               onClick={() => setCurrentSlide(index)}
             />
           ))}
@@ -344,46 +294,75 @@ const Home = () => {
       </div>
 
       {/* Subject Category Filter with Recommended */}
-      <div className="category-filter">
-        <button className={`category-btn ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>All Subjects</button>
-        {/* Recommended Category */}
+      <div className="peerfusion-category-filter">
+        <button className={`peerfusion-category-btn ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>
+          All Subjects
+        </button>
         <button 
           key="recommended" 
-          className={`category-btn ${selectedCategory?.id === 'recommended' ? 'active' : ''}`} 
+          className={`peerfusion-category-btn ${selectedCategory?.id === 'recommended' ? 'active' : ''}`} 
           onClick={() => setSelectedCategory({ id: 'recommended', name: 'Recommended' })}
         >
-         Recommended
+          Recommended
         </button>
         {subjectCategories.map(category => (
-          <button key={category.id} className={`category-btn ${selectedCategory?.id === category.id ? 'active' : ''}`} onClick={() => setSelectedCategory(category)}>{category.name}</button>
+          <button key={category.id} className={`peerfusion-category-btn ${selectedCategory?.id === category.id ? 'active' : ''}`} onClick={() => setSelectedCategory(category)}>
+            {category.name}
+          </button>
         ))}
       </div>
 
-      {/* User Cards with Recommended Badge */}
-      <div className="user-list">
+      {/* Pinterest-style User Cards */}
+      <div className="peerfusion-user-list">
         {isLoading ? (
-          <div className="loading-spinner-container"><div className="loading-spinner"></div></div>
+          <div className="peerfusion-loading-container">
+            <div className="peerfusion-loading-spinner"></div>
+          </div>
         ) : (
           filteredUsers.map(user => {
             const isRecommended = recommendedUsers.some(recUser => recUser.id === user.id);
             return (
-              <div className="user-card" key={user.id} onClick={() => handleOpenModal(user)}>
-                {user.avatar && <img src={`http://localhost:5000/uploads/${user.avatar}`} alt="Avatar" className="user-avatar" />}
-                <div className="user-rating">
-                  <RatingDisplay rating={user?.rating} />
-                  {isRecommended && <RecommendedBadge />}
+              <div className="peerfusion-user-card" key={user.id} onClick={() => handleOpenModal(user)}>
+                <div className="peerfusion-card-avatar-container">
+                  {user.avatar && (
+                    <img 
+                      src={`http://localhost:5000/uploads/${user.avatar}`} 
+                      alt="Avatar" 
+                      className="peerfusion-user-avatar" 
+                    />
+                  )}
+                  <div className="peerfusion-user-rating">
+                    <RatingDisplay rating={user?.rating} />
+                  </div>
+                  {isRecommended && (
+                    <div className="peerfusion-card-recommended-badge">
+                      <RecommendedBadge />
+                    </div>
+                  )}
                 </div>
-                <div className="user-info">
-                  <h3 className="user-name">{user.username}</h3>
-                  <div className="user-details">
-                    <p className="user-subject"><span className="detail-label">Subject:</span> {user.subject || 'N/A'}</p>
-                    <p className="user-level"><span className="detail-label">Year Level:</span> {user.year_level || 'N/A'}</p>
-                    <p className="user-role"><span className="detail-label">Role:</span> {user.role || 'N/A'}</p>
+                <div className="peerfusion-user-info">
+                  <h3 className="peerfusion-user-name">{user.username}</h3>
+                  <div className="peerfusion-user-details">
+                    <p className="peerfusion-user-subject">
+                      <span className="peerfusion-detail-label">Subject:</span> 
+                      {user.subject || 'N/A'}
+                    </p>
+                    <p className="peerfusion-user-level">
+                      <span className="peerfusion-detail-label">Year Level:</span> 
+                      {user.year_level || 'N/A'}
+                    </p>
+                    <p className="peerfusion-user-role">
+                      <span className="peerfusion-detail-label">Role:</span> 
+                      {user.role || 'N/A'}
+                    </p>
                   </div>
                   {user.social_links && (
-                    <div className="social-links-preview">
+                    <div className="peerfusion-social-links-preview">
                       {user.social_links.split('\n').slice(0, 2).map((link, i) => (
-                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="card-link">🔗 {link.length > 20 ? link.substring(0, 20) + '...' : link}</a>
+                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="peerfusion-card-link">
+                          <span className="peerfusion-link-icon"></span>
+                          {link.length > 20 ? link.substring(0, 20) + '...' : link}
+                        </a>
                       ))}
                     </div>
                   )}
@@ -394,148 +373,168 @@ const Home = () => {
         )}
       </div>
 
-      {/* Modal with Recommended Features */}
+      {/* Modal */}
       {selectedUser && (
-        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button className="close-modal" onClick={() => setSelectedUser(null)}>×</button>
-            <div className="modal-avatar-container">
+        <div className="peerfusion-modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div className="peerfusion-modal-content" onClick={e => e.stopPropagation()}>
+            <button className="peerfusion-close-modal" onClick={() => setSelectedUser(null)}>×</button>
+            
+            <div className="peerfusion-modal-avatar-container">
               {selectedUser.avatar && (
                 <img
                   src={`http://localhost:5000/uploads/${selectedUser.avatar}`}
                   alt="Avatar"
-                  className="modal-avatar"
+                  className="peerfusion-modal-avatar"
                 />
               )}
               {recommendedUsers.some(recUser => recUser.id === selectedUser.id) && (
-                  <RecommendedBadge />
-                )}
-              <div className="modal-rating">
+                <RecommendedBadge />
+              )}
+              <div className="peerfusion-modal-rating">
                 <RatingDisplay rating={selectedUser?.rating} />
                 <span>({selectedUser?.total_reviews || 0} reviews)</span>
               </div>
             </div>
 
-            <div className="modal-main">
-              <h3>{selectedUser.username}</h3>
-              <p className="modal-role">{selectedUser.role || 'N/A'}</p>
-              <p className="modal-bio">{selectedUser.bio || 'No bio provided'}</p>
-              <div className="modal-section">
-                <h4>Subject Expertise</h4>
-                <div className="subject-tags">{selectedUser.subject?.split(',').map((s, i) => <span key={i} className="subject-tag">{s.trim()}</span>) || 'N/A'}</div>
+            <div className="peerfusion-modal-main">
+              <h3 className="peerfusion-modal-title">{selectedUser.username}</h3>
+              <p className="peerfusion-modal-role">{selectedUser.role || 'N/A'}</p>
+              <p className="peerfusion-modal-bio">{selectedUser.bio || 'No bio provided'}</p>
+              
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Subject Expertise</h4>
+                <div className="peerfusion-subject-tags">
+                  {selectedUser.subject?.split(',').map((s, i) => (
+                    <span key={i} className="peerfusion-subject-tag">{s.trim()}</span>
+                  )) || 'N/A'}
+                </div>
               </div>
-              <div className="modal-section">
-                <h4>Year Level</h4>
+
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Year Level</h4>
                 <p>{selectedUser.year_level || 'N/A'}</p>
               </div>
-              <div className="modal-section">
-                <h4>Number of Tutored Skill Learners</h4>
+
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Number of Tutored Skill Learners</h4>
                 <p>{selectedUser.uniquePartnerCount ?? 0} Skill Sharers</p>
               </div>
+
               {selectedUser.social_links && (
-                <div className="modal-section">
-                  <h4>Social Links</h4>
-                  <div className="modal-social-links">
+                <div className="peerfusion-modal-section">
+                  <h4 className="peerfusion-modal-section-title">Social Links</h4>
+                  <div className="peerfusion-modal-social-links">
                     {selectedUser.social_links.split('\n').map((link, i) => (
-                      <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="modal-social-link">
-                        <span className="link-icon">🔗</span><span className="link-text">{link}</span>
+                      <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="peerfusion-modal-social-link">
+                        <span className="peerfusion-link-icon"></span>
+                        <span className="peerfusion-link-text">{link}</span>
                       </a>
                     ))}
                   </div>
                 </div>
               )}
-              <div className="modal-section">
-                <h4>Contact</h4>
-                <p className="contact-info">
+
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Contact</h4>
+                <p className="peerfusion-contact-info">
                   {selectedUser.contact_number ? (
-                    <a href={`tel:${selectedUser.contact_number}`} className="contact-link">📞 {selectedUser.contact_number}</a>
+                    <a href={`tel:${selectedUser.contact_number}`} className="peerfusion-contact-link">
+                      <span className="peerfusion-phone-icon"></span>
+                      {selectedUser.contact_number}
+                    </a>
                   ) : 'Not provided'}
                 </p>
               </div>
 
-            {/* Availability Section */}
-            {selectedUser.availability && selectedUser.role !== 'Skill Learner' && (
-              <div className="modal-section">
-                <h4> Time Availability</h4>
-                <div className="availability-display">
-                  {(() => {
-                    // Ensure availability is properly parsed
-                    let availability = selectedUser.availability;
-                    if (typeof availability === 'string') {
-                      try {
-                        availability = JSON.parse(availability);
-                      } catch (err) {
-                        console.error('Error parsing availability:', err);
-                        availability = [];
+              {/* Availability Section */}
+              {selectedUser.availability && selectedUser.role !== 'Skill Learner' && (
+                <div className="peerfusion-modal-section">
+                  <h4 className="peerfusion-modal-section-title">Time Availability</h4>
+                  <div className="peerfusion-availability-display">
+                    {(() => {
+                      let availability = selectedUser.availability;
+                      if (typeof availability === 'string') {
+                        try {
+                          availability = JSON.parse(availability);
+                        } catch (err) {
+                          console.error('Error parsing availability:', err);
+                          availability = [];
+                        }
                       }
-                    }
-                    
-                    const availableDays = availability.filter(day => 
-                      day.enabled && day.slots && day.slots.length > 0
-                    );
-                    
-                    if (availableDays.length === 0) {
-                      return <p className="no-availability">No availability set</p>;
-                    }
+                      
+                      const availableDays = availability.filter(day => 
+                        day.enabled && day.slots && day.slots.length > 0
+                      );
+                      
+                      if (availableDays.length === 0) {
+                        return <p className="peerfusion-no-availability">No availability set</p>;
+                      }
 
-                    return availableDays.map((daySchedule) => (
-                      <div key={daySchedule.day} className="availability-day">
-                        <strong className="day-label">{daySchedule.day}:</strong>
-                        <div className="time-slots-display">
-                          {daySchedule.slots.map((slot, index) => (
-                            <span key={index} className="time-slot-badge">
-                              {slot.start} - {slot.end}
-                            </span>
-                          ))}
+                      return availableDays.map((daySchedule) => (
+                        <div key={daySchedule.day} className="peerfusion-availability-day">
+                          <strong className="peerfusion-day-label">{daySchedule.day}:</strong>
+                          <div className="peerfusion-time-slots-display">
+                            {daySchedule.slots.map((slot, index) => (
+                              <span key={index} className="peerfusion-time-slot-badge">
+                                {slot.start} - {slot.end}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ));
-                  })()}
+                      ));
+                    })()}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-              <div className="modal-section">
-                <h4>Feedback & Ratings</h4>
-
-                {/* Feedback List */}
-                <div className="feedback-list">
-                  {feedbackList.length === 0 ? <p className="no-feedback">No feedback yet. Be the first to review!</p> :
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Feedback & Ratings</h4>
+                <div className="peerfusion-feedback-list">
+                  {feedbackList.length === 0 ? (
+                    <p className="peerfusion-no-feedback">No feedback yet. Be the first to review!</p>
+                  ) : (
                     <>
                       {selectedUser?.rating > 0 && (
-                        <div className="average-rating"><RatingDisplay rating={selectedUser?.rating} /></div>
+                        <div className="peerfusion-average-rating">
+                          <RatingDisplay rating={selectedUser?.rating} />
+                        </div>
                       )}
                       {displayedFeedbackData.map(({ user, reviews, hasMultiple, isExpanded, totalReviews }) => (
                         <div key={user.sender_id}>
-                          {/* First review - shows full profile */}
                           {reviews.length > 0 && (
-                            <div className="feedback-item">
-                              <div className="feedback-header">
-                                <img src={reviews[0].sender_avatar ? `http://localhost:5000/uploads/${reviews[0].sender_avatar}` : '/default-avatar.png'} alt={reviews[0].sender_name} className="feedback-avatar" />
+                            <div className="peerfusion-feedback-item">
+                              <div className="peerfusion-feedback-header">
+                                <img 
+                                  src={reviews[0].sender_avatar ? `http://localhost:5000/uploads/${reviews[0].sender_avatar}` : '/default-avatar.png'} 
+                                  alt={reviews[0].sender_name} 
+                                  className="peerfusion-feedback-avatar" 
+                                />
                                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', width:'100%' }}>
-                                  <strong style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'70%' }}>{reviews[0].sender_name}</strong>
+                                  <strong style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'70%' }}>
+                                    {reviews[0].sender_name}
+                                  </strong>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                      {reviews[0].rating > 0 && (
-                                        <div className="feedback-rating" style={{ flexShrink: 0 }}>
-                                          {Array.from({ length: 5 }).map((_, i) => (
-                                            <span key={i} className={i < reviews[0].rating ? 'filled' : ''}>
-                                              {i < reviews[0].rating ? '★' : '☆'}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                        {!!reviews[0].is_recommended && (
-                                          <span className="recommended-indicator">
-                                            ⭐ Recommended
+                                    {reviews[0].rating > 0 && (
+                                      <div className="peerfusion-feedback-rating" style={{ flexShrink: 0 }}>
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                          <span key={i} className={i < reviews[0].rating ? 'filled' : ''}>
+                                            {i < reviews[0].rating ? '★' : '☆'}
                                           </span>
-                                        )}
+                                        ))}
+                                      </div>
+                                    )}
+                                    {!!reviews[0].is_recommended && (
+                                      <span className="peerfusion-recommended-indicator">
+                                        Recommended
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
-                              <p className="feedback-message">
+                              <p className="peerfusion-feedback-message">
                                 {reviews[0].message && reviews[0].message !== '0' ? reviews[0].message : ''}
                               </p>
-                              <small className="feedback-date">
+                              <small className="peerfusion-feedback-date">
                                 {reviews[0].created_at && !isNaN(new Date(reviews[0].created_at)) 
                                   ? new Date(reviews[0].created_at).toLocaleDateString('en-US', {
                                       year: 'numeric', 
@@ -547,29 +546,21 @@ const Home = () => {
                             </div>
                           )}
                           
-                          {/* Additional reviews - compact view without profile */}
                           {reviews.slice(1).map((fb, index) => (
-                            <div 
-                              key={fb.id} 
-                              className="feedback-item additional-review"
-                            >
-                              <div className="compact-rating">
-                                <div className="compact-stars">
+                            <div key={fb.id} className="peerfusion-feedback-item additional-review">
+                              <div className="peerfusion-compact-rating">
+                                <div className="peerfusion-compact-stars">
                                   {Array.from({ length:5 }).map((_, i) => (
-                                    <span key={i} className={`compact-star ${i < fb.rating ? 'filled' : ''}`}>
+                                    <span key={i} className={`peerfusion-compact-star ${i < fb.rating ? 'filled' : ''}`}>
                                       {i < fb.rating ? '★' : '☆'}
                                     </span>
                                   ))}
                                 </div>
-                                {!!reviews[0].is_recommended && (
-                                  <span className="recommended-indicator">
-                                  </span>
-                                )}
                               </div>
-                              <p className="feedback-message">
+                              <p className="peerfusion-feedback-message">
                                 {fb.message && fb.message !== '0' ? fb.message : ''}
                               </p>
-                              <small className="feedback-date">
+                              <small className="peerfusion-feedback-date">
                                 {fb.created_at && !isNaN(new Date(fb.created_at)) 
                                   ? new Date(fb.created_at).toLocaleDateString('en-US', {
                                       year: 'numeric', 
@@ -581,11 +572,10 @@ const Home = () => {
                             </div>
                           ))}
                           
-                          {/* View More for specific user with 2+ reviews */}
                           {hasMultiple && !isExpanded && (
-                            <div className="view-more-container">
+                            <div className="peerfusion-view-more-container">
                               <button 
-                                className="view-more-btn"
+                                className="peerfusion-view-more-btn"
                                 onClick={() => toggleUserExpansion(user.sender_id)}
                               >
                                 View {totalReviews - 1} more review{totalReviews - 1 > 1 ? 's' : ''} from {user.sender_name}
@@ -593,11 +583,10 @@ const Home = () => {
                             </div>
                           )}
                           
-                          {/* Show Less for specific user */}
                           {hasMultiple && isExpanded && (
-                            <div className="view-more-container">
+                            <div className="peerfusion-view-more-container">
                               <button 
-                                className="view-more-btn"
+                                className="peerfusion-view-more-btn"
                                 onClick={() => toggleUserExpansion(user.sender_id)}
                               >
                                 Show less from {user.sender_name}
@@ -607,11 +596,10 @@ const Home = () => {
                         </div>
                       ))}
                       
-                      {/* See More Reviews for different users */}
                       {hasMoreFeedback && !showAllFeedback && (
-                        <div className="see-more-container">
+                        <div className="peerfusion-see-more-container">
                           <button 
-                            className="see-more-btn"
+                            className="peerfusion-see-more-btn"
                             onClick={() => setShowAllFeedback(true)}
                           >
                             See More Reviews
@@ -619,11 +607,10 @@ const Home = () => {
                         </div>
                       )}
 
-                      {/* Show Less Reviews for different users */}
                       {showAllFeedback && hasMoreFeedback && (
-                        <div className="see-more-container">
+                        <div className="peerfusion-see-more-container">
                           <button 
-                            className="see-more-btn"
+                            className="peerfusion-see-more-btn"
                             onClick={() => setShowAllFeedback(false)}
                           >
                             Show Less
@@ -631,18 +618,22 @@ const Home = () => {
                         </div>
                       )}
                     </>
-                  }
+                  )}
                 </div>
               </div>
-              <div className="modal-actions">
-                <button className="schedule-btn" onClick={handleRequestSession}>📅 Request Session</button>
+
+              <div className="peerfusion-modal-actions">
+                <button className="peerfusion-schedule-btn" onClick={handleRequestSession}>
+                  <span className="peerfusion-calendar-icon"></span>
+                  Request Session
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };
+
 export default Home;

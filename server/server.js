@@ -33,7 +33,7 @@ const configureSocketIO = (server, firestore) => {
   };
 
   const handleSocketConnection = (socket) => {
-    console.log('🟢 Socket connected:', socket.id);
+    console.log('Socket connected:', socket.id);
 
     socket.on('identify', ({ userId }) => {
       if (userId) {
@@ -96,12 +96,12 @@ const handleSendMessage = (socket, firestore, io) => async ({
 
     io.to(`conv_${conversationId}`).emit('receiveMessage', newMessage);
   } catch (err) {
-    console.error('❌ sendMessage Firestore error:', err);
+    console.error('sendMessage Firestore error:', err);
   }
 };
 
 const handleSocketDisconnect = (socket, userSockets) => {
-  console.log('🔴 Socket disconnected:', socket.id);
+  console.log('Socket disconnected:', socket.id);
   for (const [userId, socketId] of userSockets.entries()) {
     if (socketId === socket.id) {
       userSockets.delete(userId);
@@ -129,9 +129,9 @@ const configureRoutes = (app) => {
     const routePath = route.split('/api')[1];
     try {
       app.use(route, require(`./routes${routePath}`));
-      console.log(`✅ Route configured: ${route}`);
+      console.log(`Route configured: ${route}`);
     } catch (error) {
-      console.error(`❌ Failed to load route ${route}:`, error.message);
+      console.error(`Failed to load route ${route}:`, error.message);
     }
   });
 };
@@ -161,20 +161,20 @@ const startServer = () => {
   // Start server
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, () => {
-    console.log(`🎉 Server running on http://localhost:${PORT}`);
-    console.log('✅ Database connected directly');
-    console.log('✅ Socket.IO ready for real-time communication');
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log('Database connected directly');
+    console.log('Socket.IO ready for real-time communication');
   });
 };
 
 // Database connection test
 db.getConnection()
   .then(conn => {
-    console.log('✅ Database connected successfully');
+    console.log('Database connected successfully');
     conn.release();
     startServer();
   })
   .catch(err => {
-    console.error('❌ Database connection failed:', err.message);
+    console.error('Database connection failed:', err.message);
     process.exit(1);
   });

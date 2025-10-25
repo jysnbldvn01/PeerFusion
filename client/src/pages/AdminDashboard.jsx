@@ -6,7 +6,7 @@ import Settings from '../components/admin/Settings';
 import SubjectManagement from '../components/admin/SubjectManagement';
 import ReportManagement from '../components/admin/ReportManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
-import ActivityLogs from '../components/admin/ActivityLogs'; // Add this import
+import ActivityLogs from '../components/admin/ActivityLogs';
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
 

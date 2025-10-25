@@ -197,90 +197,74 @@ const Notification = () => {
 
   const navigate = useNavigate();
 
-// Accept session request
-const handleAccept = async (notification) => {
-  const token = localStorage.getItem("token");
-  try {
-    const res = await axios.post(
-      `http://localhost:5000/api/session/accept`,
-      {
-        requestId: notification.session_request_id || notification.id,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+  // Accept session request
+  const handleAccept = async (notification) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/session/accept`,
+        {
+          requestId: notification.session_request_id || notification.id,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    if (res.data.success && res.data.conversationId) {
+      if (res.data.success && res.data.conversationId) {
+        setNotifications((prev) =>
+          prev.filter((n) => n.id !== notification.id)
+        );
+        closeModal();
+        navigate(`/chat?conv=${res.data.conversationId}`);
+      } else {
+        fetchNotifications();
+      }
+    } catch (err) {
+      console.error("❌ Failed to accept session request:", err);
+      alert("Error accepting session request");
+    }
+  };
+
+  // Decline session request
+  const handleDecline = async (notification) => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        `http://localhost:5000/api/session/reject`,
+        {
+          requestId: notification.session_request_id || notification.id,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setNotifications((prev) =>
         prev.filter((n) => n.id !== notification.id)
       );
       closeModal();
-      // ✅ Navigate with Firestore conversationId
-      navigate(`/chat?conv=${res.data.conversationId}`);
-    } else {
-      fetchNotifications();
+    } catch (err) {
+      console.error("❌ Failed to reject session request:", err);
+      alert("Error rejecting session request");
     }
-  } catch (err) {
-    console.error("❌ Failed to accept session request:", err);
-    alert("Error accepting session request");
-  }
-};
+  };
 
-
-// Decline session request
-const handleDecline = async (notification) => {
-  const token = localStorage.getItem("token");
-  try {
-    await axios.post(
-      `http://localhost:5000/api/session/reject`,
-      {
-        requestId: notification.session_request_id || notification.id,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setNotifications((prev) =>
-      prev.filter((n) => n.id !== notification.id)
-    );
-    closeModal();
-  } catch (err) {
-    console.error("❌ Failed to reject session request:", err);
-    alert("Error rejecting session request");
-  }
-};
-
-
-
-  const getNotificationPreview = (notification) => {
+  const getNotificationBadge = (notification) => {
     switch (notification.type) {
       case 'feedback': {
         const ratingMatch = notification.message.match(/(\d)-star/);
         const rating = ratingMatch ? ratingMatch[1] : '0';
         return (
-          <div className="feedback-preview">
-            <span className="rating-badge">⭐ {rating}/5</span>
-            <p>{notification.message}</p>
-            {/* no status badge for feedback */}
-          </div>
+          <span className="peerfusion-notification-badge peerfusion-badge-rating">
+            ⭐ {rating}/5
+          </span>
         );
       }
       case 'session_request': {
-        return (
-          <div className="session-preview">
-            <p>{notification.message}</p>
-            {notification.status && (
-              <span className={`status-badge ${notification.status}`}>
-                {notification.status}
-              </span>
-            )}
-          </div>
+        return notification.status && (
+          <span className={`peerfusion-notification-badge peerfusion-badge-${notification.status}`}>
+            {notification.status}
+          </span>
         );
       }
       default:
-        return (
-          <div className="default-preview">
-            <p>{notification.message}</p>
-            {/* no status badge */}
-          </div>
-        );
+        return null;
     }
   };
 
@@ -293,270 +277,266 @@ const handleDecline = async (notification) => {
   );
 
   return (
-    <div className="account-settings">
-      <div className="settings-container">
-        <div className="settings-header">
-          <h2>Notifications</h2>
-          {profile && (
-            <div className="header-actions">
-              <div className="avatar-wrapper" style={{ width: 50, height: 50 }}>
-                <img
-                  src={`http://localhost:5000/uploads/${profile.avatar}`}
-                  alt="Avatar"
-                  className="avatar"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="notification-actions">
-          <div className="notification-search">
-            <input
-              type="text"
-              placeholder="Search notifications..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className="search-icon">🔍︎</span>
-          </div>
-        </div>
-
-        <div className="profile-sections">
-          <div className="profile-section">
-            <div className="notification-tabs">
-              <button
-                className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveTab('all')}
-              >
-                All Notifications
-              </button>
-              <button
-                className={`tab-button ${
-                  activeTab === 'archived' ? 'active' : ''
-                }`}
-                onClick={() => setActiveTab('archived')}
-              >
-                Archived
-              </button>
-            </div>
-
-            <div className="notification-list">
-              {filteredNotifications.length === 0 ? (
-                <div className="empty-state">
-                  <p>No notifications found</p>
-                  {activeTab === 'archived' ? (
-                    <span>Your archived notifications will appear here</span>
-                  ) : (
-                    <span>You're all caught up!</span>
-                  )}
-                </div>
-              ) : (
-                filteredNotifications.map((notification, index) => (
-                  <div
-                    className={`notification-card ${notification.type} ${
-                      notification.is_read ? 'read' : 'unread'
-                    } ${openMenuId === notification.id ? 'menu-open' : ''}`}
-                    key={notification.id}
-                    onClick={() => viewNotification(notification)}
-                  >
-                    <div className="notification-avatar">
-                      {notification.sender_avatar ? (
-                        <img
-                          src={`http://localhost:5000/uploads/${notification.sender_avatar}`}
-                          alt={notification.sender_name}
-                          className="sender-avatar"
-                        />
-                      ) : (
-                        <div className="avatar-placeholder">
-                          {notification.sender_name?.charAt(0) || 'U'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="notification-content">
-                      <div className="notification-header">
-                        <h4>{notification.sender_name || 'System'}</h4>
-                        <span className="notification-time">
-                          {new Date(notification.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                      {getNotificationPreview(notification)}
-                    </div>
-
-                    <div
-                      className={`notification-menu-container ${
-                        index === 0 ? 'top-notification' : ''
-                      }`}
-                      ref={(el) => (menuRefs.current[notification.id] = el)}
-                    >
-                      <button
-                        className="menu-button"
-                        onClick={(e) => toggleMenu(notification.id, e)}
-                      >
-                        ⋮
-                      </button>
-
-                      {openMenuId === notification.id && (
-                        <div className="notification-menu">
-                          {notification.is_read ? (
-                            <button
-                              className="menu-item mark-unread"
-                              onClick={(e) =>
-                                markNotificationAsUnread(notification.id, e)
-                              }
-                            >
-                              Mark as Unread
-                            </button>
-                          ) : (
-                            <button
-                              className="menu-item mark-read"
-                              onClick={(e) =>
-                                markNotificationAsRead(notification.id, e)
-                              }
-                            >
-                              Mark as Read
-                            </button>
-                          )}
-                          {!notification.is_archived ? (
-                            <button
-                              className="menu-item"
-                              onClick={(e) =>
-                                archiveNotification(notification.id, e)
-                              }
-                            >
-                              Archive
-                            </button>
-                          ) : (
-                            <button
-                              className="menu-item"
-                              onClick={(e) =>
-                                unarchiveNotification(notification.id, e)
-                              }
-                            >
-                              Unarchive
-                            </button>
-                          )}
-                          <button
-                            className="menu-item delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (
-                                window.confirm(
-                                  'Are you sure you want to delete this notification?'
-                                )
-                              ) {
-                                deleteNotification(notification.id, e);
-                              }
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
+    <div className="peerfusion-notification-container">
+      {/* Header */}
+      <div className="peerfusion-notification-header">
+        <div className="peerfusion-notification-header-content">
+          <div className="peerfusion-notification-header-left">
+            <h1 className="peerfusion-notification-title">Notifications</h1>
+            <div className="peerfusion-notification-search-container">
+              <input
+                type="text"
+                placeholder="Search notifications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="peerfusion-notification-search-input"
+              />
+              <span className="peerfusion-notification-search-icon"></span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="peerfusion-notification-tabs">
+        <button
+          className={`peerfusion-notification-tab ${activeTab === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
+          All Notifications
+        </button>
+        <button
+          className={`peerfusion-notification-tab ${activeTab === 'archived' ? 'active' : ''}`}
+          onClick={() => setActiveTab('archived')}
+        >
+          Archived
+        </button>
+      </div>
+
+      {/* Single Row Notifications List */}
+      <div className="peerfusion-notification-list">
+        {filteredNotifications.length === 0 ? (
+          <div className="peerfusion-notification-empty">
+            <div className="peerfusion-notification-empty-icon">📭</div>
+            <h3>No notifications found</h3>
+            <p>
+              {activeTab === 'archived' 
+                ? 'Your archived notifications will appear here' 
+                : 'You\'re all caught up!'}
+            </p>
+          </div>
+        ) : (
+          filteredNotifications.map((notification) => (
+            <div
+              className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'}`}
+              key={notification.id}
+              onClick={() => viewNotification(notification)}
+            >
+              <div className="peerfusion-notification-content">
+                {/* Avatar */}
+                {notification.sender_avatar ? (
+                  <img
+                    src={`http://localhost:5000/uploads/${notification.sender_avatar}`}
+                    alt={notification.sender_name}
+                    className="peerfusion-notification-avatar"
+                  />
+                ) : (
+                  <div className="peerfusion-notification-avatar-placeholder">
+                    {notification.sender_name?.charAt(0) || 'U'}
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="peerfusion-notification-details">
+                  <div className="peerfusion-notification-header">
+                    <h4 className="peerfusion-notification-username">
+                      {notification.sender_name || 'System'}
+                    </h4>
+                    <p className="peerfusion-notification-time">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  <p className="peerfusion-notification-message">
+                    {notification.message}
+                  </p>
+
+                  <div className="peerfusion-notification-badges">
+                    {getNotificationBadge(notification)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu */}
+              <div
+                className="peerfusion-notification-menu-container"
+                ref={(el) => (menuRefs.current[notification.id] = el)}
+              >
+                <button
+                  className="peerfusion-notification-menu-button"
+                  onClick={(e) => toggleMenu(notification.id, e)}
+                >
+                  ⋮
+                </button>
+
+                {openMenuId === notification.id && (
+                  <div className="peerfusion-notification-menu">
+                    {notification.is_read ? (
+                      <button
+                        className="peerfusion-notification-menu-item mark-unread"
+                        onClick={(e) =>
+                          markNotificationAsUnread(notification.id, e)
+                        }
+                      >
+                        Mark as Unread
+                      </button>
+                    ) : (
+                      <button
+                        className="peerfusion-notification-menu-item mark-read"
+                        onClick={(e) =>
+                          markNotificationAsRead(notification.id, e)
+                        }
+                      >
+                        Mark as Read
+                      </button>
+                    )}
+                    {!notification.is_archived ? (
+                      <button
+                        className="peerfusion-notification-menu-item"
+                        onClick={(e) =>
+                          archiveNotification(notification.id, e)
+                        }
+                      >
+                        Archive
+                      </button>
+                    ) : (
+                      <button
+                        className="peerfusion-notification-menu-item"
+                        onClick={(e) =>
+                          unarchiveNotification(notification.id, e)
+                        }
+                      >
+                        Unarchive
+                      </button>
+                    )}
+                    <button
+                      className="peerfusion-notification-menu-item delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          window.confirm(
+                            'Are you sure you want to delete this notification?'
+                          )
+                        ) {
+                          deleteNotification(notification.id, e);
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal */}
       {selectedNotification && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-modal" onClick={closeModal}>
+        <div className="peerfusion-notification-modal-overlay" onClick={closeModal}>
+          <div className="peerfusion-notification-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="peerfusion-notification-close-modal" onClick={closeModal}>
               ×
             </button>
 
-            <div className="modal-header">
-              <div className="sender-info">
-                <div className="sender-avatar">
-                  {selectedNotification.sender_avatar ? (
-                    <img
-                      src={`http://localhost:5000/uploads/${selectedNotification.sender_avatar}`}
-                      alt={selectedNotification.sender_name}
-                    />
-                  ) : (
-                    <div className="avatar-placeholder">
-                      {selectedNotification.sender_name?.charAt(0) || 'U'}
-                    </div>
-                  )}
+            <div className="peerfusion-notification-modal-header">
+              {selectedNotification.sender_avatar ? (
+                <img
+                  src={`http://localhost:5000/uploads/${selectedNotification.sender_avatar}`}
+                  alt={selectedNotification.sender_name}
+                  className="peerfusion-notification-modal-avatar"
+                />
+              ) : (
+                <div className="peerfusion-notification-avatar-placeholder">
+                  {selectedNotification.sender_name?.charAt(0) || 'U'}
                 </div>
-                <div className="sender-details">
-                  <h3>{selectedNotification.sender_name || 'System'}</h3>
-                  <span className="notification-time">
-                    {new Date(selectedNotification.created_at).toLocaleString()}
-                  </span>
+              )}
+              <div className="peerfusion-notification-modal-user">
+                <h3>{selectedNotification.sender_name || 'System'}</h3>
+                <div className="peerfusion-notification-modal-time">
+                  {new Date(selectedNotification.created_at).toLocaleString()}
                 </div>
               </div>
             </div>
 
-            <div className="modal-body">
-              <div className="notification-details">
-                <h4>
-                  {selectedNotification.type === 'feedback'
-                    ? 'Rating Received'
-                    : selectedNotification.type === 'session_request'
-                    ? 'Session Request'
-                    : 'Notification'}
-                </h4>
-                <p className="notification-message">
-                  {selectedNotification.message}
-                </p>
+            <div className="peerfusion-notification-modal-body">
+              <h4 className="peerfusion-notification-modal-title">
+                {selectedNotification.type === 'feedback'
+                  ? 'Rating Received'
+                  : selectedNotification.type === 'session_request'
+                  ? 'Session Request'
+                  : 'Notification'}
+              </h4>
+              <div className="peerfusion-notification-modal-message">
+                {selectedNotification.message}
+              </div>
 
-                {/* Accept / Decline buttons for pending session requests */}
-                {selectedNotification.type === 'session_request' &&
-                  selectedNotification.status === 'pending' && (
-                    <div className="session-request-actions">
-                      <button
-                        className="btn-primary"
-                        onClick={() => handleAccept(selectedNotification)}
-                      >
-                        Accept
-                      </button>
-                      <button
-                        className="btn-secondary"
-                        onClick={() => handleDecline(selectedNotification)}
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  )}
+              {/* Accept / Decline buttons for pending session requests */}
+              {selectedNotification.type === 'session_request' &&
+                selectedNotification.status === 'pending' && (
+                  <div className="peerfusion-notification-session-actions">
+                    <button
+                      className="peerfusion-notification-btn peerfusion-notification-btn-primary"
+                      onClick={() => handleAccept(selectedNotification)}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="peerfusion-notification-btn peerfusion-notification-btn-secondary"
+                      onClick={() => handleDecline(selectedNotification)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
 
-                {selectedNotification.type === 'feedback' &&
-                  feedbackDetails && (
-                    <div className="feedback-details">
-                      <div className="rating-display">
-                        <h5>Rating Details:</h5>
-                        <div className="rating-stars">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <span
-                              key={star}
-                              className={
-                                star <= feedbackDetails.rating ? 'filled' : ''
-                              }
-                            >
-                              {star <= feedbackDetails.rating ? '★' : '☆'}
-                            </span>
-                          ))}
-                          <span className="rating-value">
-                            ({feedbackDetails.rating}/5)
+              {/* Feedback Details */}
+              {selectedNotification.type === 'feedback' &&
+                feedbackDetails && (
+                  <div className="peerfusion-notification-feedback-details">
+                    <div className="peerfusion-notification-rating-display">
+                      <h5>Rating Details:</h5>
+                      <div className="peerfusion-notification-rating-stars">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={
+                              star <= feedbackDetails.rating ? 'filled' : ''
+                            }
+                          >
+                            {star <= feedbackDetails.rating ? '★' : '☆'}
                           </span>
-                        </div>
-                        {feedbackDetails.feedback_message && (
-                          <div className="feedback-message">
-                            <p>{feedbackDetails.feedback_message}</p>
-                          </div>
-                        )}
+                        ))}
+                        <span className="peerfusion-notification-rating-value">
+                          ({feedbackDetails.rating}/5)
+                        </span>
                       </div>
+                      {feedbackDetails.feedback_message && (
+                        <div className="peerfusion-notification-feedback-message">
+                          <p>{feedbackDetails.feedback_message}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-              </div>
+                  </div>
+                )}
             </div>
 
-            <div className="modal-actions">
-              <button className="btn-primary" onClick={closeModal}>
+            <div className="peerfusion-notification-modal-actions">
+              <button 
+                className="peerfusion-notification-btn peerfusion-notification-btn-primary" 
+                onClick={closeModal}
+              >
                 Close
               </button>
             </div>

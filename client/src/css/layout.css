@@ -3,55 +3,88 @@
   display: flex;
   min-height: 100vh;
   position: relative;
-  background-color: #f8fafc;
+  background-color: #ffffff;
 }
 
 .content-container {
   flex: 1;
   transition: margin-left 0.3s ease;
   min-height: 100vh;
-  background-color: #f8fafc;
-}
-
-/* Default expanded state */
-.main-content {
-  padding: 2rem;
-  margin-left: 290px;
-  transition: all 0.3s ease;
-  min-height: calc(100vh - 4rem);
+  background-color: #ffffff;
+  margin-left: 280px; /* Default expanded width */
 }
 
 /* Collapsed state */
-.sidebar-collapsed ~ .content-container .main-content {
-  margin-left: 110px;
+.content-container.collapsed {
+  margin-left: 80px; /* Collapsed width */
+}
+
+/* Main content area */
+.main-content {
+  padding: 2rem;
+  transition: all 0.3s ease;
+  min-height: calc(100vh - 4rem);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Mobile responsive */
 @media (max-width: 1024px) {
+  .content-container {
+    margin-left: 80px !important;
+  }
+  
+  .content-container.collapsed {
+    margin-left: 80px !important;
+  }
+  
   .main-content {
-    margin-left: 110px !important;
     padding: 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
-  .main-content {
+  .content-container {
     margin-left: 0 !important;
-    padding: 1rem;
-    width: 100%;
+    margin-top: 0; /* No mobile header by default */
+  }
+  
+  .content-container.collapsed {
+    margin-left: 0 !important;
+    margin-top: 0;
   }
 
-  .sidebar-expanded ~ .content-container {
-    position: relative;
-    left: 250px;
-    width: calc(100% - 250px);
-    overflow-x: hidden;
+  .main-content {
+    padding: 0rem;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  /* When mobile header is visible (navbar collapsed on mobile) */
+  .content-container.has-mobile-header {
+    margin-top: 70px; /* Height of mobile header */
+  }
+
+  /* When sidebar is expanded on mobile, shift content */
+  .peerfusion-nav-sidebar.mobile:not(.collapsed) ~ .content-container {
+    transform: translateX(320px);
+    overflow: hidden;
+    margin-top: 0; /* Remove top margin when sidebar is open */
   }
 }
 
 @media (max-width: 480px) {
   .main-content {
     padding: 0.75rem;
+  }
+  
+  .peerfusion-nav-sidebar.mobile:not(.collapsed) ~ .content-container {
+    transform: translateX(100%);
+  }
+
+  .content-container.has-mobile-header {
+    margin-top: 65px; /* Smaller header on very small screens */
   }
 }
 
@@ -70,6 +103,22 @@
 @media screen and (max-width: 768px) and (orientation: landscape) {
   .main-content {
     padding: 1rem;
+  }
+}
+
+/* Ensure chat system takes full available space */
+.peerfusion-chat-container {
+  width: 100%;
+  height: calc(100vh - 4rem); /* Account for padding */
+}
+
+@media (max-width: 768px) {
+  .peerfusion-chat-container {
+    height: calc(100vh - 2rem); /* Less padding on mobile */
+  }
+  
+  .content-container.has-mobile-header .peerfusion-chat-container {
+    height: calc(100vh - 70px - 2rem); /* Account for mobile header + padding */
   }
 }
 

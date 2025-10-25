@@ -1,4 +1,3 @@
-// src/components/chat/ChatWindow.jsx
 import React, { useEffect, useState, useRef } from "react";
 import {
   collection,
@@ -22,14 +21,54 @@ const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-const ChatWindow = ({ conversationId, currentUser }) => {
+// Icon components for ChatWindow
+const AttachmentIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+  </svg>
+);
+
+const SendIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+  </svg>
+);
+
+const FileIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+  </svg>
+);
+
+const InfoIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+  </svg>
+);
+
+const BackIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+  </svg>
+);
+
+const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onShowInfo, isMobile }) => {
   const [messages, setMessages] = useState([]);
+  const [filteredMessages, setFilteredMessages] = useState([]);
   const [text, setText] = useState("");
   const [otherUser, setOtherUser] = useState(null);
   const [currentMeeting, setCurrentMeeting] = useState(null);
   const [joinEnabled, setJoinEnabled] = useState(false);
   const [reminderReceived, setReminderReceived] = useState(false);
-  const [sending, setSending] = useState(false); // shows "Sending..." while uploading/sending
+  const [sending, setSending] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meetingDate, setMeetingDate] = useState("");
   const scrollRef = useRef();
   const firstLoad = useRef(true);
   const enableTimerRef = useRef(null);
@@ -112,7 +151,6 @@ const ChatWindow = ({ conversationId, currentUser }) => {
       setMessages(msgs);
 
       // Mark unseen messages (from other user) as seen by currentUser
-      // We'll update using arrayUnion to avoid overwriting
       try {
         const unseen = msgs.filter(
           (m) =>
@@ -122,14 +160,12 @@ const ChatWindow = ({ conversationId, currentUser }) => {
         if (unseen.length > 0) {
           for (const m of unseen) {
             const msgRef = doc(db, "conversations", conversationId, "messages", m.id);
-            // add current user to seenBy
             await updateDoc(msgRef, {
               seenBy: arrayUnion(currentUser.user_id),
             });
           }
         }
       } catch (e) {
-        // non-fatal; log for debugging
         console.warn("Failed to mark some messages as seen:", e);
       }
     });
@@ -137,23 +173,35 @@ const ChatWindow = ({ conversationId, currentUser }) => {
     return () => unsubscribe();
   }, [conversationId, currentUser?.user_id]);
 
-  // Auto-scroll
+  // Filter messages based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredMessages(messages);
+    } else {
+      const filtered = messages.filter(message =>
+        message.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        message.senderName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredMessages(filtered);
+    }
+  }, [searchTerm, messages]);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (!scrollRef.current) return;
-    const el = scrollRef.current;
-
-    if (firstLoad.current) {
-      requestAnimationFrame(() => {
-        el.scrollTop = el.scrollHeight;
-      });
-      firstLoad.current = false;
-    } else {
-      const isNearBottom = el.scrollHeight - (el.scrollTop + el.clientHeight) < 150;
-      if (isNearBottom) {
+    
+    const scrollToBottom = () => {
+      const el = scrollRef.current;
+      if (el) {
         el.scrollTop = el.scrollHeight;
       }
-    }
-  }, [messages]);
+    };
+
+    // Use requestAnimationFrame for smooth scrolling
+    requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+  }, [filteredMessages]);
 
   // Socket listeners
   useEffect(() => {
@@ -222,7 +270,6 @@ const ChatWindow = ({ conversationId, currentUser }) => {
       socket.off("meetingReminder", onMeetingReminder);
       socket.off("meetingStatusUpdated", onMeetingStatusUpdated);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.user_id, conversationId, currentMeeting?.id]);
 
   // Timers
@@ -268,7 +315,6 @@ const ChatWindow = ({ conversationId, currentUser }) => {
     const scheduledMs = new Date(meetingObj.scheduled_at).getTime();
     const now = Date.now();
 
-    // Schedule clearing 5 mins after meeting start
     if (scheduledMs > now) {
       const clearAt = scheduledMs + 5 * 60 * 1000;
       clearMeetingTimerRef.current = setTimeout(() => {
@@ -299,19 +345,7 @@ const ChatWindow = ({ conversationId, currentUser }) => {
       clearEnableTimer();
       clearMeetingTimer();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMeeting]);
-
-  // Group messages
-  const groups = [];
-  for (let i = 0; i < messages.length; i++) {
-    const m = messages[i];
-    if (groups.length === 0 || String(groups[groups.length - 1].senderId) !== String(m.senderId)) {
-      groups.push({ senderId: m.senderId, msgs: [m] });
-    } else {
-      groups[groups.length - 1].msgs.push(m);
-    }
-  }
 
   // Helper: determine fileType by mime or extension
   const determineFileType = (file) => {
@@ -322,8 +356,7 @@ const ChatWindow = ({ conversationId, currentUser }) => {
     if (mime === "application/pdf" || name.endsWith(".pdf")) return "pdf";
     if (
       mime === "application/msword" ||
-      mime ===
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
       name.endsWith(".doc") ||
       name.endsWith(".docx")
     )
@@ -375,18 +408,13 @@ const ChatWindow = ({ conversationId, currentUser }) => {
       let fileResult = null;
 
       if (file) {
-        // validate size
         if (file.size > MAX_FILE_SIZE) {
           alert("File too large. Maximum allowed size is 5 MB.");
           setSending(false);
           return;
         }
-        // validate type (no videos)
+
         const ftype = determineFileType(file);
-        if (ftype === "file" && !["pdf", "doc"].includes(ftype)) {
-          // generic fallback; allow doc/pdf even if mime odd - rely on determineFileType
-        }
-        // disallow video mime types
         if (file.type.startsWith("video/")) {
           alert("Video files are not allowed.");
           setSending(false);
@@ -402,8 +430,8 @@ const ChatWindow = ({ conversationId, currentUser }) => {
         senderAvatar: currentUser.avatar || "",
         content: fileResult ? fileResult.url : trimmed,
         fileType: fileResult ? fileResult.fileType : null,
+        fileName: file?.name || null,
         createdAt: serverTimestamp(),
-        // sender starts as "seen" by themselves
         seenBy: [currentUser.user_id],
       };
 
@@ -432,13 +460,6 @@ const ChatWindow = ({ conversationId, currentUser }) => {
     }
   };
 
-  const bubblePositionClass = (groupLength, index) => {
-    if (groupLength === 1) return "single";
-    if (index === 0) return "first";
-    if (index === groupLength - 1) return "last";
-    return "middle";
-  };
-
   const handleJoin = () => {
     if (!currentMeeting || !otherUser || !currentUser) return;
 
@@ -462,18 +483,149 @@ const ChatWindow = ({ conversationId, currentUser }) => {
     return (m.seenBy || []).map(String).includes(String(otherUser.id));
   };
 
+  // Schedule meeting function
+  const handleScheduleMeeting = async () => {
+    if (!meetingDate || !conversationId || !currentUser || !otherUser) {
+      alert("Please select a date and time for the meeting.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/meeting/schedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: conversationId,
+          participants: [currentUser.user_id, otherUser.id],
+          scheduledAt: meetingDate,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("✅ Meeting scheduled successfully!");
+        setShowMeetingModal(false);
+        setMeetingDate("");
+      } else {
+        alert("❌ Failed to schedule meeting.");
+      }
+    } catch (err) {
+      console.error("Error scheduling meeting:", err);
+      alert("Error scheduling meeting. Please try again.");
+    }
+  };
+
+  // Highlight search terms in message content
+  const highlightSearchTerm = (content) => {
+    if (!searchTerm.trim() || !content) return content;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return content.split(regex).map((part, index) =>
+      regex.test(part) ? (
+        <span key={index} className="peerfusion-search-highlight">{part}</span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  // Group filtered messages
+  const groups = [];
+  for (let i = 0; i < filteredMessages.length; i++) {
+    const m = filteredMessages[i];
+    if (groups.length === 0 || String(groups[groups.length - 1].senderId) !== String(m.senderId)) {
+      groups.push({ senderId: m.senderId, msgs: [m] });
+    } else {
+      groups[groups.length - 1].msgs.push(m);
+    }
+  }
+
   return (
-    <div className="chat-middle">
+    <div className="peerfusion-chat-middle">
+      {/* Chat Header with Mobile Controls */}
+      <div className="peerfusion-chat-header">
+        <div className="peerfusion-chat-partner-info">
+          {/* Back button for mobile */}
+          {isMobile && (
+            <button 
+              className="peerfusion-back-button"
+              onClick={onBackToList}
+              style={{color: 'white', marginRight: '12px', background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '50%'}}
+            >
+              <BackIcon />
+            </button>
+          )}
+          
+          {otherUser?.avatar ? (
+            <img
+              src={otherUser.avatar}
+              alt={otherUser.username}
+              className="peerfusion-chat-partner-avatar"
+            />
+          ) : (
+            <div
+              className="peerfusion-chat-partner-avatar"
+              style={{
+                background: "#e8efe5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#666",
+                fontSize: "16px",
+                fontWeight: "bold",
+              }}
+            >
+              {otherUser?.username?.charAt(0) || "U"}
+            </div>
+          )}
+          <span className="peerfusion-chat-partner-name">
+            {otherUser?.username}
+          </span>
+        </div>
+
+        <div className="peerfusion-chat-actions">
+          <button
+            className="peerfusion-meeting-btn"
+            onClick={() => setShowMeetingModal(true)}
+            title="Schedule Meeting"
+          >
+            <CalendarIcon />
+          </button>
+          {/* Info button for mobile */}
+          {isMobile && (
+            <button 
+              className="peerfusion-info-btn"
+              onClick={onShowInfo}
+              title="Conversation Info"
+            >
+              <InfoIcon />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Meeting Banner */}
       {currentMeeting && (
-        <div className="meeting-banner">
-          <div className="meeting-header">
-            <span className="meeting-partner">{otherUser?.username || "Partner"}</span>
-            <i className="ri-calendar-line calendar-icon" />
+        <div className="peerfusion-meeting-banner">
+          <div className="peerfusion-meeting-header">
+            <div className="peerfusion-calendar-icon">
+              <CalendarIcon />
+            </div>
           </div>
 
-          <div className="meeting-body">
-            <div className="meeting-reminder">
+          <div className="peerfusion-meeting-body">
+            <div className="peerfusion-meeting-reminder">
               REMINDER: Session scheduled on{" "}
               {new Date(currentMeeting.scheduled_at).toLocaleDateString()} at{" "}
               {new Date(currentMeeting.scheduled_at).toLocaleTimeString([], {
@@ -484,7 +636,7 @@ const ChatWindow = ({ conversationId, currentUser }) => {
 
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button
-                className={`join-button ${joinEnabled ? "enabled" : "disabled"}`}
+                className={`peerfusion-join-button ${joinEnabled ? "enabled" : ""}`}
                 onClick={handleJoin}
                 disabled={!joinEnabled}
                 title={
@@ -497,7 +649,7 @@ const ChatWindow = ({ conversationId, currentUser }) => {
               </button>
 
               {!joinEnabled && (
-                <small style={{ color: "#666" }}>
+                <small style={{ color: "rgba(255,255,255,0.8)" }}>
                   {reminderReceived ? "Join will be available shortly" : "Join available 5 minutes before start"}
                 </small>
               )}
@@ -506,145 +658,256 @@ const ChatWindow = ({ conversationId, currentUser }) => {
         </div>
       )}
 
-      {/* Chat messages */}
-      <div className="chat-messages" ref={scrollRef}>
-        {groups.map((g, gIdx) => {
-          const isMeGroup = String(g.senderId) === String(currentUser?.user_id);
-          return g.msgs.map((m, idx) => {
-            const posClass = bubblePositionClass(g.msgs.length, idx);
-            const isLastInGroup = idx === g.msgs.length - 1;
-            const showAvatar = !isMeGroup && isLastInGroup && otherUser?.avatar;
-            const timestamp = m.createdAt?.toDate
-              ? new Date(m.createdAt.toDate()).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "";
+      {/* Chat messages container */}
+      <div className="peerfusion-chat-messages-container">
+        <div className="peerfusion-chat-messages" ref={scrollRef}>
+          {searchTerm && (
+            <div style={{ 
+              padding: '0.5rem 1rem', 
+              background: '#e8f5e8', 
+              borderRadius: '8px', 
+              marginBottom: '1rem',
+              fontSize: '0.9rem',
+              color: '#2d5a27'
+            }}>
+              Showing {filteredMessages.length} messages matching "{searchTerm}"
+            </div>
+          )}
+          
+          {groups.length === 0 ? (
+            <div className="peerfusion-chat-empty">
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💬</div>
+              <h3>No messages yet</h3>
+              <p>Start the conversation by sending a message!</p>
+            </div>
+          ) : (
+            groups.map((g, gIdx) => {
+              const isMeGroup = String(g.senderId) === String(currentUser?.user_id);
+              return g.msgs.map((m, idx) => {
+                const isLastInGroup = idx === g.msgs.length - 1;
+                const showAvatar = !isMeGroup && isLastInGroup && otherUser?.avatar;
+                const timestamp = m.createdAt?.toDate
+                  ? new Date(m.createdAt.toDate()).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "";
 
-            const sentByMe = isMeGroup;
-            const lastMessageInAll = (() => {
-              // find last message overall that was sent by me
-              for (let i = messages.length - 1; i >= 0; i--) {
-                if (String(messages[i].senderId) === String(currentUser?.user_id)) {
-                  return messages[i].id === m.id;
-                }
-              }
-              return false;
-            })();
+                const sentByMe = isMeGroup;
+                const lastMessageInAll = (() => {
+                  for (let i = messages.length - 1; i >= 0; i--) {
+                    if (String(messages[i].senderId) === String(currentUser?.user_id)) {
+                      return messages[i].id === m.id;
+                    }
+                  }
+                  return false;
+                })();
 
-            return (
-              <div key={m.id} className={`chat-row ${isMeGroup ? "sent" : "received"}`}>
-                {!isMeGroup ? (
-                  showAvatar ? (
-                    <img src={otherUser.avatar} alt={otherUser.username} />
-                  ) : (
-                    <div className="avatar-space" />
-                  )
-                ) : (
-                  <div className="avatar-space" />
-                )}
+                return (
+                  <div key={m.id} className={`peerfusion-chat-row ${isMeGroup ? "sent" : "received"}`}>
+                    {!isMeGroup ? (
+                      showAvatar ? (
+                        <img src={otherUser.avatar} alt={otherUser.username} className="peerfusion-message-avatar" />
+                      ) : (
+                        <div className="peerfusion-avatar-space" />
+                      )
+                    ) : (
+                      <div className="peerfusion-avatar-space" />
+                    )}
 
-                <div
-                  className={`chat-message bubble ${posClass} ${isMeGroup ? "sent" : "received"}`}
-                >
-                  {/* Render inline image */}
-                  {m.fileType === "image" && m.content ? (
-                    <img src={m.content} alt="uploaded" className="chat-image" />
-                  ) : null}
-
-                  {/* Render PDF or DOC as inline file card */}
-                  {m.fileType === "pdf" || m.fileType === "doc" ? (
-                    <a
-                      href={m.content}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="chat-file-card"
-                      style={{ display: "inline-block", textDecoration: "none" }}
+                    <div
+                      className={`peerfusion-chat-message ${isMeGroup ? "sent" : "received"}`}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 20 }}>📄</span>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>
-                            {m.fileName || "File"}
+                      {/* Render inline image */}
+                      {m.fileType === "image" && m.content ? (
+                        <img src={m.content} alt="uploaded" className="peerfusion-chat-image" />
+                      ) : null}
+
+                      {/* Render PDF or DOC as inline file card */}
+                      {m.fileType === "pdf" || m.fileType === "doc" ? (
+                        <a
+                          href={m.content}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="peerfusion-chat-file-card"
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <FileIcon />
+                            <div>
+                              <div style={{ fontWeight: 600 }}>
+                                {m.fileName || "File"}
+                              </div>
+                              <div style={{ fontSize: 12, color: "#666" }}>{m.fileType?.toUpperCase()}</div>
+                            </div>
                           </div>
-                          <div style={{ fontSize: 12, color: "#666" }}>{m.fileType?.toUpperCase()}</div>
+                        </a>
+                      ) : null}
+
+                      {/* Text content with search highlighting */}
+                      {(!m.fileType || m.fileType === null) && (
+                        <div className="bubble-text">
+                          {highlightSearchTerm(m.content)}
                         </div>
-                      </div>
-                    </a>
-                  ) : null}
+                      )}
+                      
+                      {/* For file messages, if content is a url but no fileType recognized, show link */}
+                      {m.fileType === null && m.content && m.content.startsWith("http") ? (
+                        <a href={m.content} target="_blank" rel="noopener noreferrer" className="peerfusion-chat-file">
+                          Open file
+                        </a>
+                      ) : null}
 
-                  {/* Text content (for text messages or fallback) */}
-                  {(!m.fileType || m.fileType === null) && <div className="bubble-text">{m.content}</div>}
-                  {/* For file messages, if content is a url but no fileType recognized, show link */}
-                  {m.fileType === null && m.content && m.content.startsWith("http") ? (
-                    <a href={m.content} target="_blank" rel="noopener noreferrer" className="chat-file">
-                      Open file
-                    </a>
-                  ) : null}
+                      <span className="peerfusion-timestamp">
+                        {timestamp}{" "}
+                        {sentByMe ? (lastMessageInAll ? (isSeenByOther(m) ? "✓✓" : "✓") : "") : ""}
+                      </span>
+                    </div>
 
-                  <span className="timestamp">
-                    {timestamp}{" "}
-                    {sentByMe ? (lastMessageInAll ? (isSeenByOther(m) ? "✓✓" : "✓") : "") : ""}
-                  </span>
-                </div>
-
-                {isMeGroup ? <div className="avatar-space" /> : null}
-              </div>
-            );
-          });
-        })}
+                    {isMeGroup ? <div className="peerfusion-avatar-space" /> : null}
+                  </div>
+                );
+              });
+            })
+          )}
+        </div>
       </div>
 
       {/* Input */}
-<div className="chat-input">
-  {/* Hidden File Input */}
-  <input
-    ref={fileInputRef}
-    type="file"
-    accept=".jpg,.jpeg,.png,.gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx"
-    style={{ display: "none" }}
-    onChange={(e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      <div className="peerfusion-chat-input">
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".jpg,.jpeg,.png,.gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-      // Block video uploads
-      if (file.type.startsWith("video/")) {
-        alert("Video uploads are not allowed.");
-        e.target.value = "";
-        return;
-      }
+            if (file.type.startsWith("video/")) {
+              alert("Video uploads are not allowed.");
+              e.target.value = "";
+              return;
+            }
 
-      // Send immediately (Messenger style)
-      send(file);
-    }}
-  />
+            send(file);
+          }}
+        />
 
-  {/* File Upload Icon */}
-  <button
-    onClick={() => fileInputRef.current?.click()}
-    className="file-upload-icon"
-    title="Attach file"
-    disabled={sending}
-  >
-    📎
-  </button>
+        {/* File Upload Icon */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="peerfusion-file-upload-icon"
+          title="Attach file"
+          disabled={sending}
+        >
+          <AttachmentIcon />
+        </button>
 
-  {/* Message Text Input */}
-  <input
-    value={text}
-    onChange={(e) => setText(e.target.value)}
-    placeholder="Type a message"
-    onKeyDown={(e) => e.key === "Enter" && send()}
-    disabled={sending}
-  />
+        {/* Message Text Input */}
+        <input
+          className="peerfusion-chat-input-field"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Type a message..."
+          disabled={sending}
+        />
 
-  {/* Send Button */}
-  <button onClick={() => send()} disabled={sending}>
-    {sending ? "Sending..." : "Send"}
-  </button>
-</div>
-</div>
-);
+        {/* Send Button */}
+        <button className="peerfusion-chat-send-btn" onClick={() => send()} disabled={sending || !text.trim()}>
+          {sending ? (
+            "Sending..."
+          ) : (
+            <>
+              <SendIcon />
+              <span>Send</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Schedule Meeting Modal */}
+      {showMeetingModal && (
+        <div className="peerfusion-modal-overlay">
+          <div className="peerfusion-modal-content peerfusion-meeting-modal">
+            <div className="peerfusion-modal-header">
+              <h3 className="peerfusion-modal-title">Schedule Meeting</h3>
+              <button 
+                className="peerfusion-close-modal"
+                onClick={() => setShowMeetingModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="peerfusion-modal-body">
+              <div className="peerfusion-form-group">
+                <label>Meeting Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={meetingDate}
+                  onChange={(e) => setMeetingDate(e.target.value)}
+                  className="peerfusion-form-input"
+                />
+              </div>
+              
+              <div className="peerfusion-meeting-participants">
+                <label>Participants</label>
+                <div className="peerfusion-participants-list">
+                  <div className="peerfusion-participant">
+                    {currentUser?.avatar ? (
+                      <img 
+                        src={currentUser.avatar} 
+                        alt={currentUser.username} 
+                        className="peerfusion-participant-avatar"
+                      />
+                    ) : (
+                      <div className="peerfusion-participant-avatar-placeholder">
+                        {currentUser?.username?.charAt(0)?.toUpperCase() || "Y"}
+                      </div>
+                    )}
+                    <span>You</span>
+                  </div>
+                  <div className="peerfusion-participant">
+                    {otherUser?.avatar ? (
+                      <img 
+                        src={otherUser.avatar} 
+                        alt={otherUser.username} 
+                        className="peerfusion-participant-avatar"
+                      />
+                    ) : (
+                      <div className="peerfusion-participant-avatar-placeholder">
+                        {otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                    )}
+                    <span>{otherUser?.username}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="peerfusion-modal-actions">
+                <button
+                  onClick={handleScheduleMeeting}
+                  className="peerfusion-primary-btn"
+                  disabled={!meetingDate}
+                >
+                  <CalendarIcon />
+                  Schedule Meeting
+                </button>
+                <button
+                  onClick={() => setShowMeetingModal(false)}
+                  className="peerfusion-secondary-btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default ChatWindow;

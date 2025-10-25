@@ -12,13 +12,14 @@ const socket = io('http://localhost:5000');
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '', rememberMe: false });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setForm({ ...form, [e.target.name]: value });
     setError('');
   };
 
@@ -105,72 +106,109 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h2>Welcome to PeerFusion</h2>
-          <p>Sign in to your account</p>
+    <div 
+        className="auth-container"
+        style={{
+          background: `url('/background.svg') no-repeat center center fixed`,
+          backgroundSize: 'cover'
+        }}
+      >
+      <div className="auth-layout">
+        <div className="auth-graphics">
+          <div className="svg-container">
+            <img src="/LoginSvg.svg" alt="Login Illustration" className="login-svg" />
+          </div>
         </div>
-        <div className="auth-body">
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className="form-control"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={handleChange}
-              />
+        <div className="auth-form-section">
+          <div className="auth-card">
+            <div className="auth-header">
+              <img src="/logos.png" alt="PeerFusion Logo" className="logo" />
+              <h2>Sign in to PeerFusion</h2>
+              <p>Sign in to your account</p>
             </div>
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                className="form-control"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={handleChange}
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+            <div className="auth-body">
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="form-control"
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+
+                <div className="form-options">
+                  <div className="remember-me">
+                    <input
+                      type="checkbox"
+                      id="rememberMe"
+                      name="rememberMe"
+                      checked={form.rememberMe}
+                      onChange={handleChange}
+                    />
+                    <label htmlFor="rememberMe">Remember me</label>
+                  </div>
+                  <Link to="/forgot-password">Forgot your password?</Link>
+                </div>
+
+                <div className={`error-message ${error ? 'show' : ''}`}>{error}</div>
+                <button type="submit" className="submit-btn" disabled={loading}>
+                  {loading ? <span>Signing In...</span> : <span>Sign In</span>}
+                </button>
+              </form>
+
+              <div className="or-separator">
+                <span>OR</span>
+              </div>
+              <div className="google-login-container">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  theme="filled_black"
+                  shape="pill"
+                  text="continue_with"
+                />
+              </div>
+              <div className="auth-footer">
+                <p>
+                  Don't have an account? <Link to="/register">Register now</Link>
+                </p>
+              </div>
+
+              <footer className="auth-internal-footer">
+                <div className="footer-content">
+                  <p>&copy; 2024 PeerFusion. All rights reserved.</p>
+                  <div className="footer-links">
+                    <a href="/privacy">Privacy</a>
+                    <a href="/terms">Terms</a>
+                    <a href="/help">Help</a>
+                  </div>
+                </div>
+              </footer>
             </div>
-
-            <div className="form-options">
-              <Link to="/forgot-password">Forgot your password?</Link>
-            </div>
-
-            <div className={`error-message ${error ? 'show' : ''}`}>{error}</div>
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? <span>Signing In...</span> : <span>Sign In</span>}
-            </button>
-          </form>
-
-          <div className="or-separator">
-            <span>OR</span>
-          </div>
-          <div className="google-login-container">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              theme="filled_black"
-              shape="pill"
-              text="continue_with"
-            />
-          </div>
-          <div className="auth-footer">
-            <p>
-              Don't have an account? <Link to="/register">Register now</Link>
-            </p>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const storage = multer.diskStorage({
   destination: 'uploads/',
@@ -736,5 +737,67 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Database query failed" });
   }
 });
+
+// ------------------- Change Password --------------------------- //
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    // Get user's current password hash from users table
+    const userSql = 'SELECT password FROM users WHERE id = ?';
+    const [userResults] = await db.query(userSql, [userId]);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const currentPasswordHash = userResults[0].password;
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentPasswordHash);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+    }
+
+    if (!/(?=.*[A-Z])/.test(newPassword)) {
+      return res.status(400).json({ error: 'New password must contain at least one uppercase letter' });
+    }
+
+    if (!/(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ error: 'New password must contain at least one number' });
+    }
+
+    if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(newPassword)) {
+      return res.status(400).json({ error: 'New password must contain at least one special character' });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    const updateSql = 'UPDATE users SET password = ? WHERE id = ?';
+    await db.query(updateSql, [newPasswordHash, userId]);
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+// ------------------- End Change Password --------------------------- //
 
 module.exports = router;

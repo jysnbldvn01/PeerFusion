@@ -76,121 +76,150 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h2>Create Account</h2>
-          <p>Get started with us today</p>
+    <div 
+        className="auth-container"
+        style={{
+          background: `url('/background.svg') no-repeat center center fixed`,
+          backgroundSize: 'cover'
+        }}
+      >
+      <div className="auth-layout">
+        <div className="auth-graphics">
+          <div className="svg-container">
+            <img src="/LoginSvg.svg" alt="Register Illustration" className="login-svg" />
+          </div>
         </div>
-        
-        <div className="auth-body">
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="name">Full Name</label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                className="form-control"
-                placeholder="Your name"
-                value={form.name}
-                onChange={handleChange}
-                autoComplete="name"
-              />
+        <div className="auth-form-section">
+          <div className="auth-card">
+            <div className="auth-header">
+              <img src="/logos.png" alt="PeerFusion Logo" className="logo" />
+              <h2>Create Account</h2>
+              <p>Get started with us today</p>
             </div>
             
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className="form-control"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={handleChange}
-                autoComplete="email"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                className="form-control"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={handleChange}
-                autoComplete="new-password"
-              />
-              <button 
-                type="button" 
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-              
-              <div className="password-strength">
-                {passwordStrength.map((strong, index) => (
-                  <div 
-                    key={index} 
-                    className="strength-bar" 
-                    style={{ 
-                      background: strong ? 
-                        (index === 0 ? '#4cd964' : index === 1 ? '#5ac8fa' : '#ffcc00') 
-                        : '#e0e0e0'
-                    }}
-                  ></div>
-                ))}
-              </div>
-              <div className="password-hints">
-                {form.password.length > 0 && (
-                  <ul>
-                    <li style={{ color: passwordStrength[0] ? '#4cd964' : '#666' }}>
-                      At least 6 characters
-                    </li>
-                    <li style={{ color: passwordStrength[1] ? '#4cd964' : '#666' }}>
-                      Contains uppercase letter
-                    </li>
-                    <li style={{ color: passwordStrength[2] ? '#4cd964' : '#666' }}>
-                      Contains number or symbol
-                    </li>
-                  </ul>
+            <div className="auth-body">
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="name">Full Name</label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    className="form-control"
+                    placeholder="Your name"
+                    value={form.name}
+                    onChange={handleChange}
+                    autoComplete="name"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="form-control"
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={handleChange}
+                    autoComplete="email"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleChange}
+                    autoComplete="new-password"
+                  />
+                  <button 
+                    type="button" 
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                  
+                  <div className="password-strength">
+                    {passwordStrength.map((strong, index) => (
+                      <div 
+                        key={index} 
+                        className="strength-bar" 
+                        style={{ 
+                          background: strong ? 
+                            (index === 0 ? '#4cd964' : index === 1 ? '#5ac8fa' : '#ffcc00') 
+                            : '#e0e0e0'
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                  <div className="password-hints">
+                    {form.password.length > 0 && (
+                      <ul>
+                        <li style={{ color: passwordStrength[0] ? '#4cd964' : '#666' }}>
+                          At least 6 characters
+                        </li>
+                        <li style={{ color: passwordStrength[1] ? '#4cd964' : '#666' }}>
+                          Contains uppercase letter
+                        </li>
+                        <li style={{ color: passwordStrength[2] ? '#4cd964' : '#666' }}>
+                          Contains number or symbol
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+                </div>
+                
+                <div className={`error-message ${error ? 'show' : ''}`}>
+                  {error}
+                </div>
+                
+                {success && (
+                  <div className="success-message">
+                    {success}
+                  </div>
                 )}
+                
+                <button 
+                  type="submit" 
+                  className="submit-btn"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="button-loader"></span>
+                      Creating Account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </button>
+              </form>
+              
+              <div className="auth-footer">
+                <p>Already have an account? <a href="/" onClick={(e) => { 
+                  e.preventDefault(); 
+                  navigate('/'); 
+                }}>Sign in</a></p>
               </div>
+              <footer className="auth-internal-footer">
+                <div className="footer-content">
+                  <p>&copy; 2024 PeerFusion. All rights reserved.</p>
+                  <div className="footer-links">
+                    <a href="/privacy">Privacy</a>
+                    <a href="/terms">Terms</a>
+                    <a href="/help">Help</a>
+                  </div>
+                </div>
+              </footer>
             </div>
-            
-            <div className={`error-message ${error ? 'show' : ''}`}>
-              {error}
-            </div>
-            
-            {success && (
-              <div className="success-message">
-                {success}
-              </div>
-            )}
-            
-            <button 
-              type="submit" 
-              className="submit-btn"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="button-loader"></span>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
-          
-          <div className="auth-footer">
-            <p>Already have an account? <a href="/" onClick={(e) => { 
-              e.preventDefault(); 
-              navigate('/'); 
-            }}>Sign in</a></p>
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-// client/src/pages/ChatPage.jsx
 import React, { useContext, useEffect, useState } from "react";
 import ChatList from "../components/chat/ChatList";
 import ChatWindow from "../components/chat/ChatWindow";
@@ -12,29 +11,109 @@ import {
   query,
   orderBy,
   onSnapshot,
+  doc,
+  updateDoc,
+  arrayUnion
 } from "firebase/firestore";
 import { db } from "../firebase";
+
+// Icon components
+const SearchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+  </svg>
+);
+
+const MediaIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+  </svg>
+);
+
+const FileIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+  </svg>
+);
+
+const ChatIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+  </svg>
+);
+
+const BackIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+  </svg>
+);
 
 export default function ChatPage() {
   const { user, loading } = useContext(AuthContext);
   const [activeConversation, setActiveConversation] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Right-panel UI states
-  const [isMuted, setIsMuted] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  // Search states
+  const [conversationSearch, setConversationSearch] = useState("");
+  const [messageSearch, setMessageSearch] = useState("");
+
+  // UI states
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [showFilesModal, setShowFilesModal] = useState(false);
-
-  // Media/files list taken from messages subcollection
-  const [mediaItems, setMediaItems] = useState([]); // images
-  const [fileItems, setFileItems] = useState([]); // pdf/doc/other files
-
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingDate, setMeetingDate] = useState("");
+
+  // Media/files list
+  const [mediaItems, setMediaItems] = useState([]);
+  const [fileItems, setFileItems] = useState([]);
+
+  // Unread messages tracking
+  const [unreadCounts, setUnreadCounts] = useState({});
+
   const location = useLocation();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Mobile state
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState('list'); // 'list', 'chat', 'info'
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setMobileView('list'); // Reset to list view on desktop
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Update mobile view based on active conversation
+  useEffect(() => {
+    if (isMobile) {
+      if (activeConversation) {
+        setMobileView('chat');
+      } else {
+        setMobileView('list');
+      }
+    }
+  }, [activeConversation, isMobile]);
 
   useEffect(() => {
     if (location.pathname === "/chat") {
@@ -50,7 +129,7 @@ export default function ChatPage() {
     }
   }, [activeConversation]);
 
-  // Subscribe to messages for the active conversation to fill media/files in right panel
+  // Subscribe to messages for media/files
   useEffect(() => {
     if (!activeConversation?.id) {
       setMediaItems([]);
@@ -74,7 +153,6 @@ export default function ChatPage() {
           const m = { id: d.id, ...d.data() };
           const ft = (m.fileType || "").toString().toLowerCase();
 
-          // a message might store file URL in `content` (our earlier convention)
           if (ft === "image" && m.content) {
             images.push({
               id: m.id,
@@ -93,16 +171,6 @@ export default function ChatPage() {
               createdAt: m.createdAt,
               senderId: m.senderId,
             });
-          } else if (!m.fileType && m.content && typeof m.content === "string" && m.content.startsWith("http")) {
-            // fallback: if content is a URL but fileType missing, try to infer by extension
-            const lower = m.content.toLowerCase();
-            if (lower.match(/\.(jpg|jpeg|png|gif)$/)) {
-              images.push({ id: m.id, url: m.content, fileType: "image", fileName: m.fileName || m.content.split("/").pop(), createdAt: m.createdAt, senderId: m.senderId });
-            } else if (lower.match(/\.(pdf)$/)) {
-              files.push({ id: m.id, url: m.content, fileType: "pdf", fileName: m.fileName || m.content.split("/").pop(), createdAt: m.createdAt, senderId: m.senderId });
-            } else if (lower.match(/\.(docx?|pptx?|xlsx?)$/)) {
-              files.push({ id: m.id, url: m.content, fileType: "doc", fileName: m.fileName || m.content.split("/").pop(), createdAt: m.createdAt, senderId: m.senderId });
-            }
           }
         });
 
@@ -119,9 +187,138 @@ export default function ChatPage() {
     return () => unsubscribe();
   }, [activeConversation?.id]);
 
+  // Track unread messages
+  useEffect(() => {
+    if (!user?.user_id) return;
+
+    const unsubscribeCallbacks = [];
+
+    // Subscribe to all conversations to track unread messages
+    const conversationsQuery = query(
+      collection(db, "conversations"),
+      orderBy("lastMessageTime", "desc")
+    );
+
+    const unsubscribeConversations = onSnapshot(conversationsQuery, (snapshot) => {
+      snapshot.docs.forEach((conversationDoc) => {
+        const conversation = conversationDoc.data();
+        const conversationId = conversationDoc.id;
+        
+        if (conversation.participants?.includes(Number(user.user_id))) {
+          // Subscribe to messages for this conversation
+          const messagesQuery = query(
+            collection(db, "conversations", conversationId, "messages"),
+            orderBy("createdAt", "desc")
+          );
+
+          const unsubscribeMessages = onSnapshot(messagesQuery, (messagesSnapshot) => {
+            let unreadCount = 0;
+            
+            messagesSnapshot.docs.forEach((messageDoc) => {
+              const message = messageDoc.data();
+              // Check if message is from other user and not seen by current user
+              if (String(message.senderId) !== String(user.user_id)) {
+                const seenBy = message.seenBy || [];
+                if (!seenBy.map(String).includes(String(user.user_id))) {
+                  unreadCount++;
+                }
+              }
+            });
+
+            setUnreadCounts(prev => ({
+              ...prev,
+              [conversationId]: unreadCount
+            }));
+          });
+
+          unsubscribeCallbacks.push(unsubscribeMessages);
+        }
+      });
+    });
+
+    unsubscribeCallbacks.push(unsubscribeConversations);
+
+    return () => {
+      unsubscribeCallbacks.forEach(unsubscribe => unsubscribe());
+    };
+  }, [user?.user_id]);
+
+  const handleMarkAsRead = async (conversationId) => {
+    if (!user?.user_id || !conversationId) return;
+
+    try {
+      // Mark all messages in this conversation as read
+      const messagesQuery = query(
+        collection(db, "conversations", conversationId, "messages"),
+        orderBy("createdAt", "desc")
+      );
+
+      const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
+        const updates = [];
+        
+        snapshot.docs.forEach((messageDoc) => {
+          const message = messageDoc.data();
+          // If message is from other user and not seen by current user
+          if (String(message.senderId) !== String(user.user_id)) {
+            const seenBy = message.seenBy || [];
+            if (!seenBy.map(String).includes(String(user.user_id))) {
+              const messageRef = doc(db, "conversations", conversationId, "messages", messageDoc.id);
+              updates.push(updateDoc(messageRef, {
+                seenBy: arrayUnion(user.user_id)
+              }));
+            }
+          }
+        });
+
+        if (updates.length > 0) {
+          await Promise.all(updates);
+        }
+        
+        // Update local state
+        setUnreadCounts(prev => ({
+          ...prev,
+          [conversationId]: 0
+        }));
+
+        // Unsubscribe after processing
+        unsubscribe();
+      });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  };
+
+  // Determine container class for mobile views
+  const getContainerClass = () => {
+    if (!isMobile) return "peerfusion-chat-container";
+    
+    switch (mobileView) {
+      case 'chat':
+        return "peerfusion-chat-container chat-active";
+      case 'info':
+        return "peerfusion-chat-container info-active";
+      default:
+        return "peerfusion-chat-container";
+    }
+  };
+
+  // Mobile navigation handlers
+  const handleBackToList = () => {
+    setActiveConversation(null);
+    setMobileView('list');
+  };
+
+  const handleShowInfo = () => {
+    setMobileView('info');
+  };
+
+  const handleBackToChat = () => {
+    setMobileView('chat');
+  };
+
   const handleScheduleMeeting = async () => {
     if (!meetingDate || !activeConversation || !user) {
-      alert("Please select a date and conversation.");
+      alert("Please select a date and time for the meeting.");
       return;
     }
 
@@ -141,421 +338,337 @@ export default function ChatPage() {
       }
     } catch (err) {
       console.error("Error scheduling meeting:", err);
-      alert("Error scheduling meeting");
+      alert("Error scheduling meeting. Please try again.");
     }
   };
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          height: "97vh",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        Loading user data...
-      </div>
-    );
-  }
-
-  // UI helpers
-  const onMuteToggle = () => setIsMuted((v) => !v);
+  // Modal handlers
   const openMediaModal = () => setShowMediaModal(true);
   const openFilesModal = () => setShowFilesModal(true);
   const closeMediaModal = () => setShowMediaModal(false);
   const closeFilesModal = () => setShowFilesModal(false);
 
+  if (loading) {
+    return (
+      <div className="peerfusion-chat-loading">
+        <div className="peerfusion-loading-spinner"></div>
+        <p>Loading your conversations...</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", height: "97vh" }}>
-      {/* LEFT: Chat list */}
-      <ChatList
-        key={`${user?.id || "guest"}-${refreshTrigger}`}
-        currentUser={user}
-        activeConversationId={activeConversation?.id}
-        onSelect={(c) => setActiveConversation(c)}
-      />
+    <div className={getContainerClass()}>
+      {/* LEFT: Chat list - Always rendered but positioned by CSS */}
+      <div className="peerfusion-chat-left">
+        <ChatList
+          key={`${user?.id || "guest"}-${refreshTrigger}`}
+          currentUser={user}
+          activeConversationId={activeConversation?.id}
+          onSelect={(c) => setActiveConversation(c)}
+          searchQuery={conversationSearch}
+          onSearchChange={setConversationSearch}
+          isMobile={isMobile}
+          unreadCounts={unreadCounts}
+          onMarkAsRead={handleMarkAsRead}
+        />
+      </div>
 
       {/* MIDDLE: Chat Window */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div className="peerfusion-chat-middle">
         {activeConversation ? (
-          <>
-            <div
-              style={{
-                background: "#689d6df5",
-                color: "#fff",
-                padding: "12px 16px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                {activeConversation.otherUser?.avatar ? (
-                  <img
-                    src={activeConversation.otherUser.avatar}
-                    alt={activeConversation.otherUser.username}
-                    width={32}
-                    height={32}
-                    style={{ borderRadius: "50%" }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: "#e2dfdfff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#666",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {activeConversation.otherUser?.username?.charAt(0) || "U"}
-                  </div>
-                )}
-                <span>{activeConversation.otherUser?.username}</span>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div
-                  className="meeting-btn"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setShowMeetingModal(true)}
-                >
-                  📅
-                </div>
-              </div>
-            </div>
-
-            <ChatWindow
-              conversationId={activeConversation.id}
-              currentUser={user}
-              searchTerm={searchTerm}
-            />
-          </>
+          <ChatWindow
+            conversationId={activeConversation.id}
+            currentUser={user}
+            searchTerm={messageSearch}
+            onBackToList={handleBackToList}
+            onShowInfo={handleShowInfo}
+            isMobile={isMobile}
+          />
         ) : (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#888",
-            }}
-          >
-            Select a conversation to start chatting
-          </div>
+          !isMobile && ( // Only show empty state on desktop
+            <div className="peerfusion-chat-empty">
+              <div className="peerfusion-chat-empty-icon">
+                <ChatIcon />
+              </div>
+              <h3>Start a Conversation</h3>
+              <p>Select a chat from the sidebar to begin messaging</p>
+            </div>
+          )
         )}
       </div>
 
-      {/* RIGHT: Conversation Info & Actions */}
+      {/* RIGHT: Conversation Info */}
       {activeConversation && (
-        <div
-          style={{
-            width: 280,
-            borderLeft: "1px solid #ddd",
-            background: "#B3CCAE",
-            padding: 16,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          {/* Avatar */}
-          {activeConversation.otherUser?.avatar ? (
-            <img
-              src={activeConversation.otherUser.avatar}
-              alt={activeConversation.otherUser.username}
-              width={96}
-              height={96}
-              style={{ borderRadius: "50%", marginBottom: 8, objectFit: "cover" }}
-              onError={(e) => (e.target.style.display = "none")}
-            />
-          ) : (
-            <div
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: "50%",
-                background: "#B3CCAE",
-                marginBottom: 8,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#666",
-                fontSize: 28,
-                fontWeight: "700",
-              }}
-            >
-              {activeConversation.otherUser?.username?.charAt(0) || "U"}
+        <div className="peerfusion-chat-right">
+          {/* Mobile Controls */}
+          {isMobile && (
+            <div className="peerfusion-mobile-controls">
+              <button 
+                className="peerfusion-back-button"
+                onClick={handleBackToChat}
+              >
+                <BackIcon />
+                <span>Back</span>
+              </button>
+              <div className="peerfusion-mobile-panel-title">Chat Info</div>
+              <div style={{width: '80px'}}></div>
             </div>
           )}
 
-          <h3 style={{ margin: 0, marginBottom: 8 }}>{activeConversation.otherUser?.username}</h3>
+          <div className="peerfusion-chat-right-content">
+            {/* User Info */}
+            <div className="peerfusion-user-info-section">
+              {activeConversation.otherUser?.avatar ? (
+                <img
+                  src={activeConversation.otherUser.avatar}
+                  alt={activeConversation.otherUser.username}
+                  className="peerfusion-chat-right-avatar"
+                />
+              ) : (
+                <div className="peerfusion-chat-right-avatar peerfusion-avatar-placeholder">
+                  {activeConversation.otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+              )}
+              <h3 className="peerfusion-chat-right-name">
+                {activeConversation.otherUser?.username}
+              </h3>
+              <p className="peerfusion-user-status">Online</p>
+            </div>
 
-          {/* Actions */}
-          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-            <button
-              onClick={onMuteToggle}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: isMuted ? "#60cc4ac4" : "#37632eb2",
-                textAlign: "left",
-              }}
-            >
-              {isMuted ? "🔈 Unmute" : "🔇 Mute"}
-            </button>
+            {/* Quick Actions */}
+            <div className="peerfusion-quick-actions">
+              <button
+                onClick={() => setShowMeetingModal(true)}
+                className="peerfusion-action-btn primary"
+              >
+                <CalendarIcon />
+                Schedule Meeting
+              </button>
+              
+              <div className="peerfusion-action-group">
+                <button
+                  onClick={openMediaModal}
+                  className="peerfusion-action-btn"
+                >
+                  <MediaIcon />
+                  Media ({mediaItems.length})
+                </button>
+                <button
+                  onClick={openFilesModal}
+                  className="peerfusion-action-btn"
+                >
+                  <FileIcon />
+                  Files ({fileItems.length})
+                </button>
+              </div>
+            </div>
 
-            <button
-              onClick={() => {
-                setShowSearch((s) => !s);
-                if (showSearch) setSearchTerm("");
-              }}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: "#60cc4ac4",
-                textAlign: "left",
-              }}
-            >
-              🔍 Search
-            </button>
-
-            {showSearch && (
+            {/* Search in Conversation */}
+            <div className="peerfusion-search-section">
+              <div className="peerfusion-search-header">
+                <SearchIcon />
+                <span>Search in conversation</span>
+              </div>
               <input
                 type="text"
                 placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: 8,
-                  border: "1px solid #60cc4ac4",
-                  marginTop: 6,
-                }}
+                value={messageSearch}
+                onChange={(e) => setMessageSearch(e.target.value)}
+                className="peerfusion-search-conversation-input"
               />
-            )}
-          </div>
+            </div>
 
-          {/* Media & Files */}
-          <div style={{ marginTop: 12, width: "100%" }}>
-            <div style={{ fontWeight: "700", marginBottom: 8 }}>Media and Files</div>
-            <button
-              onClick={openMediaModal}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                textAlign: "left",
-                marginBottom: 6,
-                background: "#60cc4ac4",
-              }}
-            >
-              🖼 Media ({mediaItems.length})
-            </button>
-            <button
-              onClick={openFilesModal}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                textAlign: "left",
-                background: "#60cc4ac4",
-              }}
-            >
-              📄 Files ({fileItems.length})
-            </button>
+            {/* Shared Media Preview */}
+            {(mediaItems.length > 0 || fileItems.length > 0) && (
+              <div className="peerfusion-shared-preview">
+                <h4>Recently Shared</h4>
+                <div className="peerfusion-preview-grid">
+                  {mediaItems.slice(0, 4).map((media) => (
+                    <div key={media.id} className="peerfusion-preview-item">
+                      <img src={media.url} alt="Shared media" />
+                    </div>
+                  ))}
+                  {fileItems.slice(0, 2).map((file) => (
+                    <div key={file.id} className="peerfusion-preview-item file">
+                      <FileIcon />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Media Modal */}
       {showMediaModal && activeConversation && (
-        <div
-          onClick={closeMediaModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 760,
-              maxHeight: "80vh",
-              overflowY: "auto",
-              background: "#60cc4ac4",
-              borderRadius: 10,
-              padding: 18,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>Shared Media</h3>
-              <button onClick={closeMediaModal} style={{ border: "none", background: "transparent", cursor: "pointer" }}>✖</button>
+        <div className="peerfusion-modal-overlay" onClick={closeMediaModal}>
+          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="peerfusion-modal-header">
+              <h3 className="peerfusion-modal-title">
+                Shared Media ({mediaItems.length})
+              </h3>
+              <button className="peerfusion-close-modal" onClick={closeMediaModal}>
+                <CloseIcon />
+              </button>
             </div>
 
-            {mediaItems.length === 0 ? (
-              <div style={{ color: "#666" }}>No images shared in this conversation.</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
-                {mediaItems.map((m) => (
-                  <div key={m.id} style={{ borderRadius: 8, overflow: "hidden", background: "#fafafa", padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <a href={m.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none" }}>
-                      <img src={m.url} alt={m.fileName || "media"} style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 6 }} />
+            <div className="peerfusion-modal-body">
+              {mediaItems.length === 0 ? (
+                <div className="peerfusion-empty-state">
+                  <MediaIcon />
+                  <p>No images shared yet</p>
+                </div>
+              ) : (
+                <div className="peerfusion-media-grid">
+                  {mediaItems.map((media) => (
+                    <a
+                      key={media.id}
+                      href={media.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="peerfusion-media-item"
+                    >
+                      <img src={media.url} alt="Shared media" />
+                      <div className="peerfusion-media-info">
+                        {media.fileName || "Image"}
+                      </div>
                     </a>
-                    <div style={{ fontSize: 12, color: "#333", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{m.fileName || m.url.split("/").pop()}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Files Modal */}
       {showFilesModal && activeConversation && (
-        <div
-          onClick={closeFilesModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 700,
-              maxHeight: "80vh",
-              overflowY: "auto",
-              background: "#fff",
-              borderRadius: 10,
-              padding: 18,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>Shared Files</h3>
-              <button onClick={closeFilesModal} style={{ border: "none", background: "transparent", cursor: "pointer" }}>✖</button>
+        <div className="peerfusion-modal-overlay" onClick={closeFilesModal}>
+          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="peerfusion-modal-header">
+              <h3 className="peerfusion-modal-title">
+                Shared Files ({fileItems.length})
+              </h3>
+              <button className="peerfusion-close-modal" onClick={closeFilesModal}>
+                <CloseIcon />
+              </button>
             </div>
 
-            {fileItems.length === 0 ? (
-              <div style={{ color: "#666" }}>No files shared in this conversation.</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {fileItems.map((f) => (
-                  <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 10, borderRadius: 8, background: "#fafafa" }}>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <span style={{ fontSize: 20 }}>📄</span>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <div style={{ fontWeight: 600 }}>{f.fileName || f.url.split("/").pop()}</div>
-                        <div style={{ fontSize: 12, color: "#666" }}>{f.fileType?.toUpperCase()}</div>
+            <div className="peerfusion-modal-body">
+              {fileItems.length === 0 ? (
+                <div className="peerfusion-empty-state">
+                  <FileIcon />
+                  <p>No files shared yet</p>
+                </div>
+              ) : (
+                <div className="peerfusion-files-list">
+                  {fileItems.map((file) => (
+                    <div key={file.id} className="peerfusion-file-item">
+                      <div className="peerfusion-file-info">
+                        <FileIcon />
+                        <div className="peerfusion-file-details">
+                          <div className="peerfusion-file-name">
+                            {file.fileName || file.url.split("/").pop()}
+                          </div>
+                          <div className="peerfusion-file-type">
+                            {file.fileType?.toUpperCase()} File
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                        <button style={{ border: "none", padding: "6px 10px", borderRadius: 6, cursor: "pointer", background: "#689d6d", color: "#fff" }}>Open</button>
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="peerfusion-download-btn"
+                      >
+                        Download
                       </a>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/*  Schedule Meeting Modal */}
+      {/* Schedule Meeting Modal */}
       {showMeetingModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1500,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              padding: 20,
-              borderRadius: 10,
-              width: 350,
-              textAlign: "center",
-            }}
-          >
-            <h3>📅 Schedule a Meeting</h3>
-            <input
-              type="datetime-local"
-              value={meetingDate}
-              onChange={(e) => setMeetingDate(e.target.value)}
-              style={{
-                marginTop: 10,
-                padding: 8,
-                width: "100%",
-                borderRadius: 6,
-                border: "1px solid #ccc",
-              }}
-            />
-            <div style={{ marginTop: 15, display: "flex", gap: 10 }}>
-              <button
-                onClick={handleScheduleMeeting}
-                style={{
-                  flex: 1,
-                  background: "#689d6df5",
-                  color: "white",
-                  padding: 8,
-                  border: "none",
-                  borderRadius: 6,
-                }}
-              >
-                Schedule
-              </button>
-              <button
+        <div className="peerfusion-modal-overlay">
+          <div className="peerfusion-modal-content peerfusion-meeting-modal">
+            <div className="peerfusion-modal-header">
+              <h3 className="peerfusion-modal-title">Schedule Meeting</h3>
+              <button 
+                className="peerfusion-close-modal"
                 onClick={() => setShowMeetingModal(false)}
-                style={{
-                  flex: 1,
-                  background: "#aaa",
-                  color: "white",
-                  padding: 8,
-                  border: "none",
-                  borderRadius: 6,
-                }}
               >
-                Cancel
+                <CloseIcon />
               </button>
+            </div>
+
+            <div className="peerfusion-modal-body">
+              <div className="peerfusion-form-group">
+                <label>Meeting Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={meetingDate}
+                  onChange={(e) => setMeetingDate(e.target.value)}
+                  className="peerfusion-form-input"
+                />
+              </div>
+              
+              <div className="peerfusion-meeting-participants">
+                <label>Participants</label>
+                <div className="peerfusion-participants-list">
+                  <div className="peerfusion-participant">
+                    {user?.avatar ? (
+                      <img 
+                        src={user.avatar} 
+                        alt={user.username} 
+                        className="peerfusion-participant-avatar"
+                      />
+                    ) : (
+                      <div className="peerfusion-participant-avatar-placeholder">
+                        {user?.username?.charAt(0)?.toUpperCase() || "Y"}
+                      </div>
+                    )}
+                    <span>You</span>
+                  </div>
+                  <div className="peerfusion-participant">
+                    {activeConversation?.otherUser?.avatar ? (
+                      <img 
+                        src={activeConversation.otherUser.avatar} 
+                        alt={activeConversation.otherUser.username} 
+                        className="peerfusion-participant-avatar"
+                      />
+                    ) : (
+                      <div className="peerfusion-participant-avatar-placeholder">
+                        {activeConversation?.otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                    )}
+                    <span>{activeConversation?.otherUser?.username}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="peerfusion-modal-actions">
+                <button
+                  onClick={handleScheduleMeeting}
+                  className="peerfusion-primary-btn"
+                  disabled={!meetingDate}
+                >
+                  <CalendarIcon />
+                  Schedule Meeting
+                </button>
+                <button
+                  onClick={() => setShowMeetingModal(false)}
+                  className="peerfusion-secondary-btn"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

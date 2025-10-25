@@ -1,8 +1,467 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FiEdit, FiSave, FiX, FiUser, FiPhone, FiLink, FiClock } from 'react-icons/fi';
 import '../css/profile.css';
 
+const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
+    if (passwordErrors[name]) {
+      setPasswordErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validatePassword = () => {
+    const errors = {};
+
+    if (!passwordForm.currentPassword) {
+      errors.currentPassword = 'Current password is required';
+    }
+
+    if (!passwordForm.newPassword) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordForm.newPassword.length < 8) {
+      errors.newPassword = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[A-Z])/.test(passwordForm.newPassword)) {
+      errors.newPassword = 'Password must contain at least one uppercase letter';
+    } else if (!/(?=.*\d)/.test(passwordForm.newPassword)) {
+      errors.newPassword = 'Password must contain at least one number';
+    } else if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(passwordForm.newPassword)) {
+      errors.newPassword = 'Password must contain at least one special character';
+    }
+
+    if (!passwordForm.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your new password';
+    } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validatePassword()) {
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await onPasswordChange(passwordForm.currentPassword, passwordForm.newPassword);
+    setIsLoading(false);
+    
+    if (success) {
+      // Reset form on successful submission
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setPasswordErrors({});
+    }
+  };
+
+  const handleClose = () => {
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setPasswordErrors({});
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="peerfusion-modal-overlay" onClick={handleClose}>
+      <div className="peerfusion-modal-content peerfusion-password-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="peerfusion-close-modal" onClick={handleClose}>
+          <span className="peerfusion-close-icon"></span>
+        </button>
+
+        <div className="peerfusion-password-header">
+          <h3 className="peerfusion-password-title">Change Password</h3>
+          <p className="peerfusion-password-subtitle">Enter your current password and set a new one</p>
+        </div>
+
+        <div className="peerfusion-modal-main">
+          <form onSubmit={handleSubmit} className="peerfusion-password-form">
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Current Password</label>
+              <input 
+                type="password" 
+                name="currentPassword"
+                value={passwordForm.currentPassword}
+                onChange={handlePasswordInputChange}
+                className={`peerfusion-password-input ${passwordErrors.currentPassword ? 'peerfusion-password-input-error' : ''}`}
+                placeholder="Enter your current password"
+                disabled={isLoading}
+              />
+              {passwordErrors.currentPassword && (
+                <span className="peerfusion-password-error">{passwordErrors.currentPassword}</span>
+              )}
+            </div>
+
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">New Password</label>
+              <input 
+                type="password" 
+                name="newPassword"
+                value={passwordForm.newPassword}
+                onChange={handlePasswordInputChange}
+                className={`peerfusion-password-input ${passwordErrors.newPassword ? 'peerfusion-password-input-error' : ''}`}
+                placeholder="Enter your new password"
+                disabled={isLoading}
+              />
+              {passwordErrors.newPassword && (
+                <span className="peerfusion-password-error">{passwordErrors.newPassword}</span>
+              )}
+            </div>
+
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Confirm New Password</label>
+              <input 
+                type="password" 
+                name="confirmPassword"
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordInputChange}
+                className={`peerfusion-password-input ${passwordErrors.confirmPassword ? 'peerfusion-password-input-error' : ''}`}
+                placeholder="Confirm your new password"
+                disabled={isLoading}
+              />
+              {passwordErrors.confirmPassword && (
+                <span className="peerfusion-password-error">{passwordErrors.confirmPassword}</span>
+              )}
+            </div>
+
+            <div className="peerfusion-password-requirements">
+              <p className="peerfusion-password-requirements-title">Password Requirements</p>
+              <ul className="peerfusion-password-requirements-list">
+                <li className="peerfusion-password-requirement-item">At least 8 characters long</li>
+                <li className="peerfusion-password-requirement-item">Contains at least one uppercase letter</li>
+                <li className="peerfusion-password-requirement-item">Contains at least one number</li>
+                <li className="peerfusion-password-requirement-item">Contains at least one special character</li>
+              </ul>
+            </div>
+
+            <div className="peerfusion-password-actions">
+              <button 
+                type="button" 
+                className="peerfusion-password-cancel"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="peerfusion-password-submit"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="peerfusion-password-loading"></span>
+                    Changing...
+                  </>
+                ) : (
+                  'Change Password'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Settings Dropdown Component
+const SettingsDropdown = ({ setEditMode, editMode, setViewAs, setShowChangePassword, profile, form, selectedSubjects, setSelectedSubjects, availability, handleSave }) => {
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Close settings dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowSettings(false);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="peerfusion-settings-dropdown">
+      <button 
+        className="peerfusion-settings-button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowSettings(!showSettings);
+        }}
+      >
+        <span className="peerfusion-settings-icon"></span>
+        Settings
+      </button>
+      
+      {showSettings && (
+        <div className="peerfusion-settings-menu">
+          <button 
+            className={`peerfusion-settings-item ${editMode ? 'active' : ''}`}
+            onClick={() => {
+              setEditMode(true);
+              setShowSettings(false);
+            }}
+          >
+            <span className="peerfusion-edit-icon"></span>
+            Edit Profile
+          </button>
+          <button 
+            className="peerfusion-settings-item"
+            onClick={() => {
+              setShowChangePassword(true);
+              setShowSettings(false);
+            }}
+          >
+            <span className="peerfusion-password-lock-icon"></span>
+            Change Password
+          </button>
+          <button 
+            className="peerfusion-settings-item"
+            onClick={() => {
+              setViewAs(true);
+              setShowSettings(false);
+            }}
+          >
+            <span className="peerfusion-eye-icon"></span>
+            View As Public
+          </button>
+          {editMode && (
+            <>
+              <button 
+                className="peerfusion-settings-item"
+                onClick={() => {
+                  handleSave(new Event('click'));
+                  setShowSettings(false);
+                }}
+              >
+                <span className="peerfusion-save-icon"></span>
+                Save Changes
+              </button>
+              <button 
+                className="peerfusion-settings-item"
+                onClick={() => {
+                  setEditMode(false);
+                  setShowSettings(false);
+                  // Reset form to original profile data
+                  if (profile) {
+                    setEditMode(prev => !prev);
+                    const initialSubjects = profile.subject ? profile.subject.split(',') : [];
+                    setSelectedSubjects(initialSubjects);
+                  }
+                }}
+              >
+                <span className="peerfusion-cancel-icon"></span>
+                Cancel Edit
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Rating Display Component
+const RatingDisplay = ({ rating }) => {
+  const numericRating = Number(rating) || 0;
+  return (
+    <div className="peerfusion-rating-display">
+      <span className="peerfusion-star-icon"></span>
+      {numericRating.toFixed(1)}
+    </div>
+  );
+};
+
+// Recommended Badge Component
+const RecommendedBadge = () => (
+  <span className="peerfusion-recommended-badge">
+    <span className="peerfusion-recommended-icon"></span>
+    Recommended
+  </span>
+);
+
+// Availability Display Component
+const AvailabilityDisplay = ({ availability }) => {
+  if (!availability || availability.length === 0) {
+    return <p className="peerfusion-no-availability">No availability set</p>;
+  }
+
+  let parsedAvailability = availability;
+  if (typeof availability === 'string') {
+    try {
+      parsedAvailability = JSON.parse(availability);
+    } catch (err) {
+      console.error('Error parsing availability:', err);
+      return <p className="peerfusion-no-availability">No availability set</p>;
+    }
+  }
+
+  const availableDays = parsedAvailability.filter(day => 
+    day && day.enabled && day.slots && day.slots.length > 0
+  );
+
+  if (availableDays.length === 0) {
+    return <p className="peerfusion-no-availability">No availability set</p>;
+  }
+
+  return (
+    <div className="peerfusion-availability-display">
+      {availableDays.map((daySchedule) => (
+        <div key={daySchedule.day} className="peerfusion-availability-day">
+          <strong className="peerfusion-day-label">{daySchedule.day}:</strong>
+          <div className="peerfusion-time-slots-display">
+            {daySchedule.slots.map((slot, index) => (
+              <span key={index} className="peerfusion-time-slot-badge">
+                {slot.start} - {slot.end}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Availability Editor Component
+const AvailabilityEditor = ({ availability, onUpdate }) => {
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const timeOptions = [
+    '06:00 AM', '07:00 AM', '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+    '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
+  ];
+
+  const toggleDayAvailability = (day) => {
+    const newAvailability = availability.map(item => 
+      item.day === day 
+        ? { ...item, enabled: !item.enabled }
+        : item
+    );
+    onUpdate(newAvailability);
+  };
+
+  const addTimeSlot = (day) => {
+    const newAvailability = availability.map(item => 
+      item.day === day 
+        ? { ...item, slots: [...item.slots, { start: '09:00 AM', end: '10:00 AM' }] }
+        : item
+    );
+    onUpdate(newAvailability);
+  };
+
+  const removeTimeSlot = (day, index) => {
+    const newAvailability = availability.map(item => 
+      item.day === day 
+        ? { 
+            ...item, 
+            slots: item.slots.filter((_, i) => i !== index),
+            enabled: item.slots.length > 1 ? item.enabled : false
+          }
+        : item
+    );
+    onUpdate(newAvailability);
+  };
+
+  const updateTimeSlot = (day, index, field, value) => {
+    const newAvailability = availability.map(item => 
+      item.day === day 
+        ? { 
+            ...item, 
+            slots: item.slots.map((slot, i) => 
+              i === index ? { ...slot, [field]: value } : slot
+            )
+          }
+        : item
+    );
+    onUpdate(newAvailability);
+  };
+
+  return (
+    <div className="peerfusion-availability-editor">
+      <p className="peerfusion-availability-help">Check the days you're available and set your time slots:</p>
+      {availability.map((daySchedule) => (
+        <div key={daySchedule.day} className={`peerfusion-day-availability-editor ${daySchedule.enabled ? 'enabled' : ''}`}>
+          <div className="peerfusion-day-header-editor">
+            <label className="peerfusion-day-checkbox">
+              <input
+                type="checkbox"
+                checked={daySchedule.enabled}
+                onChange={() => toggleDayAvailability(daySchedule.day)}
+              />
+              <span className="peerfusion-day-name">{daySchedule.day}</span>
+            </label>
+          </div>
+          
+          {daySchedule.enabled && (
+            <div className="peerfusion-time-slots-editor">
+              {daySchedule.slots.map((slot, index) => (
+                <div key={index} className="peerfusion-time-slot-edit">
+                  <select
+                    value={slot.start}
+                    onChange={(e) => updateTimeSlot(daySchedule.day, index, 'start', e.target.value)}
+                    className="peerfusion-time-select"
+                  >
+                    {timeOptions.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                  <span className="peerfusion-time-separator">to</span>
+                  <select
+                    value={slot.end}
+                    onChange={(e) => updateTimeSlot(daySchedule.day, index, 'end', e.target.value)}
+                    className="peerfusion-time-select"
+                  >
+                    {timeOptions.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                  {daySchedule.slots.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeTimeSlot(daySchedule.day, index)}
+                      className="peerfusion-remove-time-btn"
+                      title="Remove time slot"
+                    >
+                      <span className="peerfusion-remove-icon"></span>
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addTimeSlot(daySchedule.day)}
+                className="peerfusion-add-time-btn"
+              >
+                <span className="peerfusion-add-icon"></span>
+                Add Another Time
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Main Profile Component
 const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -13,6 +472,7 @@ const Profile = () => {
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [viewAs, setViewAs] = useState(false);
   const [availability, setAvailability] = useState([]);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [form, setForm] = useState({
     username: '',
     bio: '',
@@ -34,166 +494,6 @@ const Profile = () => {
   ];
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const timeOptions = [
-    '06:00 AM', '07:00 AM', '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-    '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
-  ];
-
-  // Availability Display Component
-  const AvailabilityDisplay = ({ availability }) => {
-    if (!availability || availability.length === 0) {
-      return <p className="no-availability">No availability set</p>;
-    }
-
-    // Ensure we're working with a proper array and parse if needed
-    let parsedAvailability = availability;
-    if (typeof availability === 'string') {
-      try {
-        parsedAvailability = JSON.parse(availability);
-      } catch (err) {
-        console.error('Error parsing availability:', err);
-        return <p className="no-availability">No availability set</p>;
-      }
-    }
-
-    const availableDays = parsedAvailability.filter(day => 
-      day && day.enabled && day.slots && day.slots.length > 0
-    );
-
-    if (availableDays.length === 0) {
-      return <p className="no-availability">No availability set</p>;
-    }
-
-    return (
-      <div className="availability-display">
-        {availableDays.map((daySchedule) => (
-          <div key={daySchedule.day} className="availability-day">
-            <strong className="day-label">{daySchedule.day}:</strong>
-            <div className="time-slots-display">
-              {daySchedule.slots.map((slot, index) => (
-                <span key={index} className="time-slot-badge">
-                  {slot.start} - {slot.end}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Availability Editor Component
-  const AvailabilityEditor = ({ availability, onUpdate }) => {
-    const toggleDayAvailability = (day) => {
-      const newAvailability = availability.map(item => 
-        item.day === day 
-          ? { ...item, enabled: !item.enabled }
-          : item
-      );
-      onUpdate(newAvailability);
-    };
-
-    const addTimeSlot = (day) => {
-      const newAvailability = availability.map(item => 
-        item.day === day 
-          ? { ...item, slots: [...item.slots, { start: '09:00 AM', end: '10:00 AM' }] }
-          : item
-      );
-      onUpdate(newAvailability);
-    };
-
-    const removeTimeSlot = (day, index) => {
-      const newAvailability = availability.map(item => 
-        item.day === day 
-          ? { 
-              ...item, 
-              slots: item.slots.filter((_, i) => i !== index),
-              enabled: item.slots.length > 1 ? item.enabled : false
-            }
-          : item
-      );
-      onUpdate(newAvailability);
-    };
-
-    const updateTimeSlot = (day, index, field, value) => {
-      const newAvailability = availability.map(item => 
-        item.day === day 
-          ? { 
-              ...item, 
-              slots: item.slots.map((slot, i) => 
-                i === index ? { ...slot, [field]: value } : slot
-              )
-            }
-          : item
-      );
-      onUpdate(newAvailability);
-    };
-
-    return (
-      <div className="availability-editor">
-        <p className="availability-help">Check the days you're available and set your time slots:</p>
-        {availability.map((daySchedule) => (
-          <div key={daySchedule.day} className={`day-availability-editor ${daySchedule.enabled ? 'enabled' : ''}`}>
-            <div className="day-header-editor">
-              <label className="day-checkbox">
-                <input
-                  type="checkbox"
-                  checked={daySchedule.enabled}
-                  onChange={() => toggleDayAvailability(daySchedule.day)}
-                />
-                <span className="day-name">{daySchedule.day}</span>
-              </label>
-            </div>
-            
-            {daySchedule.enabled && (
-              <div className="time-slots-editor">
-                {daySchedule.slots.map((slot, index) => (
-                  <div key={index} className="time-slot-edit">
-                    <select
-                      value={slot.start}
-                      onChange={(e) => updateTimeSlot(daySchedule.day, index, 'start', e.target.value)}
-                      className="time-select"
-                    >
-                      {timeOptions.map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                    <span className="time-separator">to</span>
-                    <select
-                      value={slot.end}
-                      onChange={(e) => updateTimeSlot(daySchedule.day, index, 'end', e.target.value)}
-                      className="time-select"
-                    >
-                      {timeOptions.map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                    {daySchedule.slots.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeTimeSlot(daySchedule.day, index)}
-                        className="remove-time-btn"
-                        title="Remove time slot"
-                      >
-                        <FiX size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addTimeSlot(daySchedule.day)}
-                  className="add-time-btn"
-                >
-                  + Add Another Time
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -204,7 +504,6 @@ const Profile = () => {
         });
         setProfile(res.data);
         
-        // Improved availability parsing and initialization
         let parsedAvailability = [];
         if (res.data.availability) {
           try {
@@ -214,7 +513,6 @@ const Profile = () => {
               parsedAvailability = res.data.availability;
             }
             
-            // Ensure it's a proper array with the expected structure
             if (!Array.isArray(parsedAvailability) || parsedAvailability.length === 0) {
               throw new Error('Invalid availability format');
             }
@@ -224,7 +522,6 @@ const Profile = () => {
           }
         }
         
-        // If no availability exists or it's empty, initialize it based on role
         if (!parsedAvailability || parsedAvailability.length === 0) {
           if (res.data.role && res.data.role !== 'Skill Learner') {
             parsedAvailability = daysOfWeek.map(day => ({
@@ -282,7 +579,6 @@ const Profile = () => {
         setSelectedSubjects([]);
         setAvailability([]);
       } else if (value !== 'Skill Learner' && (!availability || availability.length === 0)) {
-        // Initialize availability when switching to sharer role
         const initialAvailability = daysOfWeek.map(day => ({
           day,
           enabled: false,
@@ -350,9 +646,6 @@ const Profile = () => {
       availability: form.role !== 'Skill Learner' ? JSON.stringify(availability) : '[]'
     };
 
-    console.log('Form data before sending:', formWithSubjects);
-    console.log('Availability being sent:', availability);
-
     Object.keys(formWithSubjects).forEach(key => {
       if (formWithSubjects[key] !== null && formWithSubjects[key] !== undefined) {
         formData.append(key, formWithSubjects[key]);
@@ -370,13 +663,11 @@ const Profile = () => {
       console.log('Update successful:', response.data);
       setEditMode(false);
       
-      // Refresh profile data
       const res = await axios.get('http://localhost:5000/api/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProfile(res.data);
       
-      // Update availability state with the refreshed data
       if (res.data.availability) {
         try {
           const parsedAvailability = typeof res.data.availability === 'string' 
@@ -392,101 +683,177 @@ const Profile = () => {
       
     } catch (err) {
       console.error('Update failed - Full error:', err);
-      console.error('Error response data:', err.response?.data);
       alert(`Update failed: ${err.response?.data?.details || err.response?.data?.error || err.message}`);
     }
   };
 
+  const handlePasswordChange = async (currentPassword, newPassword) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/profile/change-password',
+        {
+          currentPassword,
+          newPassword
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Password changed successfully!');
+        return true;
+      }
+    } catch (err) {
+      console.error('Password change error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to change password';
+      if (err.response?.status === 401) {
+        alert('Error: Current password is incorrect');
+      } else {
+        alert(`Error: ${errorMessage}`);
+      }
+      return false;
+    }
+  };
+
   return (
-    <div className="account-settings">
-      <div className="settings-container">
-        <div className="settings-header">
-          <h2>Account Settings</h2>
-          <div className="header-actions">
-          <button 
-            className={`view-btn ${viewAs ? 'active' : ''}`}
-            onClick={() => setViewAs(!viewAs)}
-          >
-            View As Public
-          </button>
-            {editMode ? (
-              <>
-                <button className="cancel-btn" onClick={() => setEditMode(false)}><FiX /> Cancel</button>
-                <button className="save-btn" onClick={handleSave}><FiSave /> Save Changes</button>
-              </>
-            ) : (
-              <button className="edit-btn" onClick={() => setEditMode(true)}><FiEdit /> Edit Profile</button>
+    <div className="peerfusion-profile-container">
+      {/* Header */}
+      <div className="peerfusion-profile-header">
+        <h1 className="peerfusion-profile-title">Profile Settings</h1>
+        <div className="peerfusion-header-actions">
+          <SettingsDropdown 
+            setEditMode={setEditMode}
+            editMode={editMode}
+            setViewAs={setViewAs}
+            setShowChangePassword={setShowChangePassword}
+            profile={profile}
+            form={form}
+            selectedSubjects={selectedSubjects}
+            setSelectedSubjects={setSelectedSubjects}
+            availability={availability}
+            handleSave={handleSave}
+          />
+        </div>
+      </div>
+
+      {/* Profile Content */}
+      <div className="peerfusion-profile-content">
+        {/* Sidebar */}
+        <div className="peerfusion-profile-sidebar">
+          <div className="peerfusion-avatar-section">
+            <div
+              className="peerfusion-avatar-wrapper"
+              onMouseEnter={() => setShowAvatarEdit(true)}
+              onMouseLeave={() => !avatarFile && setShowAvatarEdit(false)}
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile" className="peerfusion-avatar" />
+              ) : (
+                <div className="peerfusion-avatar-placeholder">
+                  <span className="peerfusion-user-icon"></span>
+                </div>
+              )}
+              {showAvatarEdit && (
+                <label className="peerfusion-avatar-edit">
+                  <span className="peerfusion-edit-icon"></span>
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                </label>
+              )}
+            </div>
+            
+            {avatarFile && (
+              <div className="peerfusion-avatar-actions">
+                <button className="peerfusion-avatar-btn peerfusion-avatar-save" onClick={handleAvatarSave}>
+                  <span className="peerfusion-save-icon"></span>
+                  Save
+                </button>
+                <button className="peerfusion-avatar-btn peerfusion-avatar-cancel" onClick={() => {
+                  setAvatarFile(null);
+                  setAvatarPreview(profile?.avatar ? `http://localhost:5000/uploads/${profile.avatar}` : '');
+                }}>
+                  <span className="peerfusion-cancel-icon"></span>
+                  Cancel
+                </button>
+              </div>
             )}
+
+            <div className="peerfusion-user-info">
+              <h2 className="peerfusion-username">{profile?.username || 'User'}</h2>
+              <p className="peerfusion-user-bio">{profile?.bio || 'No bio yet'}</p>
+            </div>
           </div>
         </div>
 
-        <div className="settings-body">
-          <div className="profile-header">
-            <div className="avatar-section">
-              <div
-                className="avatar-wrapper"
-                onMouseEnter={() => setShowAvatarEdit(true)}
-                onMouseLeave={() => !avatarFile && setShowAvatarEdit(false)}
-              >
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Profile" className="avatar" />
-                ) : (
-                  <div className="avatar-placeholder"><FiUser size={32} /></div>
-                )}
-                {showAvatarEdit && (
-                  <label className="avatar-edit-icon">
-                    <FiEdit className="edit-icon" />
-                    <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
-                  </label>
-                )}
-              </div>
-              {avatarFile && (
-                <div className="avatar-actions">
-                  <button className="avatar-save-btn" onClick={handleAvatarSave}><FiSave /> Save</button>
-                  <button className="avatar-cancel-btn" onClick={() => {
-                    setAvatarFile(null);
-                    setAvatarPreview(profile?.avatar ? `http://localhost:5000/uploads/${profile.avatar}` : '');
-                  }}><FiX /> Cancel</button>
-                </div>
-              )}
-            </div>
-
-            <div className="profile-header-info">
-              <h1>{profile?.username || 'User'}</h1>
-              <p className="profile-title">{profile?.bio || 'No bio yet'}</p>
-            </div>
-          </div>
-
+        {/* Main Content */}
+        <div className="peerfusion-profile-main">
           {profile && (
-            <div className="profile-sections">
-              <div className="profile-section">
-                <h3><FiUser /> Personal Information</h3>
+            <div className="peerfusion-profile-sections">
+              {/* Personal Information */}
+              <div className="peerfusion-profile-section">
+                <h3 className="peerfusion-section-title">
+                  <span className="peerfusion-user-icon"></span>
+                  Personal Information
+                </h3>
                 {editMode ? (
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label>Username</label>
-                      <input type="text" name="username" value={form.username} onChange={handleChange} />
+                  <div className="peerfusion-form-grid">
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Username</label>
+                      <input 
+                        type="text" 
+                        name="username" 
+                        value={form.username} 
+                        onChange={handleChange}
+                        className="peerfusion-form-input"
+                      />
                     </div>
-                    <div className="form-group">
-                      <label>Bio</label>
-                      <textarea name="bio" value={form.bio} onChange={handleChange} rows="3" />
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Bio</label>
+                      <textarea 
+                        name="bio" 
+                        value={form.bio} 
+                        onChange={handleChange} 
+                        rows="3"
+                        className="peerfusion-form-textarea"
+                        placeholder="Tell others about yourself..."
+                      />
                     </div>
-                    <div className="form-group">
-                      <label>Birthday</label>
-                      <input type="date" name="birthday" value={form.birthday?.split('T')[0]} onChange={handleChange} />
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Birthday</label>
+                      <input 
+                        type="date" 
+                        name="birthday" 
+                        value={form.birthday?.split('T')[0]} 
+                        onChange={handleChange}
+                        className="peerfusion-form-input"
+                      />
                     </div>
-                    <div className="form-group">
-                      <label>Gender</label>
-                      <select name="gender" value={form.gender} onChange={handleChange}>
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Gender</label>
+                      <select 
+                        name="gender" 
+                        value={form.gender} 
+                        onChange={handleChange}
+                        className="peerfusion-form-select"
+                      >
                         <option value="">Select</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label>Role</label>
-                      <select name="role" value={form.role} onChange={handleChange}>
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Role</label>
+                      <select 
+                        name="role" 
+                        value={form.role} 
+                        onChange={handleChange}
+                        className="peerfusion-form-select"
+                      >
                         <option value="Skill Learner">Skill Learner</option>
                         <option value="Skill Sharer">Skill Sharer</option>
                         <option value="Skill Sharer & Learner">Skill Sharer & Learner</option>
@@ -494,9 +861,9 @@ const Profile = () => {
                     </div>
 
                     {(form.role !== 'Skill Learner') && (
-                      <div className="form-group">
-                        <label>Subjects</label>
-                        <select name="subject" onChange={handleSubjectSelect}>
+                      <div className="peerfusion-form-group">
+                        <label className="peerfusion-form-label">Subjects</label>
+                        <select name="subject" onChange={handleSubjectSelect} className="peerfusion-subject-select">
                           <option value="">Select Subject</option>
                           {subjectCategories.map(category => (
                             <optgroup key={category.id} label={category.name}>
@@ -508,20 +875,27 @@ const Profile = () => {
                             </optgroup>
                           ))}
                         </select>
-                        <div className="selected-subjects">
+                        <div className="peerfusion-selected-subjects">
                           {selectedSubjects.map((subject, i) => (
-                            <span key={i} className="subject-tag">
+                            <span key={i} className="peerfusion-subject-tag">
                               {subject}
-                              <button onClick={() => removeSubject(subject)} className="remove-subject">×</button>
+                              <button onClick={() => removeSubject(subject)} className="peerfusion-remove-subject">
+                                <span className="peerfusion-remove-icon"></span>
+                              </button>
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div className="form-group">
-                      <label>Year Level</label>
-                      <select name="year_level" value={form.year_level} onChange={handleChange}>
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Year Level</label>
+                      <select 
+                        name="year_level" 
+                        value={form.year_level} 
+                        onChange={handleChange}
+                        className="peerfusion-form-select"
+                      >
                         <option value="">Select Year Level</option>
                         {yearLevels.map((level, index) => (
                           <option key={index} value={level}>{level}</option>
@@ -530,49 +904,52 @@ const Profile = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <span className="info-label">Username</span>
-                      <span className="info-value">{profile.username}</span>
+                  <div className="peerfusion-info-grid">
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Username</span>
+                      <span className="peerfusion-info-value">{profile.username}</span>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Bio</span>
-                      <span className="info-value">{profile.bio || 'No bio yet'}</span>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Bio</span>
+                      <span className="peerfusion-info-value">{profile.bio || 'No bio yet'}</span>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Birthday</span>
-                      <span className="info-value">{profile.birthday?.split('T')[0] || 'Not specified'}</span>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Birthday</span>
+                      <span className="peerfusion-info-value">{profile.birthday?.split('T')[0] || 'Not specified'}</span>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Gender</span>
-                      <span className="info-value">{profile.gender || 'Not specified'}</span>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Gender</span>
+                      <span className="peerfusion-info-value">{profile.gender || 'Not specified'}</span>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Role</span>
-                      <span className="info-value">{profile.role}</span>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Role</span>
+                      <span className="peerfusion-info-value">{profile.role}</span>
                     </div>
                     {(profile.role !== 'Skill Learner') && (
-                      <div className="info-item">
-                        <span className="info-label">Subjects</span>
-                        <div className="info-value">
+                      <div className="peerfusion-info-item">
+                        <span className="peerfusion-info-label">Subjects</span>
+                        <div className="peerfusion-info-value">
                           {profile.subject ? profile.subject.split(',').map((subj, i) => (
-                            <span key={i} className="subject-tag">{subj.trim()}</span>
+                            <span key={i} className="peerfusion-subject-tag">{subj.trim()}</span>
                           )) : 'Not specified'}
                         </div>
                       </div>
                     )}
-                    <div className="info-item">
-                      <span className="info-label">Year Level</span>
-                      <span className="info-value">{profile.year_level || 'Not specified'}</span>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Year Level</span>
+                      <span className="peerfusion-info-value">{profile.year_level || 'Not specified'}</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Schedule Availability Section */}
+              {/* Schedule Availability */}
               {(form.role !== 'Skill Learner' || profile.role !== 'Skill Learner') && (
-                <div className="profile-section">
-                  <h3><FiClock /> Schedule Availability</h3>
+                <div className="peerfusion-profile-section">
+                  <h3 className="peerfusion-section-title">
+                    <span className="peerfusion-clock-icon"></span>
+                    Schedule Availability
+                  </h3>
                   {editMode ? (
                     <AvailabilityEditor 
                       availability={availability} 
@@ -584,47 +961,67 @@ const Profile = () => {
                 </div>
               )}
               
-              {/* Contact Section */}
-              <div className="profile-section">
-                <h3><FiLink /> Contact Information</h3>
+              {/* Contact Information */}
+              <div className="peerfusion-profile-section">
+                <h3 className="peerfusion-section-title">
+                  <span className="peerfusion-link-icon"></span>
+                  Contact Information
+                </h3>
                 {editMode ? (
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label>Social Links (one per line)</label>
+                  <div className="peerfusion-form-grid">
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Social Links (one per line)</label>
                       <textarea
                         name="social_links"
                         value={form.social_links}
                         onChange={handleChange}
                         rows="3"
+                        className="peerfusion-form-textarea"
+                        placeholder="https://linkedin.com/in/yourprofile&#10;https://github.com/yourusername"
                       />
                     </div>
-                    <div className="form-group">
-                      <label><FiPhone /> Contact Number</label>
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">
+                        <span className="peerfusion-phone-icon"></span>
+                        Contact Number
+                      </label>
                       <input
                         type="text"
                         name="contact_number"
                         value={form.contact_number}
                         onChange={handleChange}
+                        className="peerfusion-form-input"
+                        placeholder="+1 (555) 123-4567"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <span className="info-label">Social Links</span>
-                      <div className="info-value">
+                  <div className="peerfusion-info-grid">
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Social Links</span>
+                      <div className="peerfusion-info-value">
                         {profile.social_links ? (
-                          profile.social_links.split('\n').map((link, i) => (
-                            <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="social-link">
-                              {link}
-                            </a>
-                          ))
+                          <div className="peerfusion-social-links">
+                            {profile.social_links.split('\n').map((link, i) => (
+                              <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="peerfusion-social-link">
+                                <span className="peerfusion-link-icon"></span>
+                                {link}
+                              </a>
+                            ))}
+                          </div>
                         ) : 'No links provided'}
                       </div>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Contact Number</span>
-                      <span className="info-value">{profile.contact_number || 'Not specified'}</span>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Contact Number</span>
+                      <span className="peerfusion-info-value">
+                        {profile.contact_number ? (
+                          <>
+                            <span className="peerfusion-phone-icon"></span>
+                            {profile.contact_number}
+                          </>
+                        ) : 'Not specified'}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -636,88 +1033,106 @@ const Profile = () => {
 
       {/* View As Public Modal */}
       {viewAs && profile && (
-        <div className="modal-overlay" onClick={() => setViewAs(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-modal" onClick={() => setViewAs(false)}>×</button>
+        <div className="peerfusion-modal-overlay" onClick={() => setViewAs(false)}>
+          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="peerfusion-close-modal" onClick={() => setViewAs(false)}>
+              <span className="peerfusion-close-icon"></span>
+            </button>
 
-            <div className="modal-avatar-container">
+            <div className="peerfusion-modal-avatar-container">
               {profile.avatar && (
                 <img
                   src={`http://localhost:5000/uploads/${profile.avatar}`}
                   alt="Avatar"
-                  className="modal-avatar"
+                  className="peerfusion-modal-avatar"
                 />
               )}
-              <div className="modal-rating">⭐ {profile.rating || 'N/A'}</div>
+              <div className="peerfusion-modal-rating">
+                <RatingDisplay rating={profile.rating} />
+                <span>({profile.total_reviews || 0} reviews)</span>
+              </div>
             </div>
 
-            <div className="modal-main">
-              <h3>{profile.username}</h3>
-              <p className="modal-role">{profile.role || 'N/A'}</p>
-              <p className="modal-bio">{profile.bio || 'No bio yet'}</p>
+            <div className="peerfusion-modal-main">
+              <h3 className="peerfusion-modal-title">{profile.username}</h3>
+              <p className="peerfusion-modal-role">{profile.role || 'N/A'}</p>
+              <p className="peerfusion-modal-bio">{profile.bio || 'No bio yet'}</p>
 
-              <div className="modal-section">
-                <h4>Subject Expertise</h4>
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Subject Expertise</h4>
                 {profile.subject && profile.role !== 'Skill Learner' ? (
-                  <div className="subject-tags">
+                  <div className="peerfusion-modal-subject-tags">
                     {profile.subject.split(',').map((subject, i) => (
-                      <span key={i} className="subject-tag">{subject.trim()}</span>
+                      <span key={i} className="peerfusion-subject-tag">{subject.trim()}</span>
                     ))}
                   </div>
                 ) : <p>N/A</p>}
               </div>
 
-              <div className="modal-section">
-                <h4>Year Level</h4>
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Year Level</h4>
                 <p>{profile.year_level || 'N/A'}</p>
               </div>
 
-              {/* Availability in Public View - Use the state availability */}
               {profile.role !== 'Skill Learner' && availability && availability.length > 0 && (
-                <div className="modal-section">
-                  <h4>📅 Available Times</h4>
+                <div className="peerfusion-modal-section">
+                  <h4 className="peerfusion-modal-section-title">
+                    <span className="peerfusion-clock-icon"></span>
+                    Available Times
+                  </h4>
                   <AvailabilityDisplay availability={availability} />
                 </div>
               )}
 
               {profile.social_links && (
-                <div className="modal-section">
-                  <h4>Social Links</h4>
-                  <div className="modal-social-links">
+                <div className="peerfusion-modal-section">
+                  <h4 className="peerfusion-modal-section-title">Social Links</h4>
+                  <div className="peerfusion-modal-social-links">
                     {profile.social_links.split('\n').map((link, i) => (
                       <a
                         key={i}
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="modal-social-link"
+                        className="peerfusion-modal-social-link"
                       >
-                        <span className="link-icon">🔗</span>
-                        <span className="link-text">{link}</span>
+                        <span className="peerfusion-link-icon"></span>
+                        <span className="peerfusion-link-text">{link}</span>
                       </a>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="modal-section">
-                <h4>Contact</h4>
-                <p className="contact-info">
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">Contact</h4>
+                <p className="peerfusion-contact-info">
                   {profile.contact_number ? (
-                    <a href={`tel:${profile.contact_number}`} className="contact-link">
-                      📞 {profile.contact_number}
+                    <a href={`tel:${profile.contact_number}`} className="peerfusion-contact-link">
+                      <span className="peerfusion-phone-icon"></span>
+                      {profile.contact_number}
                     </a>
                   ) : 'Not provided'}
                 </p>
               </div>
 
-              <div className="modal-actions">
-                <button className="schedule-btn">📅 Request Session</button>
+              <div className="peerfusion-modal-actions">
+                <button className="peerfusion-schedule-btn">
+                  <span className="peerfusion-calendar-icon"></span>
+                  Request Session
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        onPasswordChange={handlePasswordChange}
+      />
     </div>
   );
 };

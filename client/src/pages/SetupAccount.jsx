@@ -53,6 +53,7 @@ const SetupAccount = () => {
           navigate('/profile');
         }
       } catch (err) {
+        // Profile doesn't exist, continue with setup
       }
     };
     checkExistingProfile();
@@ -190,75 +191,99 @@ const SetupAccount = () => {
   };
 
   return (
-    <div className="setup-container">
-      <div className="setup-card">
-        <header className="setup-header">
-          <h1>Complete Your Profile</h1>
-          <p className="setup-subtitle">Let's get to know you better</p>
+    <div 
+        className="auth-container"
+        style={{
+          background: `url('/background.svg') no-repeat center center fixed`,
+          backgroundSize: 'cover'
+        }}
+      >
+      <div className="peerfusion-setup-card">
+        <header className="peerfusion-setup-header">
+          <h1 className="peerfusion-setup-title">Complete Your Profile</h1>
+          <p className="peerfusion-setup-subtitle">Let's get to know you better</p>
         </header>
 
-        <form onSubmit={handleSubmit} className="setup-form">
-          <div className="avatar-upload-section">
-            <div className="avatar-preview-container">
+        <form onSubmit={handleSubmit} className="peerfusion-setup-form">
+          {/* Avatar Upload Section */}
+          <div className="peerfusion-avatar-section">
+            <div className="peerfusion-avatar-container">
               {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar Preview" className="avatar-image" />
+                <img src={avatarPreview} alt="Avatar Preview" className="peerfusion-avatar-image" />
               ) : (
-                <div className="avatar-placeholder">
+                <div className="peerfusion-avatar-placeholder">
                   <FiUser size={32} />
                 </div>
               )}
             </div>
-            <label className="avatar-upload-btn">
+            <label className="peerfusion-upload-btn">
               <input 
                 type="file" 
                 accept="image/*" 
                 onChange={handleAvatarChange} 
-                className="avatar-input" 
+                className="peerfusion-upload-input" 
               />
-              <FiUpload className="upload-icon" />
+              <FiUpload className="peerfusion-upload-icon" />
               <span>Upload Photo</span>
             </label>
           </div>
 
-          <div className="form-section">
-            <h2 className="section-title"><FiUser /> Basic Information</h2>
-            <div className="form-group">
-              <label>Username</label>
+          {/* Basic Information Section */}
+          <div className="peerfusion-form-section">
+            <h2 className="peerfusion-section-title">
+              <FiUser className="peerfusion-section-icon" />
+              Basic Information
+            </h2>
+            
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Username</label>
               <input 
                 type="text" 
                 name="username" 
                 value={form.username} 
                 onChange={handleChange} 
                 placeholder="Enter your username" 
+                className="peerfusion-form-input"
                 required 
               />
             </div>
 
-            <div className="form-group">
-              <label><FiFileText /> Bio</label>
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">
+                <FiFileText className="peerfusion-label-icon" />
+                Bio
+              </label>
               <textarea 
                 name="bio" 
                 value={form.bio} 
                 onChange={handleChange} 
                 placeholder="Tell us about yourself..."
                 rows="4"
+                className="peerfusion-form-textarea"
               />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label><FiCalendar /> Birthday</label>
+            <div className="peerfusion-form-row">
+              <div className="peerfusion-form-group">
+                <label className="peerfusion-form-label">
+                  <FiCalendar className="peerfusion-label-icon" />
+                  Birthday
+                </label>
                 <input 
                   type="date" 
                   name="birthday" 
                   value={form.birthday} 
                   onChange={handleChange} 
+                  className="peerfusion-form-input"
                 />
               </div>
 
-              <div className="form-group">
-                <label><FiUsers /> Gender</label>
-                <select name="gender" value={form.gender} onChange={handleChange}>
+              <div className="peerfusion-form-group">
+                <label className="peerfusion-form-label">
+                  <FiUsers className="peerfusion-label-icon" />
+                  Gender
+                </label>
+                <select name="gender" value={form.gender} onChange={handleChange} className="peerfusion-form-select">
                   <option value="">Select...</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -267,19 +292,19 @@ const SetupAccount = () => {
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Role</label>
-                <select name="role" value={form.role} onChange={handleChange}>
+            <div className="peerfusion-form-row">
+              <div className="peerfusion-form-group">
+                <label className="peerfusion-form-label">Role</label>
+                <select name="role" value={form.role} onChange={handleChange} className="peerfusion-form-select">
                   <option value="Skill Learner">Skill Learner</option>
                   <option value="Skill Sharer">Skill Sharer</option>
                   <option value="Skill Sharer & Learner">Skill Sharer & Learner</option>
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>Year Level</label>
-                <select name="year_level" value={form.year_level} onChange={handleChange}>
+              <div className="peerfusion-form-group">
+                <label className="peerfusion-form-label">Year Level</label>
+                <select name="year_level" value={form.year_level} onChange={handleChange} className="peerfusion-form-select">
                   <option value="">Select Year Level</option>
                   {yearLevels.map((level, index) => (
                     <option key={index} value={level}>{level}</option>
@@ -289,15 +314,20 @@ const SetupAccount = () => {
             </div>
           </div>
 
-          <div className="form-section">
-            <h2 className="section-title"><FiAward /> Subjects</h2>
-            <div className="form-group">
-              <label>Subjects</label>
-              <div className="subject-select-container">
+          {/* Subjects Section */}
+          <div className="peerfusion-form-section">
+            <h2 className="peerfusion-section-title">
+              <FiAward className="peerfusion-section-icon" />
+              Subjects
+            </h2>
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Subjects</label>
+              <div className="peerfusion-subject-container">
                 <select 
                   name="subject" 
                   onChange={handleSubjectSelect}
                   disabled={form.role === 'Skill Learner'}
+                  className="peerfusion-subject-select"
                 >
                   <option value="">Select Subject</option>
                   {subjectCategories.map(category => (
@@ -312,14 +342,14 @@ const SetupAccount = () => {
                     </optgroup>
                   ))}
                 </select>
-                <div className="selected-subjects">
+                <div className="peerfusion-subjects-list">
                   {selectedSubjects.map((subject, index) => (
-                    <span key={index} className="subject-tag">
+                    <span key={index} className="peerfusion-subject-tag">
                       {subject}
                       <button 
                         type="button" 
                         onClick={() => removeSubject(subject)}
-                        className="remove-subject"
+                        className="peerfusion-remove-subject"
                       >
                         <FiX size={14} />
                       </button>
@@ -332,44 +362,48 @@ const SetupAccount = () => {
 
           {/* Schedule Availability Section */}
           {form.role !== 'Skill Learner' && (
-            <div className="form-section">
-              <h2 className="section-title"><FiClock /> Schedule Availability</h2>
-              <p className="section-description">
+            <div className="peerfusion-form-section">
+              <h2 className="peerfusion-section-title">
+                <FiClock className="peerfusion-section-icon" />
+                Schedule Availability
+              </h2>
+              <p className="peerfusion-section-description">
                 Set your available time slots for sessions. Students will see this when requesting sessions.
               </p>
               
-              <div className="availability-container">
+              <div className="peerfusion-availability-container">
                 {availability.map((daySchedule) => (
-                  <div key={daySchedule.day} className={`day-availability ${daySchedule.enabled ? 'enabled' : ''}`}>
-                    <div className="day-header">
-                      <label className="day-checkbox">
+                  <div key={daySchedule.day} className={`peerfusion-day-availability ${daySchedule.enabled ? 'enabled' : ''}`}>
+                    <div className="peerfusion-day-header">
+                      <label className="peerfusion-day-checkbox">
                         <input
                           type="checkbox"
                           checked={daySchedule.enabled}
                           onChange={() => toggleDayAvailability(daySchedule.day)}
+                          className="peerfusion-checkbox-input"
                         />
-                        <span className="day-name">{daySchedule.day}</span>
+                        <span className="peerfusion-day-name">{daySchedule.day}</span>
                       </label>
                     </div>
                     
                     {daySchedule.enabled && (
-                      <div className="time-slots">
+                      <div className="peerfusion-time-slots">
                         {daySchedule.slots.map((slot, index) => (
-                          <div key={index} className="time-slot">
+                          <div key={index} className="peerfusion-time-slot">
                             <select
                               value={slot.start}
                               onChange={(e) => updateTimeSlot(daySchedule.day, index, 'start', e.target.value)}
-                              className="time-select"
+                              className="peerfusion-time-select"
                             >
                               {timeOptions.map(time => (
                                 <option key={time} value={time}>{time}</option>
                               ))}
                             </select>
-                            <span className="time-separator">to</span>
+                            <span className="peerfusion-time-separator">to</span>
                             <select
                               value={slot.end}
                               onChange={(e) => updateTimeSlot(daySchedule.day, index, 'end', e.target.value)}
-                              className="time-select"
+                              className="peerfusion-time-select"
                             >
                               {timeOptions.map(time => (
                                 <option key={time} value={time}>{time}</option>
@@ -379,7 +413,7 @@ const SetupAccount = () => {
                               <button
                                 type="button"
                                 onClick={() => removeTimeSlot(daySchedule.day, index)}
-                                className="remove-time-btn"
+                                className="peerfusion-remove-time-btn"
                                 title="Remove time slot"
                               >
                                 <FiX size={14} />
@@ -390,7 +424,7 @@ const SetupAccount = () => {
                         <button
                           type="button"
                           onClick={() => addTimeSlot(daySchedule.day)}
-                          className="add-time-btn"
+                          className="peerfusion-add-time-btn"
                         >
                           + Add Another Time
                         </button>
@@ -402,35 +436,48 @@ const SetupAccount = () => {
             </div>
           )}
 
-          <div className="form-section">
-            <h2 className="section-title"><FiLink /> Contact Information</h2>
-            <div className="form-group">
-              <label>Social Links (one per line)</label>
+          {/* Contact Information Section */}
+          <div className="peerfusion-form-section">
+            <h2 className="peerfusion-section-title">
+              <FiLink className="peerfusion-section-icon" />
+              Contact Information
+            </h2>
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Social Links (one per line)</label>
               <textarea 
                 name="social_links" 
                 value={form.social_links} 
                 onChange={handleChange} 
-                placeholder="https://linkedin.com/yourprofile\nhttps://github.com/yourusername"
+                placeholder="https://linkedin.com/yourprofile&#10;https://github.com/yourusername"
                 rows="3"
+                className="peerfusion-form-textarea"
               />
             </div>
 
-            <div className="form-group">
-              <label><FiPhone /> Contact Number</label>
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">
+                <FiPhone className="peerfusion-label-icon" />
+                Contact Number
+              </label>
               <input 
                 type="text" 
                 name="contact_number" 
                 value={form.contact_number} 
                 onChange={handleChange} 
                 placeholder="+(63) 945189326" 
+                className="peerfusion-form-input"
               />
             </div>
           </div>
 
-          <button type="submit" className="submit-btn" disabled={isLoading}>
-            {isLoading ? 'Saving...' : (
+          {/* Submit Button */}
+          <button type="submit" className="peerfusion-submit-btn" disabled={isLoading}>
+            {isLoading ? (
+              'Saving...'
+            ) : (
               <>
-                <FiSave /> Complete Profile Setup
+                <FiSave className="peerfusion-submit-icon" />
+                Complete Profile Setup
               </>
             )}
           </button>
