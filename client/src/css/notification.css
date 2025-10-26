@@ -32,7 +32,6 @@
 
 .peerfusion-notification-title {
   color: #2d5a27;
-  font-size: 2rem;
   font-weight: 700;
   margin: 0;
   background: linear-gradient(135deg, #2d5a27 0%, #4a7c3a 100%);
@@ -608,9 +607,6 @@
     width: 100%;
   }
   
-  .peerfusion-notification-title {
-    font-size: 1.6rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -619,7 +615,7 @@
   }
   
   .peerfusion-notification-title {
-    font-size: 1.4rem;
+    font-size: 2rem;
   }
   
   .peerfusion-header-avatar {

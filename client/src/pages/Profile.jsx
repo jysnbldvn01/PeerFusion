@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import '../css/profile.css';
 
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+  </svg>
+);
+
 const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -73,8 +79,8 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
   const handleClose = () => {
     setPasswordForm({
       currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+        newPassword: '',
+        confirmPassword: ''
     });
     setPasswordErrors({});
     onClose();
@@ -86,7 +92,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
     <div className="peerfusion-modal-overlay" onClick={handleClose}>
       <div className="peerfusion-modal-content peerfusion-password-modal" onClick={(e) => e.stopPropagation()}>
         <button className="peerfusion-close-modal" onClick={handleClose}>
-          <span className="peerfusion-close-icon"></span>
+          <CloseIcon />
         </button>
 
         <div className="peerfusion-password-header">
@@ -186,7 +192,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
 };
 
 // Settings Dropdown Component
-const SettingsDropdown = ({ setEditMode, editMode, setViewAs, setShowChangePassword, profile, form, selectedSubjects, setSelectedSubjects, availability, handleSave }) => {
+const SettingsDropdown = ({ setEditMode, editMode, setViewAs, setShowChangePassword, profile, form, selectedSubjects, setSelectedSubjects, availability, handleSave, resetForm }) => {
   const [showSettings, setShowSettings] = useState(false);
 
   // Close settings dropdown when clicking outside
@@ -259,14 +265,9 @@ const SettingsDropdown = ({ setEditMode, editMode, setViewAs, setShowChangePassw
               <button 
                 className="peerfusion-settings-item"
                 onClick={() => {
+                  resetForm();
                   setEditMode(false);
                   setShowSettings(false);
-                  // Reset form to original profile data
-                  if (profile) {
-                    setEditMode(prev => !prev);
-                    const initialSubjects = profile.subject ? profile.subject.split(',') : [];
-                    setSelectedSubjects(initialSubjects);
-                  }
                 }}
               >
                 <span className="peerfusion-cancel-icon"></span>
@@ -440,7 +441,7 @@ const AvailabilityEditor = ({ availability, onUpdate }) => {
                       className="peerfusion-remove-time-btn"
                       title="Remove time slot"
                     >
-                      <span className="peerfusion-remove-icon"></span>
+                      <CloseIcon />
                     </button>
                   )}
                 </div>
@@ -494,6 +495,51 @@ const Profile = () => {
   ];
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  // Function to reset form to original profile data
+  const resetForm = () => {
+    if (profile) {
+      setForm({
+        username: profile.username || '',
+        bio: profile.bio || '',
+        birthday: profile.birthday || '',
+        gender: profile.gender || '',
+        social_links: profile.social_links || '',
+        contact_number: profile.contact_number || '',
+        role: profile.role || 'Skill Learner',
+        year_level: profile.year_level || ''
+      });
+      
+      const initialSubjects = profile.subject ? profile.subject.split(',') : [];
+      setSelectedSubjects(initialSubjects);
+      
+      // Reset availability
+      if (profile.availability) {
+        try {
+          let parsedAvailability = [];
+          if (typeof profile.availability === 'string') {
+            parsedAvailability = JSON.parse(profile.availability);
+          } else {
+            parsedAvailability = profile.availability;
+          }
+          setAvailability(parsedAvailability);
+        } catch (err) {
+          console.error('Error parsing availability:', err);
+          setAvailability([]);
+        }
+      } else {
+        setAvailability([]);
+      }
+      
+      // Reset avatar preview
+      if (profile.avatar) {
+        setAvatarPreview(`http://localhost:5000/uploads/${profile.avatar}`);
+      } else {
+        setAvatarPreview('');
+      }
+      setAvatarFile(null);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -737,6 +783,7 @@ const Profile = () => {
             setSelectedSubjects={setSelectedSubjects}
             availability={availability}
             handleSave={handleSave}
+            resetForm={resetForm}
           />
         </div>
       </div>
@@ -880,7 +927,7 @@ const Profile = () => {
                             <span key={i} className="peerfusion-subject-tag">
                               {subject}
                               <button onClick={() => removeSubject(subject)} className="peerfusion-remove-subject">
-                                <span className="peerfusion-remove-icon"></span>
+                                <CloseIcon />
                               </button>
                             </span>
                           ))}
@@ -1036,7 +1083,7 @@ const Profile = () => {
         <div className="peerfusion-modal-overlay" onClick={() => setViewAs(false)}>
           <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="peerfusion-close-modal" onClick={() => setViewAs(false)}>
-              <span className="peerfusion-close-icon"></span>
+              <CloseIcon />
             </button>
 
             <div className="peerfusion-modal-avatar-container">

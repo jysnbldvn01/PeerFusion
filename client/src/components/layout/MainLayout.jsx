@@ -2,7 +2,9 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import NavigationBar from './NavigationBar';
 import { AuthContext } from '../../context/AuthContext';
+import FloatingChatToggle from '../chat/FloatingChatToggle';
 import '../../css/layout.css';
+import '../../css/floatingchattoggle.css';
 
 function MainLayout() {
   const { user } = useContext(AuthContext);
@@ -33,6 +35,9 @@ function MainLayout() {
           <Outlet />
         </main>
       </div>
+      
+      {/* Floating Chat Toggle - Only show for logged-in users */}
+      {user && <FloatingChatToggle />}
     </div>
   );
 }

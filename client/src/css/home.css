@@ -589,7 +589,7 @@
   padding: 1rem 0;
 }
 
-/* Feedback Styles */
+/* Enhanced Feedback Styles */
 .peerfusion-feedback-list {
   max-height: 300px;
   overflow-y: auto;
@@ -613,7 +613,7 @@
 .peerfusion-feedback-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
   margin-bottom: 0.8rem;
 }
 
@@ -623,14 +623,52 @@
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e8efe5;
+  flex-shrink: 0;
+}
+
+.peerfusion-feedback-user-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.peerfusion-feedback-user-name {
+  font-weight: 600;
+  color: #2d5a27;
+  margin: 0;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peerfusion-feedback-rating-container {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.3rem;
+  flex-wrap: wrap;
 }
 
 .peerfusion-feedback-rating {
   color: #f39c12;
-  margin: 0.5rem 0;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.peerfusion-recommended-indicator {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .peerfusion-feedback-message {
@@ -638,6 +676,7 @@
   color: #5a7c55;
   line-height: 1.5;
   font-size: 0.9rem;
+  word-wrap: break-word;
 }
 
 .peerfusion-feedback-date {
@@ -754,7 +793,15 @@
   display: none;
 }
 
-/* Responsive Design */
+/* Average Rating in Modal */
+.peerfusion-average-rating {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+/* Responsive Design for Feedback Section */
 @media (max-width: 768px) {
   .peerfusion-header-section {
     flex-direction: column;
@@ -792,6 +839,33 @@
     padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
   }
+
+  /* Responsive Feedback Styles */
+  .peerfusion-feedback-header {
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .peerfusion-feedback-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .peerfusion-feedback-user-info {
+    min-width: 150px;
+  }
+
+  .peerfusion-feedback-rating-container {
+    gap: 0.5rem;
+  }
+
+  .peerfusion-feedback-item {
+    padding: 1rem;
+  }
+
+  .peerfusion-feedback-message {
+    font-size: 0.85rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -814,4 +888,48 @@
   .peerfusion-modal-section {
     margin-bottom: 1.5rem;
   }
+
+  /* Mobile Feedback Styles */
+  .peerfusion-feedback-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+
+  .peerfusion-feedback-user-info {
+    width: 100%;
+  }
+
+  .peerfusion-feedback-rating-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .peerfusion-feedback-item {
+    padding: 0.8rem;
+  }
+
+  .peerfusion-view-more-btn, .peerfusion-see-more-btn {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Scrollbar Styling for Feedback List */
+.peerfusion-feedback-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.peerfusion-feedback-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.peerfusion-feedback-list::-webkit-scrollbar-thumb {
+  background: #4a7c3a;
+  border-radius: 10px;
+}
+
+.peerfusion-feedback-list::-webkit-scrollbar-thumb:hover {
+  background: #2d5a27;
 }

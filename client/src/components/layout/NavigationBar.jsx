@@ -16,7 +16,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
   const fetchNotificationCount = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      setNotificationCount(0); // Ensure it's 0 if no token
+      setNotificationCount(0); 
       return;
     }
   
@@ -24,11 +24,10 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
       const res = await axios.get('http://localhost:5000/api/profile/notifications/unread-count', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Make sure we're setting the actual count from response
       setNotificationCount(res.data.count || 0);
     } catch (err) {
       console.error('Failed to fetch notification count:', err);
-      setNotificationCount(0); // Reset to 0 on error
+      setNotificationCount(0);
     }
   };
 
@@ -41,7 +40,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     handleResize();
     window.addEventListener('resize', handleResize);
     
-    // Fetch notification count after a short delay to ensure token is available
     const timer = setTimeout(() => {
       fetchNotificationCount();
     }, 100);
@@ -69,25 +67,24 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     navigate('/login');
   };
 
-  // Full refresh only for chat (Firebase issue)
   const handleChatNavigation = (e) => {
     e.preventDefault();
     window.location.href = '/chat';
   };
 
   const handleMobileToggle = () => {
-    onToggle(); // Toggle mobile menu
+    onToggle();
   };
 
   const handleDesktopToggle = () => {
     if (!isMobile) {
-      onToggle(); // Only toggle on desktop
+      onToggle();
     }
   };
 
   const handleNavClick = () => {
     if (isMobile) {
-      onToggle(); // Close mobile menu when item is clicked
+      onToggle();
     }
   };
 
@@ -149,7 +146,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
               <span className="peerfusion-nav-label">Home</span>
             </Link>
             
-            {/* Chat with full refresh */}
             <a 
               href="/chat" 
               className={`peerfusion-nav-item ${isActive('/chat') ? 'active' : ''}`}
@@ -192,14 +188,14 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
             </Link>
           </div>
 
-          {/* Logout Section */}
+          {/* Logout Section - Smaller button */}
           <div className="peerfusion-nav-footer">
             <button 
               onClick={handleLogout} 
               className="peerfusion-nav-logout-btn"
             >
-              <FiLogOut className="peerfusion-nav-icon" />
-              <span className="peerfusion-nav-label">Logout</span>
+              <FiLogOut className="peerfusion-nav-logout-icon" />
+              {!isCollapsed && <span className="peerfusion-nav-logout-label">Logout</span>}
             </button>
           </div>
         </div>
