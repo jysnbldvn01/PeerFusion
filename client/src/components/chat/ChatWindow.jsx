@@ -70,6 +70,15 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [sending, setSending] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingDate, setMeetingDate] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null); // { type: 'message'|'user', message?: obj }
+  const [reportReason, setReportReason] = useState("");
+  const [reportOffense, setReportOffense] = useState('Harassment');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
+  const [menuMessageId, setMenuMessageId] = useState(null);
+  const [menuAbove, setMenuAbove] = useState(false);
+  const menuBtnRefs = useRef({});
   const scrollRef = useRef();
   const firstLoad = useRef(true);
   const enableTimerRef = useRef(null);
@@ -85,6 +94,62 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
     const UPLOADS_BASE = API_BASE.replace(/\/api$/, "") + "/uploads/";
     return `${UPLOADS_BASE}${file}`;
+  };
+
+  const openReportMessage = (message) => {
+    setReportTarget({ type: 'message', message });
+    setReportReason("");
+    setReportOffense('Harassment');
+    setShowReportModal(true);
+  };
+
+  // Reporting user moved to ChatPage right sidebar
+
+  const handleSubmitReport = async () => {
+    if (!otherUser?.id || !reportTarget) return;
+    try {
+      setReportSubmitting(true);
+      const token = localStorage.getItem('token');
+      // Build human-readable message preview
+      let messagePreview = '';
+      const msg = reportTarget.message || {};
+      if (msg.fileType === 'image') {
+        messagePreview = '[Image]';
+      } else if (msg.fileType === 'pdf' || msg.fileType === 'doc') {
+        messagePreview = `${(msg.fileType || '').toUpperCase()} File: ${msg.fileName || 'File'}`;
+      } else {
+        messagePreview = (msg.content || '').toString();
+      }
+      const description = `Message: "${messagePreview}", Reason: ${reportReason}`;
+      const payload = {
+        reported_user_id: otherUser.id,
+        report_type: reportOffense,
+        description
+      };
+      const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+      const res = await fetch(`${API_BASE}/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data?.success) {
+        alert('Report submitted successfully.');
+        setShowReportModal(false);
+        setReportTarget(null);
+        setReportReason("");
+      } else {
+        alert(data?.error || 'Failed to submit report');
+      }
+    } catch (e) {
+      console.error('Report submission error:', e);
+      alert('Error submitting report.');
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   // Load other users' profiles to resolve avatars by ID (avatars are stored on server)
@@ -593,6 +658,80 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
               <BackIcon />
             </button>
           )}
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="peerfusion-modal-overlay" onClick={() => setShowReportModal(false)}>
+          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="peerfusion-modal-header">
+              <h3 className="peerfusion-modal-title">
+                {reportTarget?.type === 'message' ? 'Report Message' : 'Report User'}
+              </h3>
+              <button className="peerfusion-close-modal" onClick={() => setShowReportModal(false)}>✕</button>
+            </div>
+            <div className="peerfusion-modal-body">
+              {reportTarget?.type === 'message' && (
+                <div className="peerfusion-form-group">
+                  <label>Message Preview</label>
+                  {reportTarget?.message?.fileType === 'image' && reportTarget?.message?.content ? (
+                    <div className="peerfusion-form-input" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#000' }}>
+                      <img src={reportTarget.message.content} alt="Reported image" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 6 }} />
+                    </div>
+                  ) : (reportTarget?.message?.fileType === 'pdf' || reportTarget?.message?.fileType === 'doc') ? (
+                    <div className="peerfusion-form-input" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#000' }}>
+                      <span style={{ fontWeight: 600 }}>{reportTarget?.message?.fileName || 'File'}</span>
+                      <span style={{ color: '#666' }}>({(reportTarget?.message?.fileType || '').toUpperCase()})</span>
+                    </div>
+                  ) : (
+                    <div className="peerfusion-form-input" style={{whiteSpace:'pre-wrap', color: '#000'}}>
+                      {reportTarget?.message?.content || '(no text content)'}
+                    </div>
+                  )}
+                </div>
+              )}
+              {reportTarget?.type === 'message' && (
+                <div className="peerfusion-form-group">
+                  <label>Report Type</label>
+                  <select
+                    className="peerfusion-form-input"
+                    value={reportOffense}
+                    onChange={(e) => setReportOffense(e.target.value)}
+                  >
+                    <option>Harassment</option>
+                    <option>Hate Speech</option>
+                    <option>Spam</option>
+                    <option>Scam or Fraud</option>
+                    <option>Sexual Content</option>
+                    <option>Violence or Threats</option>
+                    <option>Self-harm</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              )}
+              <div className="peerfusion-form-group">
+                <label>Reason</label>
+                <textarea
+                  className="peerfusion-form-input"
+                  placeholder="Describe why you are reporting this"
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  rows={4}
+                />
+              </div>
+              <div className="peerfusion-modal-actions">
+                <button
+                  onClick={handleSubmitReport}
+                  className="peerfusion-primary-btn"
+                  disabled={reportSubmitting || !otherUser?.id || !reportTarget}
+                >
+                  {reportSubmitting ? 'Submitting...' : 'Submit Report'}
+                </button>
+                <button onClick={() => setShowReportModal(false)} className="peerfusion-secondary-btn">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
           
           {otherUser?.avatar ? (
             <img
@@ -731,7 +870,12 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                 })();
 
                 return (
-                  <div key={m.id} className={`peerfusion-chat-row ${isMeGroup ? "sent" : "received"}`}>
+                  <div
+                    key={m.id}
+                    className={`peerfusion-chat-row ${isMeGroup ? "sent" : "received"}`}
+                    onMouseEnter={() => setHoveredMessageId(m.id)}
+                    onMouseLeave={() => setHoveredMessageId((prev) => (prev === m.id ? null : prev))}
+                  >
                     {!isMeGroup ? (
                       showAvatar ? (
                         <img src={otherUser.avatar} alt={otherUser.username} className="peerfusion-message-avatar" />
@@ -788,7 +932,73 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                         {timestamp}{" "}
                         {sentByMe ? (lastMessageInAll ? (isSeenByOther(m) ? "✓✓" : "✓") : "") : ""}
                       </span>
+                      {/* menu moved outside bubble */}
                     </div>
+
+                    {/* Three-dots menu next to bubble (only for received messages) */}
+                    {!sentByMe && (
+                      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: 6 }}>
+                        <button
+                          className="peerfusion-message-menu-btn"
+                          title="More"
+                          aria-label="Message actions"
+                          ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
+                          onClick={() => {
+                            const next = menuMessageId === m.id ? null : m.id;
+                            if (next) {
+                              const btn = menuBtnRefs.current[m.id];
+                              try {
+                                const rect = btn?.getBoundingClientRect();
+                                const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
+                                setMenuAbove(spaceBelow < 120);
+                              } catch (_) {
+                                setMenuAbove(false);
+                              }
+                            }
+                            setMenuMessageId(next);
+                          }}
+                          style={{
+                            display: (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none',
+                            padding: '1px 8px',
+                            border: 'none',
+                            background: 'transparent',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            lineHeight: 5,
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          …
+                        </button>
+                        {menuMessageId === m.id && (
+                          <div
+                            className="peerfusion-message-menu"
+                            style={{ 
+                              position: 'absolute', 
+                              right: 0, 
+                              top: menuAbove ? 'auto' : 'calc(100% + 6px)',
+                              bottom: menuAbove ? 'calc(100% + 6px)' : 'auto',
+                              background: '#fff', 
+                              border: '1px solid #ddd', 
+                              borderRadius: '6px', 
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.08)', 
+                              zIndex: 10,
+                              minWidth: '160px',
+                              maxWidth: '260px'
+                            }}
+                          >
+                            <button
+                              className="peerfusion-message-menu-item"
+                              onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
+                              style={{ padding: '10px 10px', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            >
+                              Report message
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {isMeGroup ? <div className="peerfusion-avatar-space" /> : null}
                   </div>
@@ -830,6 +1040,8 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         >
           <AttachmentIcon />
         </button>
+
+        {/* Report user moved to right sidebar in ChatPage */}
 
         {/* Message Text Input */}
         <input

@@ -76,16 +76,45 @@ const FloatingChatToggle = () => {
   const [fileItems, setFileItems] = useState([]);
   const [conversationUnreadCounts, setConversationUnreadCounts] = useState({});
   const [notifications, setNotifications] = useState([]);
-  
+  const [profilesById, setProfilesById] = useState({});
+
   const chatRef = useRef(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  
+
   // Track already notified message IDs to prevent duplicates
   const notifiedMessageIds = useRef(new Set());
 
   // Disable toggle when on chat page
   const isChatPage = location.pathname === '/chat';
+
+  // Build absolute avatar URL from filename or absolute URL
+  const ensureAvatarUrl = (avatar) => {
+    if (!avatar || typeof avatar !== 'string') return null;
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+    const file = avatar.replace(/^\/+/, '');
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    return `${UPLOADS_BASE}${file}`;
+  };
+
+  // Load other user profiles (to get avatar filenames stored on server)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((list) => {
+        const map = {};
+        (list || []).forEach((u) => {
+          const id = u?.id || u?.user_id;
+          if (id) map[String(id)] = u;
+        });
+        setProfilesById(map);
+      })
+      .catch(() => {});
+  }, [location.pathname]);
 
   // Real-time unread count calculation
   useEffect(() => {
@@ -103,6 +132,8 @@ const FloatingChatToggle = () => {
         const data = doc.data();
         const otherId = data.participants.find((p) => Number(p) !== Number(user.user_id));
         const otherUser = data.userInfo?.[String(otherId)] || {};
+        const profile = profilesById[String(otherId)] || {};
+        const avatarFilename = profile.avatar || otherUser.avatar || '';
 
         return {
           id: doc.id,
@@ -110,7 +141,7 @@ const FloatingChatToggle = () => {
           otherUser: {
             id: otherId,
             username: otherUser.username || `User ${otherId}`,
-            avatar: otherUser.avatar || "/default-avatar.png",
+            avatar: ensureAvatarUrl(avatarFilename) || null,
           },
           lastMessageTime: data.lastMessageTime?.toDate?.() || new Date(),
         };
@@ -120,7 +151,7 @@ const FloatingChatToggle = () => {
     });
 
     return () => unsubscribeConversations();
-  }, [user?.user_id]);
+  }, [user?.user_id, profilesById]);
 
   // Real-time unread message tracking and notification system
   useEffect(() => {
@@ -199,7 +230,7 @@ const FloatingChatToggle = () => {
     const newNotification = {
       id: notificationId,
       senderName: message.senderName || conversation.otherUser.username,
-      senderAvatar: message.senderAvatar || conversation.otherUser.avatar,
+      senderAvatar: ensureAvatarUrl(message.senderAvatar || conversation.otherUser.avatar) || undefined,
       message: message.content,
       conversationId: conversation.id,
       conversation: conversation,
@@ -620,7 +651,7 @@ const FloatingChatToggle = () => {
                 </button>
                 <div className="peerfusion-floating-chat-partner">
                   <img 
-                    src={activeConversation?.otherUser?.avatar} 
+                    src={ensureAvatarUrl(activeConversation?.otherUser?.avatar) || '/default-avatar.png'} 
                     alt={activeConversation?.otherUser?.username}
                     className="peerfusion-floating-avatar"
                     onError={(e) => {
@@ -697,7 +728,7 @@ const FloatingChatToggle = () => {
                       >
                         <div className="peerfusion-floating-avatar-container">
                           <img
-                            src={conversation.otherUser.avatar}
+                            src={ensureAvatarUrl(conversation.otherUser.avatar) || '/default-avatar.png'}
                             alt={conversation.otherUser.username}
                             className="peerfusion-floating-avatar"
                             onError={(e) => {
@@ -813,7 +844,7 @@ const FloatingChatToggle = () => {
               <div className="peerfusion-floating-info-panel">
                 <div className="peerfusion-user-info-section">
                   <img
-                    src={activeConversation?.otherUser?.avatar}
+                    src={ensureAvatarUrl(activeConversation?.otherUser?.avatar) || '/default-avatar.png'}
                     alt={activeConversation?.otherUser?.username}
                     className="peerfusion-floating-info-avatar"
                     onError={(e) => {

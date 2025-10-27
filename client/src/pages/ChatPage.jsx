@@ -84,6 +84,10 @@ export default function ChatPage() {
   const [showFilesModal, setShowFilesModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingDate, setMeetingDate] = useState("");
+  const [showReportUserModal, setShowReportUserModal] = useState(false);
+  const [reportUserReason, setReportUserReason] = useState("");
+  const [reportUserSubmitting, setReportUserSubmitting] = useState(false);
+  const [reportUserOffense, setReportUserOffense] = useState('Harassment');
 
   // Media/files list
   const [mediaItems, setMediaItems] = useState([]);
@@ -358,6 +362,43 @@ export default function ChatPage() {
   const closeMediaModal = () => setShowMediaModal(false);
   const closeFilesModal = () => setShowFilesModal(false);
 
+  const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+  const handleReportUser = async () => {
+    if (!activeConversation?.otherUser?.id) return;
+    try {
+      setReportUserSubmitting(true);
+      const token = localStorage.getItem('token');
+      const payload = {
+        reported_user_id: activeConversation.otherUser.id,
+        report_type: reportUserOffense,
+        description: reportUserReason
+      };
+      const res = await fetch(`${API}/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data?.success) {
+        alert('Report submitted successfully.');
+        setShowReportUserModal(false);
+        setReportUserReason("");
+        setReportUserOffense('Harassment');
+      } else {
+        alert(data?.error || 'Failed to submit report');
+      }
+    } catch (e) {
+      console.error('Report user error:', e);
+      alert('Error submitting report.');
+    } finally {
+      setReportUserSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="peerfusion-chat-loading">
@@ -406,6 +447,65 @@ export default function ChatPage() {
             </div>
           )
         )}
+
+      {/* Report User Modal */}
+      {showReportUserModal && activeConversation && (
+        <div className="peerfusion-modal-overlay" onClick={() => setShowReportUserModal(false)}>
+          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="peerfusion-modal-header">
+              <h3 className="peerfusion-modal-title">Report User</h3>
+              <button className="peerfusion-close-modal" onClick={() => setShowReportUserModal(false)}>
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="peerfusion-modal-body">
+              <div className="peerfusion-form-group">
+                <label>Reporting</label>
+                <div className="peerfusion-form-input">
+                  {activeConversation.otherUser?.username || `User ${activeConversation.otherUser?.id}`}
+                </div>
+              </div>
+              <div className="peerfusion-form-group">
+                <label>Report Type</label>
+                <select
+                  className="peerfusion-form-input"
+                  value={reportUserOffense}
+                  onChange={(e) => setReportUserOffense(e.target.value)}
+                >
+                  <option>Harassment</option>
+                  <option>Hate Speech</option>
+                  <option>Spam</option>
+                  <option>Scam or Fraud</option>
+                  <option>Sexual Content</option>
+                  <option>Violence or Threats</option>
+                  <option>Self-harm</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="peerfusion-form-group">
+                <label>Reason</label>
+                <textarea
+                  className="peerfusion-form-input"
+                  placeholder="Describe why you are reporting this user"
+                  value={reportUserReason}
+                  onChange={(e) => setReportUserReason(e.target.value)}
+                  rows={4}
+                />
+              </div>
+              <div className="peerfusion-modal-actions">
+                <button
+                  onClick={handleReportUser}
+                  className="peerfusion-primary-btn"
+                  disabled={reportUserSubmitting}
+                >
+                  {reportUserSubmitting ? 'Submitting...' : 'Submit Report'}
+                </button>
+                <button onClick={() => setShowReportUserModal(false)} className="peerfusion-secondary-btn">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* RIGHT: Conversation Info */}
@@ -448,31 +548,32 @@ export default function ChatPage() {
 
             {/* Quick Actions */}
             <div className="peerfusion-quick-actions">
+            <button
+              onClick={() => setShowMeetingModal(true)}
+              className="peerfusion-action-btn primary"
+            >
+              <CalendarIcon />
+              Schedule Meeting
+            </button>
+            
+            <div className="peerfusion-action-group">
               <button
-                onClick={() => setShowMeetingModal(true)}
-                className="peerfusion-action-btn primary"
+                onClick={openMediaModal}
+                className="peerfusion-action-btn"
               >
-                <CalendarIcon />
-                Schedule Meeting
+                <MediaIcon />
+                Media ({mediaItems.length})
               </button>
-              
-              <div className="peerfusion-action-group">
-                <button
-                  onClick={openMediaModal}
-                  className="peerfusion-action-btn"
-                >
-                  <MediaIcon />
-                  Media ({mediaItems.length})
-                </button>
-                <button
-                  onClick={openFilesModal}
-                  className="peerfusion-action-btn"
-                >
-                  <FileIcon />
-                  Files ({fileItems.length})
-                </button>
-              </div>
+              <button
+                onClick={openFilesModal}
+                className="peerfusion-action-btn"
+              >
+                <FileIcon />
+                Files ({fileItems.length})
+              </button>
             </div>
+
+          </div>
 
             {/* Search in Conversation */}
             <div className="peerfusion-search-section">
@@ -487,6 +588,17 @@ export default function ChatPage() {
                 onChange={(e) => setMessageSearch(e.target.value)}
                 className="peerfusion-search-conversation-input"
               />
+            </div>
+
+            {/* Report User Action (moved below search) */}
+            <div className="peerfusion-action-group" style={{ marginTop: '12px' }}>
+              <button
+                onClick={() => setShowReportUserModal(true)}
+                className="peerfusion-action-btn danger"
+                title="Report this user"
+              >
+                ⚑ Report User
+              </button>
             </div>
 
             {/* Shared Media Preview */}
