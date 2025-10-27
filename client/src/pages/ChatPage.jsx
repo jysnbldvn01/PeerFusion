@@ -65,6 +65,16 @@ export default function ChatPage() {
   const [activeConversation, setActiveConversation] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // Ensure avatar is an absolute URL; if it's a filename, assume it's served from /uploads
+  const ensureAvatarUrl = (avatar) => {
+    if (!avatar || typeof avatar !== 'string') return null;
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+    const file = avatar.replace(/^\/+/, '');
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    return `${UPLOADS_BASE}${file}`;
+  };
+
   // Search states
   const [conversationSearch, setConversationSearch] = useState("");
   const [messageSearch, setMessageSearch] = useState("");
@@ -421,7 +431,7 @@ export default function ChatPage() {
             <div className="peerfusion-user-info-section">
               {activeConversation.otherUser?.avatar ? (
                 <img
-                  src={activeConversation.otherUser.avatar}
+                  src={ensureAvatarUrl(activeConversation.otherUser.avatar)}
                   alt={activeConversation.otherUser.username}
                   className="peerfusion-chat-right-avatar"
                 />
@@ -625,7 +635,7 @@ export default function ChatPage() {
                   <div className="peerfusion-participant">
                     {user?.avatar ? (
                       <img 
-                        src={user.avatar} 
+                        src={ensureAvatarUrl(user.avatar)} 
                         alt={user.username} 
                         className="peerfusion-participant-avatar"
                       />
@@ -639,7 +649,7 @@ export default function ChatPage() {
                   <div className="peerfusion-participant">
                     {activeConversation?.otherUser?.avatar ? (
                       <img 
-                        src={activeConversation.otherUser.avatar} 
+                        src={ensureAvatarUrl(activeConversation.otherUser.avatar)} 
                         alt={activeConversation.otherUser.username} 
                         className="peerfusion-participant-avatar"
                       />

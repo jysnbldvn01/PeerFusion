@@ -63,6 +63,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [filteredMessages, setFilteredMessages] = useState([]);
   const [text, setText] = useState("");
   const [otherUser, setOtherUser] = useState(null);
+  const [profilesById, setProfilesById] = useState({});
   const [currentMeeting, setCurrentMeeting] = useState(null);
   const [joinEnabled, setJoinEnabled] = useState(false);
   const [reminderReceived, setReminderReceived] = useState(false);
@@ -75,12 +76,36 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const clearMeetingTimerRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Normalize avatar -> absolute URL
+  // Normalize avatar -> absolute URL, aligned with Home.jsx (uses /uploads from API base)
   const ensureAvatarUrl = (avatar) => {
     if (!avatar) return null;
+    if (typeof avatar !== 'string') return null;
     if (avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
-    return `${window.location.protocol}//${window.location.host}/uploads/${avatar}`;
+    const file = avatar.replace(/^\/+/, "");
+    const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    const UPLOADS_BASE = API_BASE.replace(/\/api$/, "") + "/uploads/";
+    return `${UPLOADS_BASE}${file}`;
   };
+
+  // Load other users' profiles to resolve avatars by ID (avatars are stored on server)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    fetch(`${API_BASE}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(list => {
+        const map = {};
+        (list || []).forEach(u => {
+          if (u && (u.id || u.user_id)) {
+            const id = u.id || u.user_id;
+            map[String(id)] = u;
+          }
+        });
+        setProfilesById(map);
+      })
+      .catch(() => {});
+  }, []);
 
   // Fetch other user info
   useEffect(() => {
@@ -99,10 +124,12 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         const data = convSnap.data();
         const otherId = data.participants?.find((p) => String(p) !== String(currentUser.user_id));
         const info = data.userInfo?.[String(otherId)] || {};
+        const profile = profilesById[String(otherId)] || {};
+        const avatarFilename = profile.avatar || info.avatar || "";
         setOtherUser({
           id: otherId,
-          username: info.username || `User ${otherId}`,
-          avatar: ensureAvatarUrl(info.avatar || ""),
+          username: info.username || profile.username || `User ${otherId}`,
+          avatar: ensureAvatarUrl(avatarFilename || ""),
         });
       } catch (err) {
         console.error("Failed to fetch conversation metadata:", err);
@@ -111,7 +138,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     };
 
     fetchOtherUser();
-  }, [conversationId, currentUser?.user_id]);
+  }, [conversationId, currentUser?.user_id, profilesById]);
 
   // Fetch scheduled meeting (for this conversation)
   useEffect(() => {
@@ -858,7 +885,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                   <div className="peerfusion-participant">
                     {currentUser?.avatar ? (
                       <img 
-                        src={currentUser.avatar} 
+                        src={ensureAvatarUrl(currentUser.avatar)} 
                         alt={currentUser.username} 
                         className="peerfusion-participant-avatar"
                       />

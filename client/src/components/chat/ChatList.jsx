@@ -27,6 +27,41 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
   const [filteredConversations, setFilteredConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const [profilesById, setProfilesById] = useState({});
+
+  // Ensure avatar is an absolute URL; if it's a filename, assume it's served from /uploads
+  const ensureAvatarUrl = (avatar) => {
+    if (!avatar) return null;
+    if (typeof avatar !== "string") return null;
+    if (avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
+    // strip any leading slashes to avoid double slashes
+    const file = avatar.replace(/^\/+/, "");
+    const API = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    const UPLOADS_BASE = API.replace(/\/api$/, "") + "/uploads/";
+    return `${UPLOADS_BASE}${file}`;
+  };
+
+  // Load all other user profiles to map avatars by user ID
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    fetch(`${API}/profile/others`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(list => {
+        const map = {};
+        (list || []).forEach(u => {
+          if (u && (u.id || u.user_id)) {
+            const id = u.id || u.user_id;
+            map[String(id)] = u;
+          }
+        });
+        setProfilesById(map);
+      })
+      .catch(() => {});
+  }, [location.pathname]);
 
   useEffect(() => {
     const userId = currentUser?.user_id || currentUser?.id;
@@ -54,14 +89,16 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
             (p) => Number(p) !== Number(userId)
           );
           const otherUser = data.userInfo?.[String(otherId)] || {};
+          const profile = profilesById[String(otherId)] || {};
+          const avatarFilename = profile.avatar || otherUser.avatar || "";
 
           return {
             id: doc.id,
             ...data,
             otherUser: {
               id: otherId,
-              username: otherUser.username || `User ${otherId}`,
-              avatar: otherUser.avatar || "/default-avatar.png",
+              username: otherUser.username || profile.username || `User ${otherId}`,
+              avatar: ensureAvatarUrl(avatarFilename || ""),
             },
             lastMessageTime: data.lastMessageTime?.toDate?.() || new Date(),
             hasUnread: unreadCounts[doc.id] > 0,
@@ -80,7 +117,7 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
     );
 
     return () => unsubscribe();
-  }, [currentUser, location.pathname, unreadCounts]);
+  }, [currentUser, location.pathname, unreadCounts, profilesById]);
 
   // Filter conversations based on search query
   useEffect(() => {
@@ -200,14 +237,34 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
               onClick={() => handleConversationSelect(c)}
             >
               <div className="peerfusion-avatar-container-chat">
-                <img
-                  src={c.otherUser.avatar}
-                  alt={c.otherUser.username}
+                {c.otherUser.avatar ? (
+                  <img
+                    src={c.otherUser.avatar}
+                    alt={c.otherUser.username}
+                    className="peerfusion-peer-avatar"
+                    onError={(e) => {
+                      // Hide broken image and let placeholder show
+                      e.currentTarget.style.display = 'none';
+                      const placeholder = e.currentTarget.nextSibling;
+                      if (placeholder) placeholder.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                {/* Placeholder with initials if no avatar */}
+                <div
                   className="peerfusion-peer-avatar"
-                  onError={(e) => {
-                    e.target.src = "/default-avatar.png";
+                  style={{
+                    display: c.otherUser.avatar ? 'none' : 'flex',
+                    background: '#e8efe5',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#666',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
                   }}
-                />
+                >
+                  {c.otherUser.username?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
                 {c.hasUnread && (
                   <div className="peerfusion-unread-indicator">
                     {c.unreadCount > 0 && c.unreadCount < 10 ? c.unreadCount : ""}
