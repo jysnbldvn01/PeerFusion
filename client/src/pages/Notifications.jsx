@@ -12,6 +12,7 @@ const Notification = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState(null);
   const menuRefs = useRef({});
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -27,6 +28,7 @@ const Notification = () => {
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
     }
   }, [activeTab]);
 
@@ -40,6 +42,7 @@ const Notification = () => {
         setProfile(res.data);
       } catch (err) {
         console.error('Failed to fetch profile:', err);
+        window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch profile');
       }
     };
 
@@ -76,6 +79,7 @@ const Notification = () => {
       }
     } catch (err) {
       console.error('Failed to fetch feedback details:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch feedback details');
     }
   };
 
@@ -95,6 +99,7 @@ const Notification = () => {
       setOpenMenuId(null);
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as read');
     }
   };
 
@@ -114,6 +119,7 @@ const Notification = () => {
       setOpenMenuId(null);
     } catch (err) {
       console.error('Failed to mark notification as unread:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
     }
   };
 
@@ -133,6 +139,7 @@ const Notification = () => {
       setOpenMenuId(null);
     } catch (err) {
       console.error('Failed to archive notification:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to archive notification');
     }
   };
 
@@ -152,6 +159,35 @@ const Notification = () => {
       setOpenMenuId(null);
     } catch (err) {
       console.error('Failed to unarchive notification:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to unarchive notification');
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!notifications || notifications.length === 0) return;
+    const token = localStorage.getItem('token');
+    const unread = notifications.filter(n => !n.is_read);
+    if (unread.length === 0) {
+      window.pfToast?.info?.('All notifications are already read');
+      return;
+    }
+    try {
+      await Promise.all(
+        unread.map(n =>
+          axios.put(
+            `http://localhost:5000/api/profile/notifications/${n.id}/read`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+        )
+      );
+      await fetchNotifications();
+      window.dispatchEvent(new Event('notificationsUpdated'));
+      window.pfToast?.success?.('All notifications marked as read');
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
     }
   };
 
@@ -170,6 +206,7 @@ const Notification = () => {
       setOpenMenuId(null);
     } catch (err) {
       console.error('Failed to delete notification:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to delete notification');
     }
   };
 
@@ -214,13 +251,15 @@ const Notification = () => {
           prev.filter((n) => n.id !== notification.id)
         );
         closeModal();
+        window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
       } else {
         fetchNotifications();
+        window.pfToast?.info?.('Session accepted');
       }
     } catch (err) {
       console.error("❌ Failed to accept session request:", err);
-      alert("Error accepting session request");
+      window.pfToast?.error?.(err?.response?.data?.message || 'Error accepting session request');
     }
   };
 
@@ -239,9 +278,10 @@ const Notification = () => {
         prev.filter((n) => n.id !== notification.id)
       );
       closeModal();
+      window.pfToast?.success?.('Session request declined');
     } catch (err) {
       console.error("❌ Failed to reject session request:", err);
-      alert("Error rejecting session request");
+      window.pfToast?.error?.(err?.response?.data?.message || 'Error rejecting session request');
     }
   };
 
@@ -310,6 +350,15 @@ const Notification = () => {
           onClick={() => setActiveTab('archived')}
         >
           Archived
+        </button>
+        <button
+          className={`peerfusion-notification-tab peerfusion-mark-all-btn`}
+          onClick={markAllAsRead}
+          disabled={unreadCount === 0}
+          title={unreadCount === 0 ? 'No unread notifications' : 'Mark all as read'}
+          style={{ opacity: unreadCount === 0 ? 0.6 : 1, cursor: unreadCount === 0 ? 'not-allowed' : 'pointer' }}
+        >
+          Mark all as read {unreadCount > 0 ? `(${unreadCount})` : ''}
         </button>
       </div>
 
@@ -421,13 +470,10 @@ const Notification = () => {
                     )}
                     <button
                       className="peerfusion-notification-menu-item delete"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        if (
-                          window.confirm(
-                            'Are you sure you want to delete this notification?'
-                          )
-                        ) {
+                        const ok = await window.pfConfirm?.('Are you sure you want to delete this notification?');
+                        if (ok) {
                           deleteNotification(notification.id, e);
                         }
                       }}

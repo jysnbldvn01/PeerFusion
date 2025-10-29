@@ -150,9 +150,8 @@ export default function Settings() {
   };
 
   const handleDeleteModerator = async (moderatorId) => {
-    if (!window.confirm('Are you sure you want to permanently delete this moderator? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await window.pfConfirm?.('Are you sure you want to permanently delete this moderator? This action cannot be undone.');
+    if (!ok) return;
 
     const token = localStorage.getItem('token');
     try {
@@ -161,10 +160,13 @@ export default function Settings() {
       });
 
       setMessage('Moderator permanently deleted successfully');
+      window.pfToast?.success?.('Moderator permanently deleted successfully');
       fetchModerators();
     } catch (err) {
       console.error('Error deleting moderator:', err);
-      setError(err.response?.data?.error || 'Failed to delete moderator');
+      const msg = err.response?.data?.error || 'Failed to delete moderator';
+      setError(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 

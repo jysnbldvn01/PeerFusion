@@ -35,6 +35,7 @@ export default function UserManagement() {
       console.error('Error fetching users:', err);
       const msg = err.response?.data?.message || 'Failed to load users.';
       setError(msg);
+      window.pfToast?.error?.(msg);
     } finally {
       setLoading(false);
     }
@@ -97,9 +98,8 @@ export default function UserManagement() {
 
     try {
       if (bulkAction === 'delete') {
-        if (!window.confirm(`Are you sure you want to delete ${userIds.length} users?`)) {
-          return;
-        }
+        const ok = await (window.pfConfirm?.(`Are you sure you want to delete ${userIds.length} users?`));
+        if (!ok) return;
         
         for (const userId of userIds) {
           await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
@@ -109,7 +109,7 @@ export default function UserManagement() {
         
         setUsers(prevUsers => prevUsers.filter(user => !userIds.includes(user.id)));
         setSelectedUsers(new Set());
-        alert(`${userIds.length} users deleted successfully`);
+        window.pfToast?.success?.(`${userIds.length} users deleted successfully`);
         
       } else if (bulkAction.startsWith('role:')) {
         const role = bulkAction.split(':')[1];
@@ -127,7 +127,7 @@ export default function UserManagement() {
           )
         );
         setSelectedUsers(new Set());
-        alert(`${userIds.length} users updated to ${role}`);
+        window.pfToast?.success?.(`${userIds.length} users updated to ${role}`);
         
       } else if (bulkAction === 'suspend') {
         for (const userId of userIds) {
@@ -143,7 +143,7 @@ export default function UserManagement() {
           )
         );
         setSelectedUsers(new Set());
-        alert(`${userIds.length} users suspended successfully`);
+        window.pfToast?.success?.(`${userIds.length} users suspended successfully`);
         
       } else if (bulkAction === 'activate') {
         for (const userId of userIds) {
@@ -159,21 +159,21 @@ export default function UserManagement() {
           )
         );
         setSelectedUsers(new Set());
-        alert(`${userIds.length} users activated successfully`);
+        window.pfToast?.success?.(`${userIds.length} users activated successfully`);
       }
       
       setBulkAction('');
     } catch (err) {
       console.error('Bulk action error:', err);
       const msg = err.response?.data?.message || 'Failed to perform bulk action.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
   // Single user actions
   const handleEditRole = async (user) => {
     if (!newRole.trim()) {
-      alert('Please select a role');
+      window.pfToast?.info?.('Please select a role');
       return;
     }
 
@@ -191,11 +191,11 @@ export default function UserManagement() {
       );
       setEditingUser(null);
       setNewRole('');
-      alert('User role updated successfully');
+      window.pfToast?.success?.('User role updated successfully');
     } catch (err) {
       console.error('Error updating user:', err);
       const msg = err.response?.data?.message || 'Failed to update user.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
@@ -208,11 +208,11 @@ export default function UserManagement() {
       
       setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
       setDeleteConfirm(null);
-      alert('User permanently deleted successfully');
+      window.pfToast?.success?.('User permanently deleted successfully');
     } catch (err) {
       console.error('Error deleting user:', err);
       const msg = err.response?.data?.error || 'Failed to delete user.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
@@ -232,7 +232,7 @@ export default function UserManagement() {
           )
         );
         setSuspendConfirm(null);
-        alert('User suspended successfully');
+        window.pfToast?.success?.('User suspended successfully');
       } else {
         // Activate user
         await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/reactivate`, 
@@ -246,12 +246,12 @@ export default function UserManagement() {
           )
         );
         setSuspendConfirm(null);
-        alert('User activated successfully');
+        window.pfToast?.success?.('User activated successfully');
       }
     } catch (err) {
       console.error('Error updating user status:', err);
       const msg = err.response?.data?.message || 'Failed to update user status.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 

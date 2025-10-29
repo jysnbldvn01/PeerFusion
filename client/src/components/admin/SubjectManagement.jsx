@@ -45,7 +45,7 @@ const SubjectManagement = () => {
       fetchSubjects();
     } catch (err) {
       console.error('Error adding category:', err);
-      alert(err.response?.data?.error || 'Failed to add category');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to add category');
     }
   };
 
@@ -62,7 +62,7 @@ const SubjectManagement = () => {
       fetchSubjects();
     } catch (err) {
       console.error('Error adding subject:', err);
-      alert(err.response?.data?.error || 'Failed to add subject');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to add subject');
     }
   };
 
@@ -82,12 +82,13 @@ const SubjectManagement = () => {
       fetchSubjects();
     } catch (err) {
       console.error('Error updating category:', err);
-      alert(err.response?.data?.error || 'Failed to update category');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to update category');
     }
   };
 
   const handleDeleteCategory = async (categoryId) => {
-    if (!window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) return;
+    const ok = await window.pfConfirm?.('Are you sure you want to delete this category? This action cannot be undone.');
+    if (!ok) return;
     
     try {
       const token = localStorage.getItem('token');
@@ -97,12 +98,13 @@ const SubjectManagement = () => {
       fetchSubjects();
     } catch (err) {
       console.error('Error deleting category:', err);
-      alert(err.response?.data?.error || 'Failed to delete category');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to delete category');
     }
   };
 
   const handleDeleteSubject = async (subjectId) => {
-    if (!window.confirm('Are you sure you want to delete this subject? This action cannot be undone.')) return;
+    const ok = await window.pfConfirm?.('Are you sure you want to delete this subject? This action cannot be undone.');
+    if (!ok) return;
     
     try {
       const token = localStorage.getItem('token');
@@ -112,7 +114,7 @@ const SubjectManagement = () => {
       fetchSubjects();
     } catch (err) {
       console.error('Error deleting subject:', err);
-      alert(err.response?.data?.error || 'Failed to delete subject');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to delete subject');
     }
   };
 

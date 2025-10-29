@@ -84,6 +84,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const enableTimerRef = useRef(null);
   const clearMeetingTimerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isAuthenticated = !!localStorage.getItem('token');
 
   // Normalize avatar -> absolute URL, aligned with Home.jsx (uses /uploads from API base)
   const ensureAvatarUrl = (avatar) => {
@@ -137,16 +138,16 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       });
       const data = await res.json();
       if (data?.success) {
-        alert('Report submitted successfully.');
+        window.pfToast?.success?.('Report submitted successfully.');
         setShowReportModal(false);
         setReportTarget(null);
         setReportReason("");
       } else {
-        alert(data?.error || 'Failed to submit report');
+        window.pfToast?.error?.(data?.error || 'Failed to submit report');
       }
     } catch (e) {
       console.error('Report submission error:', e);
-      alert('Error submitting report.');
+      window.pfToast?.error?.('Error submitting report.');
     } finally {
       setReportSubmitting(false);
     }
@@ -501,14 +502,14 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
 
       if (file) {
         if (file.size > MAX_FILE_SIZE) {
-          alert("File too large. Maximum allowed size is 5 MB.");
+          window.pfToast?.error?.("File too large. Maximum allowed size is 5 MB.");
           setSending(false);
           return;
         }
 
         const ftype = determineFileType(file);
         if (file.type.startsWith("video/")) {
-          alert("Video files are not allowed.");
+          window.pfToast?.error?.("Video files are not allowed.");
           setSending(false);
           return;
         }
@@ -546,7 +547,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       console.error("Failed to send message:", err);
-      alert("Failed to send message. Try again.");
+      window.pfToast?.error?.("Failed to send message. Try again.");
     } finally {
       setSending(false);
     }
@@ -578,7 +579,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   // Schedule meeting function
   const handleScheduleMeeting = async () => {
     if (!meetingDate || !conversationId || !currentUser || !otherUser) {
-      alert("Please select a date and time for the meeting.");
+      window.pfToast?.info?.("Please select a date and time for the meeting.");
       return;
     }
 
@@ -598,15 +599,15 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       const data = await res.json();
 
       if (data.success) {
-        alert("✅ Meeting scheduled successfully!");
+        window.pfToast?.success?.("Meeting scheduled successfully!");
         setShowMeetingModal(false);
         setMeetingDate("");
       } else {
-        alert("❌ Failed to schedule meeting.");
+        window.pfToast?.error?.("Failed to schedule meeting.");
       }
     } catch (err) {
       console.error("Error scheduling meeting:", err);
-      alert("Error scheduling meeting. Please try again.");
+      window.pfToast?.error?.("Error scheduling meeting. Please try again.");
     }
   };
 
@@ -758,6 +759,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
           <span className="peerfusion-chat-partner-name">
             {otherUser?.username}
           </span>
+          <span className={isAuthenticated ? 'online-indicator' : 'offline-indicator'} />
         </div>
 
         <div className="peerfusion-chat-actions">
