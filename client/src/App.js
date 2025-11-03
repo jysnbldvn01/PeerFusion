@@ -11,10 +11,12 @@ import Profile from './pages/Profile';
 import SetupAccount from './pages/SetupAccount';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
+import UserAppealPage from './components/UserAppealPage';
 
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import Appeal from './pages/Appeal';
 
 // Moderator Pages
 import ModeratorDashboard from './pages/ModeratorDashboard';
@@ -37,6 +39,9 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/appeal" element={<Appeal/>} />
+          <Route path="/user-appeal" element={<UserAppealPage />} />
+
             <Route
               path="/setup-account"
               element={

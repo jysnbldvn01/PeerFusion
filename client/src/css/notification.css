@@ -8,7 +8,7 @@
   min-height: 100vh;
 }
 
-/* Header Section - Profile on hard right */
+/* Header Section */
 .peerfusion-notification-header {
   margin-bottom: 2rem;
   padding: 1rem 0;
@@ -28,7 +28,6 @@
   gap: 2rem;
   flex: 1;
 }
-
 
 .peerfusion-notification-title {
   color: #2d5a27;
@@ -74,7 +73,7 @@
   pointer-events: none;
 }
 
-/* User Avatar in Header - Hard Right */
+/* User Avatar in Header */
 .peerfusion-header-avatar {
   width: 50px;
   height: 50px;
@@ -91,6 +90,7 @@
   gap: 0.75rem;
   margin: 2rem 0;
   padding: 0 0.5rem;
+  align-items: center;
 }
 
 .peerfusion-notification-tab {
@@ -155,6 +155,22 @@
   opacity: 0.8;
 }
 
+/* Important notification styles - RED INDICATOR */
+.peerfusion-notification-important {
+  border-left: 4px solid #ef4444 !important;
+  background: linear-gradient(90deg, #fff5f5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-important.unread {
+  border-left: 4px solid #ef4444 !important;
+  background: linear-gradient(90deg, #fee2e2 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-important.read {
+  border-left: 4px solid #ef4444 !important;
+  background: linear-gradient(90deg, #fff5f5 0%, #ffffff 10%) !important;
+}
+
 /* Notification Content */
 .peerfusion-notification-content {
   flex: 1;
@@ -187,6 +203,12 @@
   flex-shrink: 0;
 }
 
+.peerfusion-team-avatar {
+  background: linear-gradient(135deg, #55df6c 0%, #1e500b 100%);
+  color: white;
+  font-weight: bold;
+}
+
 .peerfusion-notification-details {
   flex: 1;
   min-width: 0;
@@ -202,7 +224,7 @@
 
 .peerfusion-notification-username {
   margin: 0;
-  color: #000000;
+  color: #2d5a27;
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -213,11 +235,15 @@
   margin: 0;
 }
 
+/* Notification message - hide overflow in list view */
 .peerfusion-notification-message {
   color: #5a7c55;
-  line-height: 1.5;
   margin: 0.5rem 0;
   font-size: 0.95rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 /* Notification Badges */
@@ -243,19 +269,22 @@
   box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
 }
 
-.peerfusion-badge-pending {
+.peerfusion-badge-warning {
   background: #fef3c7;
   color: #92400e;
+  border: 1px solid #f59e0b;
 }
 
-.peerfusion-badge-accepted {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.peerfusion-badge-declined {
+.peerfusion-badge-suspension {
   background: #fee2e2;
   color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.peerfusion-badge-ban {
+  background: #1f2937;
+  color: #ffffff;
+  border: 1px solid #111827;
 }
 
 /* Menu System */
@@ -442,7 +471,7 @@
 
 .peerfusion-notification-modal-user h3 {
   margin: 0 0 0.25rem 0;
-  color: #000000;
+  color: #2d5a27;
   font-size: 1.3rem;
   font-weight: 700;
 }
@@ -465,17 +494,14 @@
   font-weight: 600;
 }
 
+/* Show full message in modal */
 .peerfusion-notification-modal-message {
   color: #5a7c55;
   line-height: 1.6;
-  margin-bottom: 1.5rem;
-  padding: 1.2rem;
-  background: #f8faf7;
-  border-radius: 12px;
-  border-left: 4px solid #4a7c3a;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-/* Session Request Actions */
 .peerfusion-notification-session-actions {
   display: flex;
   gap: 1rem;
@@ -575,6 +601,41 @@
   padding: 0 2rem 2rem;
 }
 
+/* Important notice in modal */
+.peerfusion-notification-important-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fef2f2;
+  border-radius: 12px;
+  border-left: 4px solid #ef4444;
+  margin: 1.5rem 0;
+}
+
+.peerfusion-notification-important-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.peerfusion-notification-important-notice p {
+  margin: 0;
+  color: #991b1b;
+  line-height: 1.5;
+}
+
+/* Notification link styling */
+.notification-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.notification-link:hover {
+  color: #2563eb;
+  text-decoration: none;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .peerfusion-notification-container {
@@ -606,7 +667,6 @@
   .peerfusion-notification-search-container {
     width: 100%;
   }
-  
 }
 
 @media (max-width: 480px) {
@@ -621,5 +681,291 @@
   .peerfusion-header-avatar {
     width: 40px;
     height: 40px;
+  }
+}/* Approved notification styles - GREEN INDICATOR */
+.peerfusion-notification-approved {
+  border-left: 4px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-approved.unread {
+  border-left: 4px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #e8efe5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-approved.read {
+  border-left: 4px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%) !important;
+}
+
+/* Rejected notification styles - RED-BROWN INDICATOR */
+.peerfusion-notification-rejected {
+  border-left: 4px solid #8b4513 !important;
+  background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-rejected.unread {
+  border-left: 4px solid #8b4513 !important;
+  background: linear-gradient(90deg, #fae8e5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-rejected.read {
+  border-left: 4px solid #8b4513 !important;
+  background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
+}
+
+/* Accepted notification styles - DARK GREEN INDICATOR */
+.peerfusion-notification-accepted {
+  border-left: 4px solid #2d5a27 !important;
+  background: linear-gradient(90deg, #f0f7ed 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-accepted.unread {
+  border-left: 4px solid #2d5a27 !important;
+  background: linear-gradient(90deg, #e0efe0 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-accepted.read {
+  border-left: 4px solid #2d5a27 !important;
+  background: linear-gradient(90deg, #f0f7ed 0%, #ffffff 10%) !important;
+}
+
+/* Badge styles for approved/rejected/accepted */
+.peerfusion-badge-approved {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
+  border: none;
+}
+
+.peerfusion-badge-rejected {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+  border: none;
+}
+
+.peerfusion-badge-accepted {
+  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.3);
+  border: none;
+}
+
+/* Button styles for accept/reject actions */
+.peerfusion-notification-btn-accept {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-notification-btn-accept:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
+  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
+}
+
+.peerfusion-notification-btn-reject {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+}
+
+.peerfusion-notification-btn-reject:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
+  background: linear-gradient(135deg, #654321, #8b4513);
+}
+
+/* Modal notice styles for approved/rejected */
+.peerfusion-notice-approved {
+  background: #f8faf7;
+  border-left: 4px solid #4a7c3a;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+
+.peerfusion-notice-rejected {
+  background: #fef8f7;
+  border-left: 4px solid #8b4513;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+
+.peerfusion-notice-accepted {
+  background: #f0f7ed;
+  border-left: 4px solid #2d5a27;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+
+.peerfusion-notice-approved p {
+  color: #2d5a27;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.peerfusion-notice-rejected p {
+  color: #654321;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.peerfusion-notice-accepted p {
+  color: #2d5a27;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.peerfusion-notification-important-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+
+/* Mark All Button - Responsive */
+.peerfusion-mark-all-btn {
+  margin-left: auto;
+  padding: 0.7rem 1.5rem;
+  border: 2px solid #e8efe5;
+  border-radius: 25px;
+  background: #ffffff;
+  color: #5a7c55;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(45, 90, 39, 0.08);
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.peerfusion-mark-all-btn:hover {
+  border-color: #4a7c3a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.15);
+}
+
+.peerfusion-mark-all-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.peerfusion-mark-all-btn:disabled:hover {
+  border-color: #e8efe5;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(45, 90, 39, 0.08);
+}
+
+/* Tabs Container - Responsive */
+.peerfusion-notification-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 2rem 0;
+  padding: 0 0.5rem;
+  align-items: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .peerfusion-notification-tabs {
+    gap: 0.5rem;
+  }
+  
+  .peerfusion-mark-all-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    margin-left: auto;
+  }
+  
+  .peerfusion-notification-tab {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Small Mobile Responsive */
+@media (max-width: 480px) {
+  .peerfusion-notification-tabs {
+    gap: 0.4rem;
+  }
+  
+  .peerfusion-mark-all-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .peerfusion-notification-tab {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Very Small Mobile */
+@media (max-width: 360px) {
+  .peerfusion-mark-all-btn {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.75rem;
+  }
+  
+  .peerfusion-notification-tab {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.75rem;
   }
 }

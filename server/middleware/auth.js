@@ -4,9 +4,8 @@ const db = require('../config/db');
 async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   
-  console.log('Auth Header:', authHeader); // Debug log
-  
-  // Check if authorization header exists and has proper format
+  console.log('Auth Header:', authHeader);
+
   if (!authHeader) {
     return res.status(401).json({ error: 'No authorization header provided' });
   }
@@ -18,7 +17,6 @@ async function authenticateToken(req, res, next) {
 
   const token = parts[1];
   
-  // Check if token exists and is not empty
   if (!token || token === 'null' || token === 'undefined' || token.trim() === '') {
     return res.status(401).json({ error: 'No token provided' });
   }
@@ -26,11 +24,13 @@ async function authenticateToken(req, res, next) {
   try {
     console.log('Verifying token:', token.substring(0, 20) + '...');
     
-    // Verify the token first
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Token decoded successfully for user:', decoded.id);
     
-    const [users] = await db.query('SELECT id, status FROM users WHERE id = ?', [decoded.id]);
+    const [users] = await db.query(
+      'SELECT id, status, suspended_until, strike_count FROM users WHERE id = ?', 
+      [decoded.id]
+    );
     
     if (users.length === 0) {
       console.log('User not found in database:', decoded.id);
@@ -39,12 +39,41 @@ async function authenticateToken(req, res, next) {
     
     const user = users[0];
     console.log('User status:', user.status);
+    console.log('User suspended until:', user.suspended_until);
+    console.log('User strike count:', user.strike_count);
     
-    if (user.status === 'inactive') {
-      console.log('User is suspended:', decoded.id);
+    // Check the status enum
+    if (user.status === 'suspended') {
+      // Check if suspension period has ended
+      if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+        const timeLeft = Math.ceil((new Date(user.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
+        return res.status(403).json({ 
+          error: `Your account has been suspended. It will be reactivated in ${timeLeft} days.`,
+          status: 'suspended',
+          suspended_until: user.suspended_until
+        });
+      } else {
+        // Auto-reactivate if suspension period has passed
+        console.log('Auto-reactivating user:', decoded.id);
+        await db.query(
+          'UPDATE users SET status = "active", suspended_until = NULL WHERE id = ?',
+          [decoded.id]
+        );
+      }
+    } else if (user.status === 'banned') {
+      console.log('User is banned:', decoded.id);
       return res.status(403).json({ 
-        error: 'Your account has been suspended. Please contact support.' 
+        error: 'Your account has been permanently banned. Please contact support.',
+        status: 'banned'
       });
+    } else if (user.status === 'warning') {
+      // User can still login but has warnings
+      console.log('User has warnings with strike count:', user.strike_count);
+      // Add warning info to request for potential use
+      req.userWarning = {
+        strike_count: user.strike_count,
+        status: 'warning'
+      };
     }
 
     req.user = decoded;

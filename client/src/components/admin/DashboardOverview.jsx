@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import { saveAs } from 'file-saver';
 import { 
-  FiDownload, 
   FiImage, 
   FiBarChart2,
   FiUsers,
@@ -18,7 +17,10 @@ import {
   FiCheckCircle,
   FiAlertCircle,
   FiClock,
-  FiXCircle
+  FiXCircle,
+  FiBook,
+  FiTrendingUp,
+  FiActivity
 } from 'react-icons/fi';
 
 // Professional color schemes
@@ -39,7 +41,22 @@ const PROFESSIONAL_COLORS = {
   },
   
   // Analytics colors
-  analytics: ['#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6']
+  analytics: ['#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6'],
+  
+  // Severity colors for reports
+  severity: {
+    high: '#EF4444',    // Red
+    medium: '#F59E0B',  // Amber/Yellow
+    low: '#10B981'      // Green
+  },
+  
+  // Appeal status colors
+  appeals: {
+    pending: '#F59E0B',     // Amber/Yellow
+    under_review: '#3B82F6', // Blue
+    approved: '#22C55E',     // Green
+    rejected: '#EF4444'      // Red
+  }
 };
 
 const dashboardStyles = {
@@ -77,11 +94,15 @@ const dashboardStyles = {
     padding: '24px',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     borderLeft: '4px solid #3b82f6',
-    transition: 'all 0.3s ease'
+    transition: 'all 0.3s ease',
+    cursor: 'pointer'
   },
   statCardGreen: { borderLeftColor: '#10b981' },
   statCardYellow: { borderLeftColor: '#f59e0b' },
   statCardPurple: { borderLeftColor: '#8b5cf6' },
+  statCardRed: { borderLeftColor: '#ef4444' },
+  statCardOrange: { borderLeftColor: '#f97316' },
+  statCardIndigo: { borderLeftColor: '#6366f1' },
   statTitle: {
     fontSize: '16px',
     fontWeight: '600',
@@ -234,6 +255,34 @@ const dashboardStyles = {
     width: '12px',
     height: '12px',
     borderRadius: '2px'
+  },
+  miniStatsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '16px',
+    marginBottom: '24px'
+  },
+  miniStatCard: {
+    background: 'white',
+    borderRadius: '8px',
+    padding: '16px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    borderLeft: '3px solid #3b82f6'
+  },
+  miniStatTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#4a5568',
+    marginBottom: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  miniStatValue: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1a202c',
+    margin: 0
   }
 };
 
@@ -281,7 +330,10 @@ const StatusIcon = ({ status }) => {
     resolved: <FiCheckCircle style={{ color: PROFESSIONAL_COLORS.reports.resolved }} />,
     dismissed: <FiXCircle style={{ color: PROFESSIONAL_COLORS.reports.dismissed }} />,
     active: <FiCheckCircle style={{ color: PROFESSIONAL_COLORS.reports.resolved }} />,
-    inactive: <FiXCircle style={{ color: PROFESSIONAL_COLORS.reports.dismissed }} />
+    inactive: <FiXCircle style={{ color: PROFESSIONAL_COLORS.reports.dismissed }} />,
+    high: <FiAlertCircle style={{ color: PROFESSIONAL_COLORS.severity.high }} />,
+    medium: <FiAlertCircle style={{ color: PROFESSIONAL_COLORS.severity.medium }} />,
+    low: <FiAlertCircle style={{ color: PROFESSIONAL_COLORS.severity.low }} />
   };
   
   return icons[status] || <FiAlertCircle />;
@@ -343,12 +395,19 @@ export default function DashboardOverview() {
     moderators: 0,
     feedback: 0,
     reports: 0,
-    averageRating: 0
+    averageRating: 0,
+    appeals: 0,
+    pendingAppeals: 0,
+    categories: 0,
+    subjects: 0
   });
   const [ratingData, setRatingData] = useState([]);
   const [userGrowthData, setUserGrowthData] = useState([]);
   const [reportStatusData, setReportStatusData] = useState([]);
+  const [reportSeverityData, setReportSeverityData] = useState([]);
+  const [appealStatusData, setAppealStatusData] = useState([]);
   const [feedbackStats, setFeedbackStats] = useState({});
+  const [reportStats, setReportStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState([]);
@@ -359,18 +418,7 @@ export default function DashboardOverview() {
 
   const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  // Auto-refresh data every 30 seconds
-  useEffect(() => {
-    fetchDashboardData();
-    
-    const interval = setInterval(() => {
-      fetchDashboardData();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -388,13 +436,14 @@ export default function DashboardOverview() {
         'Content-Type': 'application/json'
       };
 
-      // For moderators, skip the moderators endpoint
+      // Fetch all required data
       const requests = [
         fetch(`${API_BASE}/admin/users`, { headers }),
-        // Skip moderators endpoint for moderators
         ...(isModerator ? [] : [fetch(`${API_BASE}/admin/moderators`, { headers })]),
         fetch(`${API_BASE}/admin/feedback/stats`, { headers }),
-        fetch(`${API_BASE}/admin/reports/stats`, { headers })
+        fetch(`${API_BASE}/admin/reports/stats`, { headers }),
+        fetch(`${API_BASE}/admin/subjects`, { headers }),
+        fetch(`${API_BASE}/admin/appeals/stats`, { headers })
       ];
 
       const [usersResponse, ...otherResponses] = await Promise.all(requests);
@@ -402,27 +451,31 @@ export default function DashboardOverview() {
       if (!usersResponse.ok) throw new Error(`Users: ${usersResponse.status}`);
 
       // Handle responses based on user role
-      let moderatorsResponse, feedbackResponse, reportsResponse;
+      let moderatorsResponse, feedbackResponse, reportsResponse, subjectsResponse, appealsResponse;
       
       if (isModerator) {
-        // For moderators: usersResponse, feedbackResponse, reportsResponse
-        [feedbackResponse, reportsResponse] = otherResponses;
+        // For moderators: usersResponse, feedbackResponse, reportsResponse, subjectsResponse, appealsResponse
+        [feedbackResponse, reportsResponse, subjectsResponse, appealsResponse] = otherResponses;
       } else {
-        // For admins: usersResponse, moderatorsResponse, feedbackResponse, reportsResponse
-        [moderatorsResponse, feedbackResponse, reportsResponse] = otherResponses;
+        // For admins: usersResponse, moderatorsResponse, feedbackResponse, reportsResponse, subjectsResponse, appealsResponse
+        [moderatorsResponse, feedbackResponse, reportsResponse, subjectsResponse, appealsResponse] = otherResponses;
         
         if (!moderatorsResponse.ok) throw new Error(`Moderators: ${moderatorsResponse.status}`);
       }
 
       if (!feedbackResponse.ok) throw new Error(`Feedback: ${feedbackResponse.status}`);
       if (!reportsResponse.ok) throw new Error(`Reports: ${reportsResponse.status}`);
+      if (!subjectsResponse.ok) throw new Error(`Subjects: ${subjectsResponse.status}`);
+      if (!appealsResponse.ok) throw new Error(`Appeals: ${appealsResponse.status}`);
 
       const users = await usersResponse.json();
       const moderators = isModerator ? 0 : await moderatorsResponse.json();
       const feedbackStats = await feedbackResponse.json();
       const reportsStats = await reportsResponse.json();
+      const subjectsData = await subjectsResponse.json();
+      const appealsStats = await appealsResponse.json();
 
-      processDashboardData(users, moderators, feedbackStats, reportsStats);
+      processDashboardData(users, moderators, feedbackStats, reportsStats, subjectsData, appealsStats);
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -438,7 +491,7 @@ export default function DashboardOverview() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE, isModerator]);
 
   // Fallback function to fetch data without restricted endpoints
   const fetchLimitedData = async () => {
@@ -449,25 +502,29 @@ export default function DashboardOverview() {
         'Content-Type': 'application/json'
       };
 
-      const [usersResponse, feedbackResponse, reportsResponse] = await Promise.all([
+      const [usersResponse, feedbackResponse, reportsResponse, subjectsResponse, appealsResponse] = await Promise.all([
         fetch(`${API_BASE}/admin/users`, { headers }),
         fetch(`${API_BASE}/admin/feedback/stats`, { headers }),
-        fetch(`${API_BASE}/admin/reports/stats`, { headers })
+        fetch(`${API_BASE}/admin/reports/stats`, { headers }),
+        fetch(`${API_BASE}/admin/subjects`, { headers }),
+        fetch(`${API_BASE}/admin/appeals/stats`, { headers })
       ]);
 
-      if (usersResponse.ok && feedbackResponse.ok && reportsResponse.ok) {
+      if (usersResponse.ok && feedbackResponse.ok && reportsResponse.ok && subjectsResponse.ok && appealsResponse.ok) {
         const users = await usersResponse.json();
         const feedbackStats = await feedbackResponse.json();
         const reportsStats = await reportsResponse.json();
+        const subjectsData = await subjectsResponse.json();
+        const appealsStats = await appealsResponse.json();
         
-        processDashboardData(users, 0, feedbackStats, reportsStats);
+        processDashboardData(users, 0, feedbackStats, reportsStats, subjectsData, appealsStats);
       }
     } catch (error) {
       console.error('Error fetching limited data:', error);
     }
   };
 
-  const processDashboardData = (users, moderators, feedbackStats, reportsStats) => {
+  const processDashboardData = (users, moderators, feedbackStats, reportsStats, subjectsData, appealsStats) => {
     const totalUsers = Array.isArray(users) ? users.length : 0;
     const totalModerators = isModerator ? 0 : (Array.isArray(moderators) ? moderators.length : 0);
     
@@ -482,12 +539,24 @@ export default function DashboardOverview() {
     const reportsData = reportsStats.stats || reportsStats || {};
     const totalReports = Number(reportsData.total) || 0;
 
+    const subjectsInfo = subjectsData.categories || [];
+    const totalCategories = subjectsInfo.length || 0;
+    const totalSubjects = subjectsInfo.reduce((total, category) => total + (category.subjects?.length || 0), 0);
+
+    const appealsData = appealsStats.stats || appealsStats || {};
+    const totalAppeals = Number(appealsData.total) || 0;
+    const pendingAppeals = Number(appealsData.byStatus?.pending) || 0;
+
     setStats({
       users: totalUsers,
       moderators: totalModerators,
       feedback: totalFeedback,
       reports: totalReports,
-      averageRating: avgRating.toFixed(1)
+      averageRating: avgRating.toFixed(1),
+      appeals: totalAppeals,
+      pendingAppeals: pendingAppeals,
+      categories: totalCategories,
+      subjects: totalSubjects
     });
 
     // Professional rating distribution with meaningful colors
@@ -495,27 +564,27 @@ export default function DashboardOverview() {
       { 
         name: '5 Stars', 
         value: Number(feedbackData.five_star) || 0, 
-        color: PROFESSIONAL_COLORS.ratingDistribution[0] // Green - Excellent
+        color: PROFESSIONAL_COLORS.ratingDistribution[0]
       },
       { 
         name: '4 Stars', 
         value: Number(feedbackData.four_star) || 0, 
-        color: PROFESSIONAL_COLORS.ratingDistribution[1] // Light Green - Very Good
+        color: PROFESSIONAL_COLORS.ratingDistribution[1]
       },
       { 
         name: '3 Stars', 
         value: Number(feedbackData.three_star) || 0, 
-        color: PROFESSIONAL_COLORS.ratingDistribution[2] // Blue - Good
+        color: PROFESSIONAL_COLORS.ratingDistribution[2]
       },
       { 
         name: '2 Stars', 
         value: Number(feedbackData.two_star) || 0, 
-        color: PROFESSIONAL_COLORS.ratingDistribution[3] // Amber/Yellow - Fair
+        color: PROFESSIONAL_COLORS.ratingDistribution[3]
       },
       { 
         name: '1 Star', 
         value: Number(feedbackData.one_star) || 0, 
-        color: PROFESSIONAL_COLORS.ratingDistribution[4] // Red - Poor
+        color: PROFESSIONAL_COLORS.ratingDistribution[4]
       }
     ];
     setRatingData(ratingDistribution);
@@ -534,7 +603,7 @@ export default function DashboardOverview() {
       }));
     setUserGrowthData(userRatings);
 
-    // Report status data with professional colors
+    // Report status data
     const reportStatuses = reportsData.byStatus || {};
     const reportData = Object.entries(reportStatuses).map(([status, count]) => ({
       name: status.charAt(0).toUpperCase() + status.slice(1),
@@ -544,14 +613,49 @@ export default function DashboardOverview() {
     }));
     setReportStatusData(reportData);
 
+    // Report severity data
+    const reportSeverities = reportsData.bySeverity || {};
+    const severityData = Object.entries(reportSeverities).map(([severity, count]) => ({
+      name: severity.charAt(0).toUpperCase() + severity.slice(1),
+      count: Number(count) || 0,
+      color: PROFESSIONAL_COLORS.severity[severity] || PROFESSIONAL_COLORS.reports.default,
+      severity: severity
+    }));
+    setReportSeverityData(severityData);
+
+    // Appeal status data
+    const appealStatuses = appealsData.byStatus || {};
+    const appealData = Object.entries(appealStatuses).map(([status, count]) => ({
+      name: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
+      count: Number(count) || 0,
+      color: PROFESSIONAL_COLORS.appeals[status] || PROFESSIONAL_COLORS.reports.default,
+      status: status
+    }));
+    setAppealStatusData(appealData);
+
     setFeedbackStats(feedbackData);
+    setReportStats(reportsData);
   };
+
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    fetchDashboardData();
+    
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   const statCardStyle = (color) => ({
     ...dashboardStyles.statCard,
     ...(color === 'green' && dashboardStyles.statCardGreen),
     ...(color === 'yellow' && dashboardStyles.statCardYellow),
-    ...(color === 'purple' && dashboardStyles.statCardPurple)
+    ...(color === 'purple' && dashboardStyles.statCardPurple),
+    ...(color === 'red' && dashboardStyles.statCardRed),
+    ...(color === 'orange' && dashboardStyles.statCardOrange),
+    ...(color === 'indigo' && dashboardStyles.statCardIndigo)
   });
 
   if (loading) {
@@ -651,11 +755,82 @@ export default function DashboardOverview() {
           <div style={dashboardStyles.statValue}>{stats.averageRating}</div>
           <div style={dashboardStyles.statSubtitle}>Out of 5 stars</div>
         </div>
+
+        {/* New Stats for Reports, Appeals, and Subjects */}
+        <div style={statCardStyle('red')}>
+          <div style={dashboardStyles.statTitle}>
+            <FiFlag size={18} />
+            Total Reports
+          </div>
+          <div style={dashboardStyles.statValue}>{stats.reports}</div>
+          <div style={dashboardStyles.statSubtitle}>User reports</div>
+        </div>
+
+        <div style={statCardStyle('orange')}>
+          <div style={dashboardStyles.statTitle}>
+            <FiBook size={18} />
+            Pending Appeals
+          </div>
+          <div style={dashboardStyles.statValue}>{stats.pendingAppeals}</div>
+          <div style={dashboardStyles.statSubtitle}>Out of {stats.appeals} total</div>
+        </div>
+
+        <div style={statCardStyle('indigo')}>
+          <div style={dashboardStyles.statTitle}>
+            <FiBook size={18} />
+            Categories & Subjects
+          </div>
+          <div style={dashboardStyles.statValue}>{stats.categories}</div>
+          <div style={dashboardStyles.statSubtitle}>{stats.subjects} total subjects</div>
+        </div>
+      </div>
+
+      {/* Mini Stats Grid for Report Severity */}
+      <div style={dashboardStyles.miniStatsGrid}>
+        <div style={dashboardStyles.miniStatCard}>
+          <div style={dashboardStyles.miniStatTitle}>
+            <FiAlertCircle style={{ color: PROFESSIONAL_COLORS.severity.high }} />
+            High Severity Reports
+          </div>
+          <div style={{...dashboardStyles.miniStatValue, color: PROFESSIONAL_COLORS.severity.high}}>
+            {reportStats.bySeverity?.high || 0}
+          </div>
+        </div>
+        <div style={dashboardStyles.miniStatCard}>
+          <div style={dashboardStyles.miniStatTitle}>
+            <FiAlertCircle style={{ color: PROFESSIONAL_COLORS.severity.medium }} />
+            Medium Severity Reports
+          </div>
+          <div style={{...dashboardStyles.miniStatValue, color: PROFESSIONAL_COLORS.severity.medium}}>
+            {reportStats.bySeverity?.medium || 0}
+          </div>
+        </div>
+        <div style={dashboardStyles.miniStatCard}>
+          <div style={dashboardStyles.miniStatTitle}>
+            <FiAlertCircle style={{ color: PROFESSIONAL_COLORS.severity.low }} />
+            Low Severity Reports
+          </div>
+          <div style={{...dashboardStyles.miniStatValue, color: PROFESSIONAL_COLORS.severity.low}}>
+            {reportStats.bySeverity?.low || 0}
+          </div>
+        </div>
+        <div style={dashboardStyles.miniStatCard}>
+          <div style={dashboardStyles.miniStatTitle}>
+            <FiActivity size={16} />
+            Resolution Rate
+          </div>
+          <div style={dashboardStyles.miniStatValue}>
+            {reportStats.total ? 
+              `${(((reportStats.byStatus?.resolved || 0) / reportStats.total) * 100).toFixed(1)}%` 
+              : '0%'
+            }
+          </div>
+        </div>
       </div>
 
       {/* Charts Grid */}
       <div style={dashboardStyles.chartsGrid}>
-        {/* Rating Distribution - Professional Colorful Pie Chart */}
+        {/* Rating Distribution */}
         <div style={dashboardStyles.chartCard}>
           <div style={dashboardStyles.chartHeader}>
             <h3 style={dashboardStyles.chartTitle}>
@@ -778,7 +953,7 @@ export default function DashboardOverview() {
           </div>
         </div>
 
-        {/* Report Status - Colorful Bar Chart */}
+        {/* Report Status */}
         <div style={dashboardStyles.chartCard}>
           <div style={dashboardStyles.chartHeader}>
             <h3 style={dashboardStyles.chartTitle}>
@@ -837,6 +1012,125 @@ export default function DashboardOverview() {
           </div>
         </div>
 
+        {/* Report Severity */}
+        <div style={dashboardStyles.chartCard}>
+          <div style={dashboardStyles.chartHeader}>
+            <h3 style={dashboardStyles.chartTitle}>
+              <FiAlertCircle size={20} />
+              Report Severity
+            </h3>
+            <div style={dashboardStyles.chartActions}>
+              <button 
+                style={dashboardStyles.chartActionButton}
+                onClick={() => downloadChartAsPNG('severity-chart', 'reports-severity')}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                <FiImage size={14} />
+                PNG
+              </button>
+              <button 
+                style={dashboardStyles.chartActionButton}
+                onClick={() => downloadChartAsCSV(reportSeverityData, 'reports-severity')}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                <FiBarChart2 size={14} />
+                CSV
+              </button>
+            </div>
+          </div>
+          <div style={dashboardStyles.chartContainer} id="severity-chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={reportSeverityData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}\n(${(percent * 100).toFixed(1)}%)`}
+                  outerRadius={120}
+                  innerRadius={60}
+                  dataKey="count"
+                >
+                  {reportSeverityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={dashboardStyles.legendContainer}>
+            {reportSeverityData.map((entry, index) => (
+              <div key={index} style={dashboardStyles.legendItem}>
+                <StatusIcon status={entry.severity} />
+                <div style={{...dashboardStyles.legendColor, backgroundColor: entry.color}} />
+                <span>{entry.name} Severity: {entry.count} reports</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Appeal Status */}
+        <div style={dashboardStyles.chartCard}>
+          <div style={dashboardStyles.chartHeader}>
+            <h3 style={dashboardStyles.chartTitle}>
+              <FiBook size={20} />
+              Appeal Status
+            </h3>
+            <div style={dashboardStyles.chartActions}>
+              <button 
+                style={dashboardStyles.chartActionButton}
+                onClick={() => downloadChartAsPNG('appeals-chart', 'appeals-status')}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                <FiImage size={14} />
+                PNG
+              </button>
+              <button 
+                style={dashboardStyles.chartActionButton}
+                onClick={() => downloadChartAsCSV(appealStatusData, 'appeals-status')}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                <FiBarChart2 size={14} />
+                CSV
+              </button>
+            </div>
+          </div>
+          <div style={dashboardStyles.chartContainer} id="appeals-chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={appealStatusData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar 
+                  dataKey="count" 
+                  name="Appeal Count" 
+                  radius={[4, 4, 0, 0]}
+                >
+                  {appealStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={dashboardStyles.legendContainer}>
+            {appealStatusData.map((entry, index) => (
+              <div key={index} style={dashboardStyles.legendItem}>
+                <div style={{...dashboardStyles.legendColor, backgroundColor: entry.color}} />
+                <span>{entry.name}: {entry.count} appeals</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Feedback Analytics */}
         <div style={dashboardStyles.chartCard}>
           <h3 style={dashboardStyles.chartTitle}>
@@ -876,7 +1170,7 @@ export default function DashboardOverview() {
             </div>
             <div style={dashboardStyles.analyticsItem}>
               <span style={dashboardStyles.analyticsLabel}>
-                <FiDownload size={16} style={{ color: PROFESSIONAL_COLORS.analytics[3] }} />
+                <FiTrendingUp size={16} style={{ color: PROFESSIONAL_COLORS.analytics[3] }} />
                 Active Reviews:
               </span>
               <span style={{...dashboardStyles.analyticsValue, color: PROFESSIONAL_COLORS.analytics[3]}}>

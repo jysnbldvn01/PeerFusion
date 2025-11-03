@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments } from 'react-icons/fa';
+import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel} from 'react-icons/fa';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardOverview from '../components/admin/DashboardOverview';
 import ModeratorSettings from '../components/admin/ModeratorSettings';
 import SubjectManagement from '../components/admin/SubjectManagement';
 import ReportManagement from '../components/admin/ReportManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
+import AppealManagement from '../components/admin/AppealManagement';
+
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,10 +21,20 @@ export default function ModeratorDashboard() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Toast helper function
+  const showToast = (message, type = 'info') => {
+    window.dispatchEvent(new CustomEvent('peerfusion-toast', {
+      detail: { message, type }
+    }));
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    navigate('/admin-login');
+    showToast('Logged out successfully', 'success');
+    setTimeout(() => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      navigate('/admin-login');
+    }, 1000);
   };
 
   const renderContent = () => {
@@ -37,6 +49,8 @@ export default function ModeratorDashboard() {
         return <ReportManagement />;
       case 'feedback':
         return <FeedbackManagement />;
+      case 'appeals':
+        return <AppealManagement />;
       case 'settings':
         return <ModeratorSettings />;
       default:
@@ -93,6 +107,13 @@ export default function ModeratorDashboard() {
           >
             <FaFlag className="icon" />
             {isSidebarOpen && <span>Report Management</span>}
+          </li>
+          <li
+            className={activeTab === 'appeals' ? 'active' : ''}
+            onClick={() => setActiveTab('appeals')}
+          >
+            <FaGavel className="icon" />
+            {isSidebarOpen && <span>Appeal Management</span>}
           </li>
           <li
             className={activeTab === 'feedback' ? 'active' : ''}

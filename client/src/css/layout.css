@@ -63,7 +63,7 @@
 
   /* When mobile header is visible (navbar collapsed on mobile) */
   .content-container.has-mobile-header {
-    margin-top: 70px; /* Height of mobile header */
+    margin-top: 66px; /* Height of mobile header */
   }
 
   /* When sidebar is expanded on mobile, shift content */
@@ -125,24 +125,27 @@
 /* Notification Alert Banner */
 .notification-alert-banner {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: white;
-  padding: 12px 20px;
+  padding: 12px 16px;
   z-index: 2000;
-  animation: slideDown 0.3s ease-out;
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  width: auto;
+  max-width: min(720px, calc(100vw - 32px));
+  animation: slideDown 0.25s ease-out;
 }
 
 .alert-content {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
-  max-width: 1200px;
-  margin: 0 auto;
   position: relative;
+  padding-right: 44px; /* space for close button */
 }
 
 .alert-icon {
@@ -156,7 +159,7 @@
   font-size: 1.5rem;
   cursor: pointer;
   position: absolute;
-  right: 20px;
+  right: 8px;
   padding: 0;
   width: 24px;
   height: 24px;
@@ -184,6 +187,14 @@
   border-radius: 50%;
   margin-left: 8px;
   animation: pulse 2s infinite;
+}
+
+.offline-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #9ca3af; /* gray */
+  border-radius: 50%;
+  margin-left: 8px;
 }
 
 @keyframes pulse {

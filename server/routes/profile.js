@@ -36,16 +36,37 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     console.log('Profile endpoint called for user ID:', req.user.id);
     
-    const sql = 'SELECT * FROM user_profiles WHERE user_id = ?';
+    const sql = `
+      SELECT 
+        up.*,
+        u.strike_count,
+        u.status as user_status,
+        u.suspended_until,
+        u.total_reports,
+        u.name as user_name,
+        u.email as user_email,
+        u.created_at as account_created
+      FROM user_profiles up
+      RIGHT JOIN users u ON up.user_id = u.id
+      WHERE u.id = ?
+    `;
     const [results] = await db.query(sql, [req.user.id]);
     
     if (results.length > 0) {
       const profile = {
         ...results[0],
         id: results[0].user_id, 
-        user_id: results[0].user_id 
+        user_id: results[0].user_id,
+        strike_count: results[0].strike_count || 0,
+        status: results[0].user_status || 'active',
+        suspended_until: results[0].suspended_until,
+        total_reports: results[0].total_reports || 0,
+        name: results[0].user_name,
+        email: results[0].user_email,
+        account_created: results[0].account_created
       };
       
+      // Handle availability parsing
       if (profile.availability) {
         try {
           if (typeof profile.availability === 'string') {
@@ -62,27 +83,64 @@ router.get('/', authenticateToken, async (req, res) => {
         profile.availability = [];
       }
       
+      console.log('Returning profile with strike data:', {
+        user_id: profile.user_id,
+        strike_count: profile.strike_count,
+        status: profile.status,
+        username: profile.username
+      });
+      
       res.json(profile);
     } else {
-      res.json({ 
-        user_id: req.user.id,
-        id: req.user.id,
-        availability: []
-      });
+      // If no profile exists, return basic user info from users table
+      const [userResults] = await db.query(
+        'SELECT id, name, email, strike_count, status, suspended_until, total_reports, created_at FROM users WHERE id = ?',
+        [req.user.id]
+      );
+      
+      if (userResults.length > 0) {
+        const userData = userResults[0];
+        const basicProfile = { 
+          user_id: userData.id,
+          id: userData.id,
+          username: userData.name,
+          email: userData.email,
+          strike_count: userData.strike_count || 0,
+          status: userData.status || 'active',
+          suspended_until: userData.suspended_until,
+          total_reports: userData.total_reports || 0,
+          account_created: userData.created_at,
+          availability: []
+        };
+        
+        console.log('Returning basic user profile:', {
+          user_id: basicProfile.user_id,
+          strike_count: basicProfile.strike_count,
+          status: basicProfile.status
+        });
+        
+        res.json(basicProfile);
+      } else {
+        console.error('User not found in database');
+        res.status(404).json({ 
+          error: 'User not found',
+          user_id: req.user.id
+        });
+      }
     }
   } catch (err) {
     console.error('Profile endpoint error:', err);
+    console.error('Error details:', {
+      message: err.message,
+      code: err.code,
+      sqlState: err.sqlState
+    });
+    
     res.status(500).json({ 
       error: 'Database query failed',
       details: err.message 
     });
   }
-});
-
-router.post('/', authenticateToken, (req, res) => {
-  const userId = req.user.id;
-  const { username } = req.body;
-  res.json({ message: 'Profile update endpoint reached successfully.' });
 });
 
 // UPDATED: Profile setup with availability
@@ -340,7 +398,16 @@ router.get('/notifications', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const sql = `
-      SELECT n.*, u.name AS sender_name, up.avatar AS sender_avatar
+      SELECT n.*, 
+             CASE 
+               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN 'PeerFusion Team'
+               ELSE u.name 
+             END AS sender_name,
+             CASE 
+               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN NULL
+               ELSE up.avatar 
+             END AS sender_avatar,
+             u.role as sender_role
       FROM notifications n
       JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
@@ -360,7 +427,16 @@ router.get('/notifications/archived', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const sql = `
-      SELECT n.*, u.name AS sender_name, up.avatar AS sender_avatar
+      SELECT n.*, 
+             CASE 
+               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN 'PeerFusion Team'
+               ELSE u.name 
+             END AS sender_name,
+             CASE 
+               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN NULL
+               ELSE up.avatar 
+             END AS sender_avatar,
+             u.role as sender_role
       FROM notifications n
       JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id

@@ -72,13 +72,36 @@ router.post('/login', async (req, res) => {
 
     const user = users[0];
 
-    // Check if user is suspended
-    if (user.status === 'inactive') {
-      console.log(`Login attempt for suspended user: ${email}`);
+    // Check user status
+    if (user.status === 'suspended') {
+      // Check if suspension period has ended
+      if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+        const timeLeft = Math.ceil((new Date(user.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
+        return res.status(403).json({ 
+          success: false,
+          error: `Your account has been suspended. It will be reactivated in ${timeLeft} days.`,
+          status: 'suspended',
+          suspended_until: user.suspended_until
+        });
+      } else {
+        // Auto-reactivate if suspension period has passed
+        console.log('Auto-reactivating user:', user.id);
+        await db.query(
+          'UPDATE users SET status = "active", suspended_until = NULL WHERE id = ?',
+          [user.id]
+        );
+        user.status = 'active';
+      }
+    } else if (user.status === 'banned') {
+      console.log(`Login attempt for banned user: ${email}`);
       return res.status(403).json({ 
         success: false,
-        error: 'Your account has been suspended. Please contact support.' 
+        error: 'Your account has been permanently banned. Please contact support.',
+        status: 'banned'
       });
+    } else if (user.status === 'warning') {
+      console.log(`Login for user with warning status: ${email}, strike count: ${user.strike_count}`);
+      // User can login but has warnings
     }
 
     // Verify password
@@ -95,13 +118,14 @@ router.post('/login', async (req, res) => {
       { 
         id: user.id, 
         role: user.role || 'user',
-        email: user.email 
+        email: user.email,
+        status: user.status
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' } // Extended to 24 hours for better UX
+      { expiresIn: '24h' }
     );
 
-    console.log(`Successful login for user: ${email}`);
+    console.log(`Successful login for user: ${email}, status: ${user.status}`);
     
     res.json({ 
       success: true,
@@ -110,7 +134,10 @@ router.post('/login', async (req, res) => {
         id: user.id, 
         name: user.name, 
         email: user.email, 
-        role: user.role || 'user' 
+        role: user.role || 'user',
+        status: user.status,
+        strike_count: user.strike_count || 0,
+        suspended_until: user.suspended_until
       } 
     });
 
@@ -162,12 +189,30 @@ router.post('/google-login', async (req, res) => {
       // User exists - login
       const existingUser = users[0];
       
-      // Check if user is suspended
-      if (existingUser.status === 'inactive') {
-        console.log(`Google login attempt for suspended user: ${email}`);
+      // Check user status
+      if (existingUser.status === 'suspended') {
+        if (existingUser.suspended_until && new Date(existingUser.suspended_until) > new Date()) {
+          const timeLeft = Math.ceil((new Date(existingUser.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
+          return res.status(403).json({ 
+            success: false,
+            error: `Your account has been suspended. It will be reactivated in ${timeLeft} days.`,
+            status: 'suspended',
+            suspended_until: existingUser.suspended_until
+          });
+        } else {
+          // Auto-reactivate if suspension period has passed
+          await db.query(
+            'UPDATE users SET status = "active", suspended_until = NULL WHERE id = ?',
+            [existingUser.id]
+          );
+          existingUser.status = 'active';
+        }
+      } else if (existingUser.status === 'banned') {
+        console.log(`Google login attempt for banned user: ${email}`);
         return res.status(403).json({ 
           success: false,
-          error: 'Your account has been suspended. Please contact support.' 
+          error: 'Your account has been permanently banned. Please contact support.',
+          status: 'banned'
         });
       }
       
@@ -184,7 +229,8 @@ router.post('/google-login', async (req, res) => {
         { 
           id: existingUser.id, 
           role: existingUser.role || 'user',
-          email: existingUser.email 
+          email: existingUser.email,
+          status: existingUser.status
         },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
@@ -199,7 +245,10 @@ router.post('/google-login', async (req, res) => {
           id: existingUser.id, 
           name: existingUser.name, 
           email: existingUser.email,
-          role: existingUser.role || 'user'
+          role: existingUser.role || 'user',
+          status: existingUser.status,
+          strike_count: existingUser.strike_count || 0,
+          suspended_until: existingUser.suspended_until
         }
       });
     }
@@ -207,8 +256,8 @@ router.post('/google-login', async (req, res) => {
     // User doesn't exist - create new user
     console.log(`Creating new user via Google login: ${email}`);
     
-    const insertSql = 'INSERT INTO users (name, email, google_id, status, role) VALUES (?, ?, ?, ?, ?)';
-    const [result] = await db.query(insertSql, [name, email, googleId, 'active', 'user']);
+    const insertSql = 'INSERT INTO users (name, email, google_id, status, role) VALUES (?, ?, ?, "active", "user")';
+    const [result] = await db.query(insertSql, [name, email, googleId]);
     
     const newUserId = result.insertId;
     
@@ -217,7 +266,8 @@ router.post('/google-login', async (req, res) => {
       { 
         id: newUserId, 
         role: 'user',
-        email: email 
+        email: email,
+        status: 'active'
       }, 
       process.env.JWT_SECRET, 
       { expiresIn: '24h' }
@@ -232,7 +282,10 @@ router.post('/google-login', async (req, res) => {
         id: newUserId, 
         name: name, 
         email: email,
-        role: 'user'
+        role: 'user',
+        status: 'active',
+        strike_count: 0,
+        suspended_until: null
       } 
     });
 
@@ -524,4 +577,6 @@ router.post('/admin-reset-password', async (req, res) => {
     res.status(500).json({ message: 'Error resetting password.' });
   }
 });
+
+
 module.exports = router;

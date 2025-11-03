@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaHistory } from 'react-icons/fa';
+import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel, FaHistory } from 'react-icons/fa';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardOverview from '../components/admin/DashboardOverview';
 import Settings from '../components/admin/Settings';
@@ -7,6 +7,7 @@ import SubjectManagement from '../components/admin/SubjectManagement';
 import ReportManagement from '../components/admin/ReportManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
 import ActivityLogs from '../components/admin/ActivityLogs';
+import AppealManagement from '../components/admin/AppealManagement';
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -40,6 +41,8 @@ export default function AdminDashboard() {
         return <FeedbackManagement />;
       case 'settings':
         return <Settings />;
+      case 'appeals':
+        return <AppealManagement />;
       case 'activity':
         return <ActivityLogs />;
       default:
@@ -103,6 +106,13 @@ export default function AdminDashboard() {
           >
             <FaComments className="icon" />
             {isSidebarOpen && <span>Feedback Management</span>}
+          </li>
+          <li
+            className={activeTab === 'appeals' ? 'active' : ''}
+            onClick={() => setActiveTab('appeals')}
+          >
+            <FaGavel className="icon" />
+            {isSidebarOpen && <span>Appeal Management</span>}
           </li>
           {/* Add Activity Logs menu item */}
           <li

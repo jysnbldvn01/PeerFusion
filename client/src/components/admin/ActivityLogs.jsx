@@ -22,7 +22,10 @@ import {
   FaIdCard,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaInfoCircle
+  FaInfoCircle,
+  FaGavel,
+  FaClipboardCheck,
+  FaTimesCircle
 } from 'react-icons/fa';
 import '../../css/activitylogs.css';
 
@@ -124,7 +127,11 @@ export default function ActivityLogs() {
       'CATEGORY_UPDATED': <FaBook className="al-icon category-updated" />,
       'CATEGORY_DELETED': <FaBook className="al-icon category-deleted" />,
       'SUBJECT_CREATED': <FaStar className="al-icon subject-created" />,
-      'SUBJECT_DELETED': <FaStar className="al-icon subject-deleted" />
+      'SUBJECT_DELETED': <FaStar className="al-icon subject-deleted" />,
+      'APPEAL_REVIEWED': <FaGavel className="al-icon appeal-reviewed" />,
+      'USER_WARNED': <FaExclamationTriangle className="al-icon user-warned" />,
+      'USER_SUSPENDED': <FaUserSlash className="al-icon user-suspended" />,
+      'USER_BANNED': <FaTimesCircle className="al-icon user-banned" />
     };
 
     return iconConfig[action] || <FaHistory className="al-icon default" />;
@@ -147,7 +154,11 @@ export default function ActivityLogs() {
       'CATEGORY_UPDATED': 'reviewed',
       'CATEGORY_DELETED': 'dismissed',
       'SUBJECT_CREATED': 'resolved',
-      'SUBJECT_DELETED': 'dismissed'
+      'SUBJECT_DELETED': 'dismissed',
+      'APPEAL_REVIEWED': 'reviewed',
+      'USER_WARNED': 'pending',
+      'USER_SUSPENDED': 'dismissed',
+      'USER_BANNED': 'dismissed'
     };
 
     return colorConfig[action] || 'pending';
@@ -170,7 +181,11 @@ export default function ActivityLogs() {
       'CATEGORY_UPDATED': 'Category Updated',
       'CATEGORY_DELETED': 'Category Deleted',
       'SUBJECT_CREATED': 'Subject Created',
-      'SUBJECT_DELETED': 'Subject Deleted'
+      'SUBJECT_DELETED': 'Subject Deleted',
+      'APPEAL_REVIEWED': 'Appeal Reviewed',
+      'USER_WARNED': 'User Warned',
+      'USER_SUSPENDED': 'User Suspended',
+      'USER_BANNED': 'User Banned'
     };
 
     return labelConfig[action] || action;
@@ -437,6 +452,127 @@ export default function ActivityLogs() {
           </div>
         );
 
+      case 'APPEAL_REVIEWED':
+        return (
+          <div className="al-action-details">
+            <div className="al-detail-item">
+              <FaGavel className="al-detail-item-icon" />
+              <div className="al-detail-item-content">
+                <span className="al-detail-item-label">Appeal Review</span>
+                <span className="al-detail-item-value">User appeal was reviewed and processed</span>
+              </div>
+            </div>
+            {parsedDetails.appeal_type && (
+              <div className="al-detail-item">
+                <FaClipboardCheck className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Appeal Type</span>
+                  <span className="al-detail-item-value al-appeal-type">
+                    {parsedDetails.appeal_type.replace('_', ' ').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.status && (
+              <div className="al-detail-item">
+                <FaInfoCircle className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Appeal Status</span>
+                  <span className={`al-detail-item-value al-status-badge al-status-${parsedDetails.status === 'approved' ? 'resolved' : 'dismissed'}`}>
+                    {parsedDetails.status.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.resolution_notes && (
+              <div className="al-detail-item">
+                <FaInfoCircle className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Resolution Notes</span>
+                  <span className="al-detail-item-value">{parsedDetails.resolution_notes}</span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.user_action_applied && (
+              <div className="al-detail-item">
+                <FaCheckCircle className="al-detail-item-icon success" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">User Action Applied</span>
+                  <span className="al-detail-item-value">Yes - User account was modified based on appeal decision</span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.user_action_details && (
+              <div className="al-detail-item">
+                <FaCog className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Action Details</span>
+                  <span className="al-detail-item-value">{parsedDetails.user_action_details.details}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'USER_WARNED':
+      case 'USER_SUSPENDED':
+      case 'USER_BANNED':
+        return (
+          <div className="al-action-details">
+            <div className="al-detail-item">
+              <FaExclamationTriangle className="al-detail-item-icon warning" />
+              <div className="al-detail-item-content">
+                <span className="al-detail-item-label">Penalty Applied</span>
+                <span className="al-detail-item-value">
+                  {action === 'USER_WARNED' ? 'Warning issued' : 
+                   action === 'USER_SUSPENDED' ? 'Account suspended' : 
+                   'Account permanently banned'}
+                </span>
+              </div>
+            </div>
+            {parsedDetails.report_type && (
+              <div className="al-detail-item">
+                <FaFlag className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Report Type</span>
+                  <span className="al-detail-item-value">{parsedDetails.report_type}</span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.severity && (
+              <div className="al-detail-item">
+                <FaInfoCircle className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Severity</span>
+                  <span className="al-detail-item-value al-severity-badge">{parsedDetails.severity}</span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.previous_strikes !== undefined && (
+              <div className="al-detail-item">
+                <FaInfoCircle className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Strike Progression</span>
+                  <span className="al-detail-item-value">
+                    {parsedDetails.previous_strikes} → {parsedDetails.new_strikes}
+                  </span>
+                </div>
+              </div>
+            )}
+            {parsedDetails.suspended_until && (
+              <div className="al-detail-item">
+                <FaCalendar className="al-detail-item-icon" />
+                <div className="al-detail-item-content">
+                  <span className="al-detail-item-label">Suspended Until</span>
+                  <span className="al-detail-item-value">
+                    {new Date(parsedDetails.suspended_until).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       case 'CATEGORY_CREATED':
       case 'CATEGORY_UPDATED':
       case 'CATEGORY_DELETED':
@@ -662,7 +798,9 @@ export default function ActivityLogs() {
                     </td>
                     <td className="al-description-cell">
                       <div className="al-description-truncated">
-                        {Object.keys(details).length > 0 ? 
+                        {log.action === 'APPEAL_REVIEWED' && details.status ? 
+                          `Appeal ${details.status}` : 
+                          Object.keys(details).length > 0 ? 
                           'View details for more information' : 'No details'
                         }
                       </div>

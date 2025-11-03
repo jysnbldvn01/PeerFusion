@@ -66,7 +66,7 @@ router.post("/accept", async (req, res) => {
     // Update chat request status
     await db.query("UPDATE chat_requests SET status='accepted' WHERE id=?", [requestId]);
 
-    // Fetch participants
+    // Fetch participants and request details
     const [rows] = await db.query(
       "SELECT requester_id, receiver_id FROM chat_requests WHERE id=?",
       [requestId]
@@ -128,6 +128,12 @@ router.post("/accept", async (req, res) => {
         userInfo: {
           [String(requester_id)]: userInfoMap[String(requester_id)],
           [String(receiver_id)]: userInfoMap[String(receiver_id)],
+        },
+        sessionRequest: {
+          requestId: requestId,
+          requesterId: requester_id,
+          receiverId: receiver_id,
+          acceptedAt: new Date()
         },
         lastMessage: "",
         lastMessageTime: null,
@@ -216,5 +222,40 @@ router.get("/unique-partners/:userId", async (req, res) => {
   }
 });
 
+// 🟢 Check if user can schedule meeting for conversation
+router.get("/can-schedule/:conversationId/:userId", async (req, res) => {
+  try {
+    const db = req.app.get("db");
+    const firestore = req.app.get("firestore");
+    const { conversationId, userId } = req.params;
+
+    // Get conversation from Firestore
+    const convDoc = await firestore.collection("conversations").doc(conversationId).get();
+    if (!convDoc.exists) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    const conversation = convDoc.data();
+    
+    // Check if this conversation has session request data
+    if (conversation.sessionRequest) {
+      const { requesterId, receiverId } = conversation.sessionRequest;
+      
+      // Only the receiver can schedule meetings
+      const canSchedule = Number(userId) === Number(receiverId);
+      
+      return res.json({ 
+        canSchedule,
+        userRole: Number(userId) === Number(requesterId) ? 'requester' : 'receiver'
+      });
+    }
+
+    // For conversations without session request data, allow both users to schedule
+    res.json({ canSchedule: true, userRole: 'both' });
+  } catch (err) {
+    console.error("❌ Error checking schedule permission:", err);
+    res.status(500).json({ error: "Failed to check schedule permission" });
+  }
+});
 
 module.exports = router;

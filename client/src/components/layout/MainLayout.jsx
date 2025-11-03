@@ -5,6 +5,8 @@ import { AuthContext } from '../../context/AuthContext';
 import FloatingChatToggle from '../chat/FloatingChatToggle';
 import '../../css/layout.css';
 import '../../css/floatingchattoggle.css';
+import ToastHost from '../ui/ToastHost';
+import ConfirmHost from '../ui/ConfirmHost';
 
 function MainLayout() {
   const { user } = useContext(AuthContext);
@@ -25,6 +27,8 @@ function MainLayout() {
 
   return (
     <div className="app-container">
+      <ToastHost />
+      <ConfirmHost />
       <NavigationBar 
         key={user?.id || 'guest'}
         isCollapsed={isNavCollapsed} 

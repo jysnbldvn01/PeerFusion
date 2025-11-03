@@ -122,7 +122,8 @@ const configureRoutes = (app) => {
     '/api/conversations',
     '/api/firebaseToken',
     '/api/meeting',
-    '/api/reports'
+    '/api/reports',
+    '/api/appeals',
   ];
 
   routes.forEach(route => {
@@ -158,7 +159,6 @@ const startServer = () => {
   app.set('firestore', firestore);
   app.set('emitToUser', emitToUser);
 
-  // Start server
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
@@ -167,7 +167,6 @@ const startServer = () => {
   });
 };
 
-// Database connection test
 db.getConnection()
   .then(conn => {
     console.log('Database connected successfully');

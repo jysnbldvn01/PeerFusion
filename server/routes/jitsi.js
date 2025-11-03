@@ -11,8 +11,8 @@ const privateKey = fs.readFileSync(
 );
 
 // From JaaS account
-const appId = "vpaas-magic-cookie-758b59a977c9450baefe97406b3422e6";
-const kid = "vpaas-magic-cookie-758b59a977c9450baefe97406b3422e6/986689";
+const appId = "vpaas-magic-cookie-e7456b2aca5e40f1874f1b2aecd1b3b0";
+const kid = "vpaas-magic-cookie-e7456b2aca5e40f1874f1b2aecd1b3b0/110f8f";
 
 router.post("/token", (req, res) => {
   const { roomName, user } = req.body;

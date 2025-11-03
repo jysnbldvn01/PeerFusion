@@ -4,7 +4,6 @@ import ChatWindow from "../components/chat/ChatWindow";
 import { AuthContext } from "../context/AuthContext";
 import "../css/chat.css";
 import { useLocation } from "react-router-dom";
-import axios from "axios";
 
 import {
   collection,
@@ -21,12 +20,6 @@ import { db } from "../firebase";
 const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
   </svg>
 );
 
@@ -60,10 +53,32 @@ const BackIcon = () => (
   </svg>
 );
 
+const FlagIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+  </svg>
+);
+
+const UploadIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+  </svg>
+);
+
 export default function ChatPage() {
   const { user, loading } = useContext(AuthContext);
   const [activeConversation, setActiveConversation] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Ensure avatar is an absolute URL
+  const ensureAvatarUrl = (avatar) => {
+    if (!avatar || typeof avatar !== 'string') return null;
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+    const file = avatar.replace(/^\/+/, '');
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    return `${UPLOADS_BASE}${file}`;
+  };
 
   // Search states
   const [conversationSearch, setConversationSearch] = useState("");
@@ -72,8 +87,12 @@ export default function ChatPage() {
   // UI states
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [showFilesModal, setShowFilesModal] = useState(false);
-  const [showMeetingModal, setShowMeetingModal] = useState(false);
-  const [meetingDate, setMeetingDate] = useState("");
+  const [showReportUserModal, setShowReportUserModal] = useState(false);
+  const [reportUserReason, setReportUserReason] = useState("");
+  const [reportUserSubmitting, setReportUserSubmitting] = useState(false);
+  const [reportUserOffense, setReportUserOffense] = useState('Harassment');
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
 
   // Media/files list
   const [mediaItems, setMediaItems] = useState([]);
@@ -87,14 +106,27 @@ export default function ChatPage() {
 
   // Mobile state
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileView, setMobileView] = useState('list'); // 'list', 'chat', 'info'
+  const [mobileView, setMobileView] = useState('list');
+
+  const ALLOWED_FILE_TYPES = [
+    'image/jpeg',
+    'image/png', 
+    'image/gif',
+    'video/mp4',
+    'video/avi',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
       if (!mobile) {
-        setMobileView('list'); // Reset to list view on desktop
+        setMobileView('list');
       }
     };
 
@@ -288,6 +320,62 @@ export default function ChatPage() {
     }
   };
 
+  // File handling functions
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = [];
+    const errors = [];
+
+    files.forEach(file => {
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+        errors.push(`${file.name}: Invalid file type`);
+        return;
+      }
+      
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name}: File too large (max 50MB)`);
+        return;
+      }
+
+      validFiles.push(file);
+    });
+
+    if (errors.length > 0) {
+      alert('Some files were rejected:\n' + errors.join('\n'));
+    }
+
+    if (validFiles.length > 0) {
+      setEvidenceFiles(prev => [...prev, ...validFiles]);
+    }
+
+    // Reset file input
+    event.target.value = '';
+  };
+
+  const removeFile = (index) => {
+    setEvidenceFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[index];
+      return newProgress;
+    });
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (file) => {
+    if (file.type.startsWith('image/')) return '🖼️';
+    if (file.type.startsWith('video/')) return '🎥';
+    if (file.type === 'application/pdf') return '📄';
+    return '📎';
+  };
+
   // Determine container class for mobile views
   const getContainerClass = () => {
     if (!isMobile) return "peerfusion-chat-container";
@@ -316,42 +404,70 @@ export default function ChatPage() {
     setMobileView('chat');
   };
 
-  const handleScheduleMeeting = async () => {
-    if (!meetingDate || !activeConversation || !user) {
-      alert("Please select a date and time for the meeting.");
-      return;
-    }
-
-    try {
-      const res = await axios.post("http://localhost:5000/api/meeting/schedule", {
-        conversationId: activeConversation.id,
-        participants: [user.id, activeConversation.otherUser.id],
-        scheduledAt: meetingDate,
-      });
-
-      if (res.data.success) {
-        alert("✅ Meeting scheduled successfully!");
-        setShowMeetingModal(false);
-        setMeetingDate("");
-      } else {
-        alert("❌ Failed to schedule meeting.");
-      }
-    } catch (err) {
-      console.error("Error scheduling meeting:", err);
-      alert("Error scheduling meeting. Please try again.");
-    }
-  };
-
   // Modal handlers
   const openMediaModal = () => setShowMediaModal(true);
   const openFilesModal = () => setShowFilesModal(true);
   const closeMediaModal = () => setShowMediaModal(false);
   const closeFilesModal = () => setShowFilesModal(false);
 
+  const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+  const handleReportUser = async () => {
+    if (!activeConversation?.otherUser?.id) return;
+    try {
+      setReportUserSubmitting(true);
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      const payload = {
+      reported_user_id: activeConversation.otherUser.id,
+      report_type: reportUserOffense,
+      description: reportUserReason,
+      source: 'chat_page'
+    };
+      // Add report data
+      formData.append('reported_user_id', activeConversation.otherUser.id);
+      formData.append('report_type', reportUserOffense);
+      formData.append('description', reportUserReason);
+      formData.append('source', 'chat_page');
+      
+      // Add evidence files
+      evidenceFiles.forEach(file => {
+      formData.append('evidence', file);
+    });
+
+    const res = await fetch(`${API}/reports`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+      
+      const data = await res.json();
+      
+      if (data?.success) {
+        alert('Report submitted successfully.');
+        setShowReportUserModal(false);
+        setReportUserReason("");
+        setReportUserOffense('Harassment');
+        setEvidenceFiles([]);
+        setUploadProgress({});
+      } else {
+        alert(data?.error || 'Failed to submit report');
+      }
+    } catch (e) {
+      console.error('Report user error:', e);
+      alert('Error submitting report.');
+    } finally {
+      setReportUserSubmitting(false);
+      setUploadProgress({});
+    }
+  };
+
   if (loading) {
     return (
       <div className="peerfusion-chat-loading">
-        <div className="peerfusion-loading-spinner"></div>
+        <div className="peerfusion-chat-loading-spinner"></div>
         <p>Loading your conversations...</p>
       </div>
     );
@@ -359,7 +475,7 @@ export default function ChatPage() {
 
   return (
     <div className={getContainerClass()}>
-      {/* LEFT: Chat list - Always rendered but positioned by CSS */}
+      {/* LEFT: Chat list */}
       <div className="peerfusion-chat-left">
         <ChatList
           key={`${user?.id || "guest"}-${refreshTrigger}`}
@@ -386,7 +502,7 @@ export default function ChatPage() {
             isMobile={isMobile}
           />
         ) : (
-          !isMobile && ( // Only show empty state on desktop
+          !isMobile && (
             <div className="peerfusion-chat-empty">
               <div className="peerfusion-chat-empty-icon">
                 <ChatIcon />
@@ -403,70 +519,42 @@ export default function ChatPage() {
         <div className="peerfusion-chat-right">
           {/* Mobile Controls */}
           {isMobile && (
-            <div className="peerfusion-mobile-controls">
+            <div className="peerfusion-chat-mobile-controls">
               <button 
-                className="peerfusion-back-button"
+                className="peerfusion-chat-back-button"
                 onClick={handleBackToChat}
               >
                 <BackIcon />
                 <span>Back</span>
               </button>
-              <div className="peerfusion-mobile-panel-title">Chat Info</div>
+              <div className="peerfusion-chat-mobile-panel-title">Chat Info</div>
               <div style={{width: '80px'}}></div>
             </div>
           )}
 
           <div className="peerfusion-chat-right-content">
             {/* User Info */}
-            <div className="peerfusion-user-info-section">
+            <div className="peerfusion-chat-user-info-section">
               {activeConversation.otherUser?.avatar ? (
                 <img
-                  src={activeConversation.otherUser.avatar}
+                  src={ensureAvatarUrl(activeConversation.otherUser.avatar)}
                   alt={activeConversation.otherUser.username}
                   className="peerfusion-chat-right-avatar"
                 />
               ) : (
-                <div className="peerfusion-chat-right-avatar peerfusion-avatar-placeholder">
+                <div className="peerfusion-chat-avatar-placeholder">
                   {activeConversation.otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
                 </div>
               )}
               <h3 className="peerfusion-chat-right-name">
                 {activeConversation.otherUser?.username}
               </h3>
-              <p className="peerfusion-user-status">Online</p>
+              <p className="peerfusion-chat-user-status">Online</p>
             </div>
 
-            {/* Quick Actions */}
-            <div className="peerfusion-quick-actions">
-              <button
-                onClick={() => setShowMeetingModal(true)}
-                className="peerfusion-action-btn primary"
-              >
-                <CalendarIcon />
-                Schedule Meeting
-              </button>
-              
-              <div className="peerfusion-action-group">
-                <button
-                  onClick={openMediaModal}
-                  className="peerfusion-action-btn"
-                >
-                  <MediaIcon />
-                  Media ({mediaItems.length})
-                </button>
-                <button
-                  onClick={openFilesModal}
-                  className="peerfusion-action-btn"
-                >
-                  <FileIcon />
-                  Files ({fileItems.length})
-                </button>
-              </div>
-            </div>
-
-            {/* Search in Conversation */}
-            <div className="peerfusion-search-section">
-              <div className="peerfusion-search-header">
+            {/* Search in Conversation - AT THE TOP */}
+            <div className="peerfusion-chat-search-section">
+              <div className="peerfusion-chat-search-header">
                 <SearchIcon />
                 <span>Search in conversation</span>
               </div>
@@ -475,63 +563,95 @@ export default function ChatPage() {
                 placeholder="Search messages..."
                 value={messageSearch}
                 onChange={(e) => setMessageSearch(e.target.value)}
-                className="peerfusion-search-conversation-input"
+                className="peerfusion-chat-search-conversation-input"
               />
+            </div>
+
+            {/* Quick Actions - MEDIA AND FILES ONLY */}
+            <div className="peerfusion-chat-quick-actions">
+              <div className="peerfusion-chat-action-group">
+                <button
+                  onClick={openMediaModal}
+                  className="peerfusion-chat-action-btn"
+                >
+                  <MediaIcon />
+                  Media ({mediaItems.length})
+                </button>
+                <button
+                  onClick={openFilesModal}
+                  className="peerfusion-chat-action-btn"
+                >
+                  <FileIcon />
+                  Files ({fileItems.length})
+                </button>
+              </div>
             </div>
 
             {/* Shared Media Preview */}
             {(mediaItems.length > 0 || fileItems.length > 0) && (
-              <div className="peerfusion-shared-preview">
+              <div className="peerfusion-chat-shared-preview">
                 <h4>Recently Shared</h4>
-                <div className="peerfusion-preview-grid">
+                <div className="peerfusion-chat-preview-grid">
                   {mediaItems.slice(0, 4).map((media) => (
-                    <div key={media.id} className="peerfusion-preview-item">
+                    <div key={media.id} className="peerfusion-chat-preview-item">
                       <img src={media.url} alt="Shared media" />
                     </div>
                   ))}
                   {fileItems.slice(0, 2).map((file) => (
-                    <div key={file.id} className="peerfusion-preview-item file">
+                    <div key={file.id} className="peerfusion-chat-preview-item file">
                       <FileIcon />
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Report User Action - AT THE BOTTOM */}
+            <div className="peerfusion-chat-action-group" style={{ marginTop: 'auto', padding: '1.5rem', borderTop: '1px solid #e8efe5' }}>
+              <button
+                onClick={() => setShowReportUserModal(true)}
+                className="peerfusion-chat-report-user-btn"
+                title="Report this user"
+              >
+                <FlagIcon />
+                Report User
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Media Modal */}
       {showMediaModal && activeConversation && (
-        <div className="peerfusion-modal-overlay" onClick={closeMediaModal}>
-          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="peerfusion-modal-header">
-              <h3 className="peerfusion-modal-title">
+        <div className="peerfusion-chat-modal-overlay" onClick={closeMediaModal}>
+          <div className="peerfusion-chat-modal-content" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
+            <button className="peerfusion-close-modal" onClick={closeMediaModal}>
+              <CloseIcon />
+            </button>
+            <div className="peerfusion-chat-modal-header">
+              <h3 className="peerfusion-chat-modal-title">
                 Shared Media ({mediaItems.length})
               </h3>
-              <button className="peerfusion-close-modal" onClick={closeMediaModal}>
-                <CloseIcon />
-              </button>
             </div>
 
-            <div className="peerfusion-modal-body">
+            <div className="peerfusion-chat-modal-body">
               {mediaItems.length === 0 ? (
-                <div className="peerfusion-empty-state">
+                <div className="peerfusion-chat-empty-state">
                   <MediaIcon />
                   <p>No images shared yet</p>
                 </div>
               ) : (
-                <div className="peerfusion-media-grid">
+                <div className="peerfusion-chat-media-grid">
                   {mediaItems.map((media) => (
                     <a
                       key={media.id}
                       href={media.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="peerfusion-media-item"
+                      className="peerfusion-chat-media-item"
                     >
                       <img src={media.url} alt="Shared media" />
-                      <div className="peerfusion-media-info">
+                      <div className="peerfusion-chat-media-info">
                         {media.fileName || "Image"}
                       </div>
                     </a>
@@ -545,34 +665,34 @@ export default function ChatPage() {
 
       {/* Files Modal */}
       {showFilesModal && activeConversation && (
-        <div className="peerfusion-modal-overlay" onClick={closeFilesModal}>
-          <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="peerfusion-modal-header">
-              <h3 className="peerfusion-modal-title">
+        <div className="peerfusion-chat-modal-overlay" onClick={closeFilesModal}>
+          <div className="peerfusion-chat-modal-content" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
+            <button className="peerfusion-close-modal" onClick={closeFilesModal}>
+              <CloseIcon />
+            </button>
+            <div className="peerfusion-chat-modal-header">
+              <h3 className="peerfusion-chat-modal-title">
                 Shared Files ({fileItems.length})
               </h3>
-              <button className="peerfusion-close-modal" onClick={closeFilesModal}>
-                <CloseIcon />
-              </button>
             </div>
 
-            <div className="peerfusion-modal-body">
+            <div className="peerfusion-chat-modal-body">
               {fileItems.length === 0 ? (
-                <div className="peerfusion-empty-state">
+                <div className="peerfusion-chat-empty-state">
                   <FileIcon />
                   <p>No files shared yet</p>
                 </div>
               ) : (
-                <div className="peerfusion-files-list">
+                <div className="peerfusion-chat-files-list">
                   {fileItems.map((file) => (
-                    <div key={file.id} className="peerfusion-file-item">
-                      <div className="peerfusion-file-info">
+                    <div key={file.id} className="peerfusion-chat-file-item">
+                      <div className="peerfusion-chat-file-info">
                         <FileIcon />
-                        <div className="peerfusion-file-details">
-                          <div className="peerfusion-file-name">
+                        <div className="peerfusion-chat-file-details">
+                          <div className="peerfusion-chat-file-name">
                             {file.fileName || file.url.split("/").pop()}
                           </div>
-                          <div className="peerfusion-file-type">
+                          <div className="peerfusion-chat-file-type">
                             {file.fileType?.toUpperCase()} File
                           </div>
                         </div>
@@ -581,7 +701,7 @@ export default function ChatPage() {
                         href={file.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="peerfusion-download-btn"
+                        className="peerfusion-chat-download-btn"
                       >
                         Download
                       </a>
@@ -594,80 +714,118 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Schedule Meeting Modal */}
-      {showMeetingModal && (
-        <div className="peerfusion-modal-overlay">
-          <div className="peerfusion-modal-content peerfusion-meeting-modal">
-            <div className="peerfusion-modal-header">
-              <h3 className="peerfusion-modal-title">Schedule Meeting</h3>
-              <button 
-                className="peerfusion-close-modal"
-                onClick={() => setShowMeetingModal(false)}
-              >
-                <CloseIcon />
-              </button>
+      {/* Report User Modal */}
+      {showReportUserModal && activeConversation && (
+        <div className="peerfusion-chat-modal-overlay" onClick={() => setShowReportUserModal(false)}>
+          <div className="peerfusion-chat-modal-content peerfusion-chat-report-modal" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
+            <button className="peerfusion-close-modal" onClick={() => setShowReportUserModal(false)}>
+              <CloseIcon />
+            </button>
+            <div className="peerfusion-chat-modal-header">
+              <h3 className="peerfusion-chat-modal-title">Report User</h3>
             </div>
-
-            <div className="peerfusion-modal-body">
-              <div className="peerfusion-form-group">
-                <label>Meeting Date & Time</label>
-                <input
-                  type="datetime-local"
-                  value={meetingDate}
-                  onChange={(e) => setMeetingDate(e.target.value)}
-                  className="peerfusion-form-input"
-                />
+            <div className="peerfusion-chat-modal-body">
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Reporting</label>
+                <div className="peerfusion-chat-form-input">
+                  {activeConversation.otherUser?.username || `User ${activeConversation.otherUser?.id}`}
+                </div>
               </div>
-              
-              <div className="peerfusion-meeting-participants">
-                <label>Participants</label>
-                <div className="peerfusion-participants-list">
-                  <div className="peerfusion-participant">
-                    {user?.avatar ? (
-                      <img 
-                        src={user.avatar} 
-                        alt={user.username} 
-                        className="peerfusion-participant-avatar"
-                      />
-                    ) : (
-                      <div className="peerfusion-participant-avatar-placeholder">
-                        {user?.username?.charAt(0)?.toUpperCase() || "Y"}
-                      </div>
-                    )}
-                    <span>You</span>
-                  </div>
-                  <div className="peerfusion-participant">
-                    {activeConversation?.otherUser?.avatar ? (
-                      <img 
-                        src={activeConversation.otherUser.avatar} 
-                        alt={activeConversation.otherUser.username} 
-                        className="peerfusion-participant-avatar"
-                      />
-                    ) : (
-                      <div className="peerfusion-participant-avatar-placeholder">
-                        {activeConversation?.otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
-                      </div>
-                    )}
-                    <span>{activeConversation?.otherUser?.username}</span>
-                  </div>
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Report Type</label>
+                <select
+                  className="peerfusion-chat-form-input"
+                  value={reportUserOffense}
+                  onChange={(e) => setReportUserOffense(e.target.value)}
+                >
+                  <option>Harassment</option>
+                  <option>Hate Speech</option>
+                  <option>Spam</option>
+                  <option>Scam or Fraud</option>
+                  <option>Sexual Content</option>
+                  <option>Violence or Threats</option>
+                  <option>Self-harm</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Reason</label>
+                <textarea
+                  className="peerfusion-chat-form-textarea"
+                  placeholder="Describe why you are reporting this user"
+                  value={reportUserReason}
+                  onChange={(e) => setReportUserReason(e.target.value)}
+                  rows={4}
+                />
+                <div className="peerfusion-chat-form-help">
+                  Your report will be reviewed by our moderation team.
                 </div>
               </div>
 
-              <div className="peerfusion-modal-actions">
+              {/* Evidence Upload Section */}
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Evidence (Optional)</label>
+                <div className="evidence-upload-area">
+                  <input
+                    type="file"
+                    id="chat-evidence-upload"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.gif,.mp4,.avi,.pdf,.doc,.docx"
+                    onChange={handleFileSelect}
+                    className="evidence-file-input"
+                  />
+                  <label htmlFor="chat-evidence-upload" className="evidence-upload-label">
+                    <div className="upload-icon"><UploadIcon /></div>
+                    <div className="upload-text">
+                      <strong>Click to upload evidence</strong>
+                      <span>or drag and drop files here</span>
+                    </div>
+                  </label>
+                </div>
+
+                {/* File List */}
+                {evidenceFiles.length > 0 && (
+                  <div className="evidence-file-list">
+                    <h4>Selected Files ({evidenceFiles.length})</h4>
+                    {evidenceFiles.map((file, index) => (
+                      <div key={index} className="evidence-file-item">
+                        <div className="file-info">
+                          <span className="file-icon">{getFileIcon(file)}</span>
+                          <div className="file-details">
+                            <span className="file-name">{file.name}</span>
+                            <span className="file-size">{formatFileSize(file.size)}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="remove-file-btn"
+                          title="Remove file"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="peerfusion-chat-modal-actions">
                 <button
-                  onClick={handleScheduleMeeting}
-                  className="peerfusion-primary-btn"
-                  disabled={!meetingDate}
+                  onClick={handleReportUser}
+                  className="peerfusion-chat-primary-btn peerfusion-chat-report-submit-btn"
+                  disabled={reportUserSubmitting}
                 >
-                  <CalendarIcon />
-                  Schedule Meeting
+                  {reportUserSubmitting ? (
+                    <>
+                      <div className="peerfusion-chat-loading-spinner-small"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    `Submit Report ${evidenceFiles.length > 0 ? `(${evidenceFiles.length} files)` : ''}`
+                  )}
                 </button>
-                <button
-                  onClick={() => setShowMeetingModal(false)}
-                  className="peerfusion-secondary-btn"
-                >
-                  Cancel
-                </button>
+                <button onClick={() => setShowReportUserModal(false)} className="peerfusion-chat-secondary-btn">Cancel</button>
               </div>
             </div>
           </div>
@@ -675,4 +833,4 @@ export default function ChatPage() {
       )}
     </div>
   );
-}
+};

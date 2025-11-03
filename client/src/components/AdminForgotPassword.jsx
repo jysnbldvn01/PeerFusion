@@ -16,11 +16,39 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
   const [tempToken, setTempToken] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState([false, false, false]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
     setError('');
     setSuccess('');
+    
+    // Update password strength indicator
+    if (name === 'password') {
+      const strength = [
+        value.length >= 6,
+        /[A-Z]/.test(value),
+        /[0-9!@#$%^&*]/.test(value)
+      ];
+      setPasswordStrength(strength);
+    }
+  };
+
+  const validatePassword = () => {
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    if (!/[A-Z]/.test(form.password)) {
+      setError('Password must contain at least one uppercase letter');
+      return false;
+    }
+    if (!/[0-9!@#$%^&*]/.test(form.password)) {
+      setError('Password must contain at least one number or symbol');
+      return false;
+    }
+    return true;
   };
 
   // Step 1: Request reset code
@@ -84,8 +112,7 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
       return;
     }
 
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (!validatePassword()) {
       return;
     }
 
@@ -248,6 +275,38 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
                       <i className="fa-solid fa-eye" aria-hidden="true" />
                     )}
                   </button>
+                </div>
+                
+                {/* Password Strength Indicator */}
+                <div className="password-strength">
+                  {passwordStrength.map((strong, index) => (
+                    <div 
+                      key={index} 
+                      className="strength-bar" 
+                      style={{ 
+                        background: strong ? 
+                          (index === 0 ? '#4cd964' : index === 1 ? '#5ac8fa' : '#ffcc00') 
+                          : '#e0e0e0'
+                      }}
+                    ></div>
+                  ))}
+                </div>
+                
+                {/* Password Hints */}
+                <div className="password-hints">
+                  {form.password.length > 0 && (
+                    <ul>
+                      <li style={{ color: passwordStrength[0] ? '#4cd964' : '#666' }}>
+                        At least 6 characters
+                      </li>
+                      <li style={{ color: passwordStrength[1] ? '#4cd964' : '#666' }}>
+                        Contains uppercase letter
+                      </li>
+                      <li style={{ color: passwordStrength[2] ? '#4cd964' : '#666' }}>
+                        Contains number or symbol
+                      </li>
+                    </ul>
+                  )}
                 </div>
               </div>
 

@@ -58,29 +58,122 @@ const BackIcon = () => (
   </svg>
 );
 
+const FlagIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+  </svg>
+);
+
 const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onShowInfo, isMobile }) => {
   const [messages, setMessages] = useState([]);
   const [filteredMessages, setFilteredMessages] = useState([]);
   const [text, setText] = useState("");
   const [otherUser, setOtherUser] = useState(null);
+  const [profilesById, setProfilesById] = useState({});
   const [currentMeeting, setCurrentMeeting] = useState(null);
   const [joinEnabled, setJoinEnabled] = useState(false);
   const [reminderReceived, setReminderReceived] = useState(false);
   const [sending, setSending] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingDate, setMeetingDate] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportOffense, setReportOffense] = useState('Harassment');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
+  const [menuMessageId, setMenuMessageId] = useState(null);
+  const [menuAbove, setMenuAbove] = useState(false);
+  const [canSchedule, setCanSchedule] = useState(false);
+  const [userRole, setUserRole] = useState('');
+  const [showScheduleTooltip, setShowScheduleTooltip] = useState(false);
+  const menuBtnRefs = useRef({});
   const scrollRef = useRef();
   const firstLoad = useRef(true);
   const enableTimerRef = useRef(null);
   const clearMeetingTimerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const scheduleButtonRef = useRef(null);
+  const isAuthenticated = !!localStorage.getItem('token');
 
   // Normalize avatar -> absolute URL
   const ensureAvatarUrl = (avatar) => {
     if (!avatar) return null;
+    if (typeof avatar !== 'string') return null;
     if (avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
-    return `${window.location.protocol}//${window.location.host}/uploads/${avatar}`;
+    const file = avatar.replace(/^\/+/, "");
+    const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    const UPLOADS_BASE = API_BASE.replace(/\/api$/, "") + "/uploads/";
+    return `${UPLOADS_BASE}${file}`;
   };
+
+  // Check schedule permissions
+  useEffect(() => {
+    const checkSchedulePermission = async () => {
+      if (!conversationId || !currentUser?.user_id) return;
+      
+      try {
+        const res = await fetch(`${API}/session/can-schedule/${conversationId}/${currentUser.user_id}`);
+        const data = await res.json();
+        
+        if (data.canSchedule !== undefined) {
+          setCanSchedule(data.canSchedule);
+          setUserRole(data.userRole || '');
+        }
+      } catch (err) {
+        console.error("Error checking schedule permission:", err);
+        setCanSchedule(true); // Fallback to allow scheduling
+      }
+    };
+
+    checkSchedulePermission();
+  }, [conversationId, currentUser?.user_id]);
+
+  // Handle schedule button click with tooltip
+  const handleScheduleClick = () => {
+    if (canSchedule) {
+      setShowMeetingModal(true);
+    } else {
+      setShowScheduleTooltip(true);
+      // Hide tooltip after 3 seconds
+      setTimeout(() => {
+        setShowScheduleTooltip(false);
+      }, 3000);
+    }
+  };
+
+  const openReportMessage = (message) => {
+    setReportTarget({ type: 'message', message });
+    setReportReason("");
+    setReportOffense('Harassment');
+    setShowReportModal(true);
+  };
+
+  // Load other users' profiles
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    fetch(`${API_BASE}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(list => {
+        const map = {};
+        (list || []).forEach(u => {
+          if (u && (u.id || u.user_id)) {
+            const id = u.id || u.user_id;
+            map[String(id)] = u;
+          }
+        });
+        setProfilesById(map);
+      })
+      .catch(() => {});
+  }, []);
 
   // Fetch other user info
   useEffect(() => {
@@ -99,10 +192,12 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         const data = convSnap.data();
         const otherId = data.participants?.find((p) => String(p) !== String(currentUser.user_id));
         const info = data.userInfo?.[String(otherId)] || {};
+        const profile = profilesById[String(otherId)] || {};
+        const avatarFilename = profile.avatar || info.avatar || "";
         setOtherUser({
           id: otherId,
-          username: info.username || `User ${otherId}`,
-          avatar: ensureAvatarUrl(info.avatar || ""),
+          username: info.username || profile.username || `User ${otherId}`,
+          avatar: ensureAvatarUrl(avatarFilename || ""),
         });
       } catch (err) {
         console.error("Failed to fetch conversation metadata:", err);
@@ -111,9 +206,9 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     };
 
     fetchOtherUser();
-  }, [conversationId, currentUser?.user_id]);
+  }, [conversationId, currentUser?.user_id, profilesById]);
 
-  // Fetch scheduled meeting (for this conversation)
+  // Fetch scheduled meeting
   useEffect(() => {
     const fetchMeetingForConversation = async () => {
       if (!conversationId) {
@@ -150,7 +245,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       const msgs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       setMessages(msgs);
 
-      // Mark unseen messages (from other user) as seen by currentUser
+      // Mark unseen messages as seen
       try {
         const unseen = msgs.filter(
           (m) =>
@@ -186,7 +281,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     }
   }, [searchTerm, messages]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom
   useEffect(() => {
     if (!scrollRef.current) return;
     
@@ -197,7 +292,6 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       }
     };
 
-    // Use requestAnimationFrame for smooth scrolling
     requestAnimationFrame(() => {
       scrollToBottom();
     });
@@ -364,7 +458,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     return "file";
   };
 
-  // Upload file to Firebase Storage, return { url, fileType }
+  // Upload file to Firebase Storage
   const uploadFileToStorage = (file) => {
     return new Promise((resolve, reject) => {
       try {
@@ -409,14 +503,14 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
 
       if (file) {
         if (file.size > MAX_FILE_SIZE) {
-          alert("File too large. Maximum allowed size is 5 MB.");
+          window.pfToast?.error?.("File too large. Maximum allowed size is 5 MB.");
           setSending(false);
           return;
         }
 
         const ftype = determineFileType(file);
         if (file.type.startsWith("video/")) {
-          alert("Video files are not allowed.");
+          window.pfToast?.error?.("Video files are not allowed.");
           setSending(false);
           return;
         }
@@ -454,30 +548,30 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       console.error("Failed to send message:", err);
-      alert("Failed to send message. Try again.");
+      window.pfToast?.error?.("Failed to send message. Try again.");
     } finally {
       setSending(false);
     }
   };
 
-  const handleJoin = () => {
-    if (!currentMeeting || !otherUser || !currentUser) return;
+const handleJoin = () => {
+  if (!currentMeeting || !otherUser || !currentUser) return;
 
-    const partnerData = {
-      id: otherUser.id,
-      username: otherUser.username || `User ${otherUser.id}`,
-      avatar: otherUser.avatar ? otherUser.avatar.split("/").pop() : "",
-    };
-
-    const videocallUrl = `/videocall?partnerId=${partnerData.id}&partnerUsername=${encodeURIComponent(
-      partnerData.username
-    )}&partnerAvatar=${encodeURIComponent(partnerData.avatar || "")}`;
-
-    const windowFeatures = "width=1000,height=700,noopener,noreferrer";
-    window.open(videocallUrl, "_blank", windowFeatures);
+  const partnerData = {
+    id: otherUser.id,
+    username: otherUser.username || `User ${otherUser.id}`,
+    avatar: otherUser.avatar ? otherUser.avatar.split("/").pop() : "",
   };
 
-  // Helper: check if a message (sent by me) is seen by the other party
+  // Pass conversationId to the video call
+  const videocallUrl = `/videocall?partnerId=${partnerData.id}&partnerUsername=${encodeURIComponent(
+    partnerData.username
+  )}&partnerAvatar=${encodeURIComponent(partnerData.avatar || "")}&conversationId=${conversationId}`;
+
+  const windowFeatures = "width=1000,height=700,noopener,noreferrer";
+  window.open(videocallUrl, "_blank", windowFeatures);
+};
+  // Helper: check if a message is seen by the other party
   const isSeenByOther = (m) => {
     if (!m || !otherUser) return false;
     return (m.seenBy || []).map(String).includes(String(otherUser.id));
@@ -486,7 +580,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   // Schedule meeting function
   const handleScheduleMeeting = async () => {
     if (!meetingDate || !conversationId || !currentUser || !otherUser) {
-      alert("Please select a date and time for the meeting.");
+      window.pfToast?.info?.("Please select a date and time for the meeting.");
       return;
     }
 
@@ -506,15 +600,15 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       const data = await res.json();
 
       if (data.success) {
-        alert("✅ Meeting scheduled successfully!");
+        window.pfToast?.success?.("Meeting scheduled successfully!");
         setShowMeetingModal(false);
         setMeetingDate("");
       } else {
-        alert("❌ Failed to schedule meeting.");
+        window.pfToast?.error?.("Failed to schedule meeting.");
       }
     } catch (err) {
       console.error("Error scheduling meeting:", err);
-      alert("Error scheduling meeting. Please try again.");
+      window.pfToast?.error?.("Error scheduling meeting. Please try again.");
     }
   };
 
@@ -525,7 +619,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     const regex = new RegExp(`(${searchTerm})`, 'gi');
     return content.split(regex).map((part, index) =>
       regex.test(part) ? (
-        <span key={index} className="peerfusion-search-highlight">{part}</span>
+        <span key={index} className="peerfusion-chat-search-highlight">{part}</span>
       ) : (
         part
       )
@@ -551,6 +645,87 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     }
   }
 
+  const handleSubmitReport = async () => {
+    if (!otherUser?.id || !reportTarget) return;
+    try {
+      setReportSubmitting(true);
+      const token = localStorage.getItem('token');
+      let messagePreview = '';
+      const msg = reportTarget.message || {};
+      if (msg.fileType === 'image') {
+        messagePreview = '[Image]';
+      } else if (msg.fileType === 'pdf' || msg.fileType === 'doc') {
+        messagePreview = `${(msg.fileType || '').toUpperCase()} File: ${msg.fileName || 'File'}`;
+      } else {
+        messagePreview = (msg.content || '').toString();
+      }
+      const description = `Message: "${messagePreview}", Reason: ${reportReason}`;
+      const payload = {
+        reported_user_id: otherUser.id,
+        report_type: reportOffense,
+        description,
+        source: 'chat_message'
+      };
+      const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+      const res = await fetch(`${API_BASE}/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data?.success) {
+        window.pfToast?.success?.('Report submitted successfully.');
+        setShowReportModal(false);
+        setReportTarget(null);
+        setReportReason("");
+      } else {
+        window.pfToast?.error?.(data?.error || 'Failed to submit report');
+      }
+    } catch (e) {
+      console.error('Report submission error:', e);
+      window.pfToast?.error?.('Error submitting report.');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
+  // Function to detect URLs and make them clickable
+  const makeLinksClickable = (text) => {
+    if (!text) return text;
+    
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    if (parts.length === 1) {
+      return highlightSearchTerm(text);
+    }
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a 
+            key={index} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              color: '#0066cc',
+              textDecoration: 'underline',
+              wordBreak: 'break-all'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {highlightSearchTerm(part)}
+          </a>
+        );
+      }
+      return highlightSearchTerm(part);
+    });
+  };
+
   return (
     <div className="peerfusion-chat-middle">
       {/* Chat Header with Mobile Controls */}
@@ -559,14 +734,14 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
           {/* Back button for mobile */}
           {isMobile && (
             <button 
-              className="peerfusion-back-button"
+              className="peerfusion-chat-back-button"
               onClick={onBackToList}
               style={{color: 'white', marginRight: '12px', background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '50%'}}
             >
               <BackIcon />
             </button>
           )}
-          
+
           {otherUser?.avatar ? (
             <img
               src={otherUser.avatar}
@@ -591,21 +766,35 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
           )}
           <span className="peerfusion-chat-partner-name">
             {otherUser?.username}
+            {userRole && (
+              <small style={{display: 'block', fontSize: '0.75rem', opacity: 0.7}}>
+                {userRole === 'requester' ? 'You requested this session' : 'You accepted this session'}
+              </small>
+            )}
           </span>
+          <span className={isAuthenticated ? 'online-indicator' : 'offline-indicator'} />
         </div>
 
         <div className="peerfusion-chat-actions">
-          <button
-            className="peerfusion-meeting-btn"
-            onClick={() => setShowMeetingModal(true)}
-            title="Schedule Meeting"
-          >
-            <CalendarIcon />
-          </button>
+          <div className="peerfusion-chat-schedule-button-wrapper" ref={scheduleButtonRef}>
+            <button
+              className={`peerfusion-chat-meeting-btn ${!canSchedule ? 'disabled' : ''}`}
+              onClick={handleScheduleClick}
+              disabled={!canSchedule}
+            >
+              <CalendarIcon />
+            </button>
+            {/* Tooltip for disabled schedule button */}
+            {showScheduleTooltip && !canSchedule && (
+              <div className="peerfusion-chat-schedule-tooltip">
+                Only the person who accepted your session can schedule meetings
+              </div>
+            )}
+          </div>
           {/* Info button for mobile */}
           {isMobile && (
             <button 
-              className="peerfusion-info-btn"
+              className="peerfusion-chat-info-btn"
               onClick={onShowInfo}
               title="Conversation Info"
             >
@@ -617,15 +806,9 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
 
       {/* Meeting Banner */}
       {currentMeeting && (
-        <div className="peerfusion-meeting-banner">
-          <div className="peerfusion-meeting-header">
-            <div className="peerfusion-calendar-icon">
-              <CalendarIcon />
-            </div>
-          </div>
-
-          <div className="peerfusion-meeting-body">
-            <div className="peerfusion-meeting-reminder">
+        <div className="peerfusion-chat-meeting-banner">
+          <div className="peerfusion-chat-meeting-body">
+            <div className="peerfusion-chat-meeting-reminder">
               REMINDER: Session scheduled on{" "}
               {new Date(currentMeeting.scheduled_at).toLocaleDateString()} at{" "}
               {new Date(currentMeeting.scheduled_at).toLocaleTimeString([], {
@@ -636,7 +819,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
 
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button
-                className={`peerfusion-join-button ${joinEnabled ? "enabled" : ""}`}
+                className={`peerfusion-chat-join-button ${joinEnabled ? "enabled" : ""}`}
                 onClick={handleJoin}
                 disabled={!joinEnabled}
                 title={
@@ -704,19 +887,24 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                 })();
 
                 return (
-                  <div key={m.id} className={`peerfusion-chat-row ${isMeGroup ? "sent" : "received"}`}>
+                  <div
+                    key={m.id}
+                    className={`peerfusion-chat-row ${isMeGroup ? "sent" : "received"}`}
+                    onMouseEnter={() => setHoveredMessageId(m.id)}
+                    onMouseLeave={() => setHoveredMessageId((prev) => (prev === m.id ? null : prev))}
+                  >
                     {!isMeGroup ? (
                       showAvatar ? (
-                        <img src={otherUser.avatar} alt={otherUser.username} className="peerfusion-message-avatar" />
+                        <img src={otherUser.avatar} alt={otherUser.username} className="peerfusion-chat-message-avatar" />
                       ) : (
-                        <div className="peerfusion-avatar-space" />
+                        <div className="peerfusion-chat-avatar-space" />
                       )
                     ) : (
-                      <div className="peerfusion-avatar-space" />
+                      <div className="peerfusion-chat-avatar-space" />
                     )}
 
                     <div
-                      className={`peerfusion-chat-message ${isMeGroup ? "sent" : "received"}`}
+                      className={`peerfusion-chat-message-bubble ${isMeGroup ? "sent" : "received"}`}
                     >
                       {/* Render inline image */}
                       {m.fileType === "image" && m.content ? (
@@ -730,6 +918,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                           target="_blank"
                           rel="noopener noreferrer"
                           className="peerfusion-chat-file-card"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <FileIcon />
@@ -743,27 +932,68 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                         </a>
                       ) : null}
 
-                      {/* Text content with search highlighting */}
+                      {/* Text content with search highlighting and clickable links */}
                       {(!m.fileType || m.fileType === null) && (
-                        <div className="bubble-text">
-                          {highlightSearchTerm(m.content)}
+                        <div className="peerfusion-chat-bubble-text">
+                          {makeLinksClickable(m.content)}
                         </div>
                       )}
-                      
-                      {/* For file messages, if content is a url but no fileType recognized, show link */}
-                      {m.fileType === null && m.content && m.content.startsWith("http") ? (
-                        <a href={m.content} target="_blank" rel="noopener noreferrer" className="peerfusion-chat-file">
-                          Open file
-                        </a>
-                      ) : null}
 
-                      <span className="peerfusion-timestamp">
+                      <span className="peerfusion-chat-timestamp">
                         {timestamp}{" "}
                         {sentByMe ? (lastMessageInAll ? (isSeenByOther(m) ? "✓✓" : "✓") : "") : ""}
                       </span>
                     </div>
 
-                    {isMeGroup ? <div className="peerfusion-avatar-space" /> : null}
+                    {/* Flag icon for reporting received messages */}
+                    {!sentByMe && (
+                      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: 4 }}>
+                        <button
+                          className="peerfusion-chat-message-report-btn"
+                          title="Report message"
+                          aria-label="Report message"
+                          ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
+                          onClick={() => {
+                            const next = menuMessageId === m.id ? null : m.id;
+                            if (next) {
+                              const btn = menuBtnRefs.current[m.id];
+                              try {
+                                const rect = btn?.getBoundingClientRect();
+                                const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
+                                setMenuAbove(spaceBelow < 120);
+                              } catch (_) {
+                                setMenuAbove(false);
+                              }
+                            }
+                            setMenuMessageId(next);
+                          }}
+                          style={{
+                            display: (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
+                          }}
+                        >
+                          <FlagIcon />
+                        </button>
+                        {menuMessageId === m.id && (
+                          <div
+                            className="peerfusion-chat-message-menu"
+                            style={{ 
+                              top: menuAbove ? 'auto' : 'calc(100% + 6px)',
+                              bottom: menuAbove ? 'calc(100% + 6px)' : 'auto'
+                            }}
+                          >
+                            <button
+                              className="peerfusion-chat-message-menu-item"
+                              onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
+                            >
+                              <FlagIcon />
+                              Report message
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {isMeGroup ? <div className="peerfusion-chat-avatar-space" /> : null}
                   </div>
                 );
               });
@@ -797,7 +1027,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         {/* File Upload Icon */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="peerfusion-file-upload-icon"
+          className="peerfusion-chat-file-upload-icon"
           title="Attach file"
           disabled={sending}
         >
@@ -827,57 +1057,136 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         </button>
       </div>
 
+      {/* Report Modal - Updated to match ChatPage design */}
+      {showReportModal && (
+        <div className="peerfusion-chat-modal-overlay" onClick={() => setShowReportModal(false)}>
+          <div className="peerfusion-chat-modal-content peerfusion-chat-report-modal" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
+            <button className="peerfusion-close-modal" onClick={() => setShowReportModal(false)}>
+              <CloseIcon />
+            </button>
+            <div className="peerfusion-chat-modal-header">
+              <h3 className="peerfusion-chat-modal-title">
+                Report Message
+              </h3>
+            </div>
+            <div className="peerfusion-chat-modal-body">
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Message Content</label>
+                <div className="peerfusion-chat-form-input" style={{minHeight: '60px', maxHeight: '120px', overflowY: 'auto'}}>
+                  {reportTarget?.message?.fileType === 'image' ? 
+                    '[Image]' : 
+                    reportTarget?.message?.fileType === 'pdf' || reportTarget?.message?.fileType === 'doc' ?
+                    `${reportTarget?.message?.fileName || 'File'} (${(reportTarget?.message?.fileType || '').toUpperCase()})` :
+                    reportTarget?.message?.content || '(no content)'
+                  }
+                </div>
+              </div>
+
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Report Type</label>
+                <select
+                  className="peerfusion-chat-form-input"
+                  value={reportOffense}
+                  onChange={(e) => setReportOffense(e.target.value)}
+                >
+                  <option>Harassment</option>
+                  <option>Hate Speech</option>
+                  <option>Spam</option>
+                  <option>Scam or Fraud</option>
+                  <option>Sexual Content</option>
+                  <option>Violence or Threats</option>
+                  <option>Self-harm</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Reason</label>
+                <textarea
+                  className="peerfusion-chat-form-textarea"
+                  placeholder="Describe why you are reporting this message"
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  rows={4}
+                />
+                <div className="peerfusion-chat-form-help">
+                  Your report will be reviewed by our moderation team.
+                </div>
+              </div>
+
+              <div className="peerfusion-chat-modal-actions">
+                <button
+                  onClick={handleSubmitReport}
+                  className="peerfusion-chat-primary-btn peerfusion-chat-report-submit-btn"
+                  disabled={reportSubmitting || !otherUser?.id || !reportTarget}
+                >
+                  {reportSubmitting ? (
+                    <>
+                      <div className="peerfusion-chat-loading-spinner-small"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Report'
+                  )}
+                </button>
+                <button onClick={() => setShowReportModal(false)} className="peerfusion-chat-secondary-btn">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Schedule Meeting Modal */}
       {showMeetingModal && (
-        <div className="peerfusion-modal-overlay">
-          <div className="peerfusion-modal-content peerfusion-meeting-modal">
-            <div className="peerfusion-modal-header">
-              <h3 className="peerfusion-modal-title">Schedule Meeting</h3>
-              <button 
-                className="peerfusion-close-modal"
-                onClick={() => setShowMeetingModal(false)}
-              >
-                ✕
-              </button>
+        <div className="peerfusion-chat-modal-overlay">
+          <div className="peerfusion-chat-modal-content peerfusion-chat-meeting-modal" style={{position: 'relative'}}>
+            <button 
+              className="peerfusion-close-modal"
+              onClick={() => setShowMeetingModal(false)}
+            >
+              <CloseIcon />
+            </button>
+            <div className="peerfusion-chat-modal-header">
+              <h3 className="peerfusion-chat-modal-title">Schedule Meeting</h3>
             </div>
 
-            <div className="peerfusion-modal-body">
-              <div className="peerfusion-form-group">
-                <label>Meeting Date & Time</label>
+            <div className="peerfusion-chat-modal-body">
+              <div className="peerfusion-chat-form-group">
+                <label className="peerfusion-chat-form-label">Meeting Date & Time</label>
                 <input
                   type="datetime-local"
                   value={meetingDate}
                   onChange={(e) => setMeetingDate(e.target.value)}
-                  className="peerfusion-form-input"
+                  className="peerfusion-chat-form-input"
                 />
               </div>
               
-              <div className="peerfusion-meeting-participants">
-                <label>Participants</label>
-                <div className="peerfusion-participants-list">
-                  <div className="peerfusion-participant">
+              <div className="peerfusion-chat-meeting-participants">
+                <label className="peerfusion-chat-form-label">Participants</label>
+                <div className="peerfusion-chat-participants-list">
+                  <div className="peerfusion-chat-participant">
                     {currentUser?.avatar ? (
                       <img 
-                        src={currentUser.avatar} 
+                        src={ensureAvatarUrl(currentUser.avatar)} 
                         alt={currentUser.username} 
-                        className="peerfusion-participant-avatar"
+                        className="peerfusion-chat-participant-avatar"
                       />
                     ) : (
-                      <div className="peerfusion-participant-avatar-placeholder">
+                      <div className="peerfusion-chat-participant-avatar-placeholder">
                         {currentUser?.username?.charAt(0)?.toUpperCase() || "Y"}
                       </div>
                     )}
                     <span>You</span>
                   </div>
-                  <div className="peerfusion-participant">
+                  <div className="peerfusion-chat-participant">
                     {otherUser?.avatar ? (
                       <img 
                         src={otherUser.avatar} 
                         alt={otherUser.username} 
-                        className="peerfusion-participant-avatar"
+                        className="peerfusion-chat-participant-avatar"
                       />
                     ) : (
-                      <div className="peerfusion-participant-avatar-placeholder">
+                      <div className="peerfusion-chat-participant-avatar-placeholder">
                         {otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                     )}
@@ -886,10 +1195,10 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                 </div>
               </div>
 
-              <div className="peerfusion-modal-actions">
+              <div className="peerfusion-chat-modal-actions">
                 <button
                   onClick={handleScheduleMeeting}
-                  className="peerfusion-primary-btn"
+                  className="peerfusion-chat-primary-btn"
                   disabled={!meetingDate}
                 >
                   <CalendarIcon />
@@ -897,7 +1206,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
                 </button>
                 <button
                   onClick={() => setShowMeetingModal(false)}
-                  className="peerfusion-secondary-btn"
+                  className="peerfusion-chat-secondary-btn"
                 >
                   Cancel
                 </button>

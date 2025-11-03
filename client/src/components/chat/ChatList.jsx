@@ -123,22 +123,20 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
       <div className="peerfusion-chat-left">
         <div className="peerfusion-chat-left-header">
           <h2 className="peerfusion-chat-left-title">Messages</h2>
-          <div className="peerfusion-search-container">
-            <div className="peerfusion-search-bar">
-              <div className="peerfusion-search-icon">
-                <SearchIcon />
-              </div>
-              <input 
-                className="peerfusion-search-input-field"
-                placeholder="Search conversations..." 
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-              />
+          <div className="peerfusion-chat-search-bar">
+            <div className="peerfusion-chat-search-icon">
+              <SearchIcon />
             </div>
+            <input 
+              className="peerfusion-chat-search-input-field"
+              placeholder="Search conversations..." 
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
           </div>
         </div>
         <div className="peerfusion-chat-loading">
-          <div className="peerfusion-loading-spinner"></div>
+          <div className="peerfusion-chat-loading-spinner"></div>
           <p>Loading conversations...</p>
         </div>
       </div>
@@ -149,37 +147,35 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
     <div className="peerfusion-chat-left">
       {/* Mobile Controls - Only show back button when in chat view */}
       {isMobile && activeConversationId && (
-        <div className="peerfusion-mobile-controls">
+        <div className="peerfusion-chat-mobile-controls">
           <button 
-            className="peerfusion-back-button"
+            className="peerfusion-chat-back-button"
             onClick={() => onSelect(null)}
           >
             <BackIcon />
             <span>Back</span>
           </button>
-          <div className="peerfusion-mobile-panel-title">Conversations</div>
+          <div className="peerfusion-chat-mobile-panel-title">Conversations</div>
           <div style={{width: '80px'}}></div>
         </div>
       )}
 
       <div className="peerfusion-chat-left-header">
         <h2 className="peerfusion-chat-left-title">Messages</h2>
-        <div className="peerfusion-search-container">
-          <div className="peerfusion-search-bar">
-            <div className="peerfusion-search-icon">
-              <SearchIcon />
-            </div>
-            <input 
-              className="peerfusion-search-input-field"
-              placeholder="Search conversations..." 
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
+        <div className="peerfusion-chat-search-bar">
+          <div className="peerfusion-chat-search-icon">
+            <SearchIcon />
           </div>
+          <input 
+            className="peerfusion-chat-search-input-field"
+            placeholder="Search conversations..." 
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
         </div>
       </div>
 
-      <div className="peerfusion-conversations-list">
+      <div className="peerfusion-chat-conversations-list">
         {filteredConversations.length === 0 ? (
           <div className="peerfusion-chat-empty">
             <div className="peerfusion-chat-empty-icon">
@@ -196,32 +192,32 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
           filteredConversations.map((c) => (
             <div
               key={c.id}
-              className={`peerfusion-peer-item ${activeConversationId === c.id ? "active" : ""} ${c.hasUnread ? "unread" : ""}`}
+              className={`peerfusion-chat-peer-item ${activeConversationId === c.id ? "active" : ""} ${c.hasUnread ? "unread" : ""}`}
               onClick={() => handleConversationSelect(c)}
             >
-              <div className="peerfusion-avatar-container-chat">
+              <div className="peerfusion-chat-avatar-container">
                 <img
                   src={c.otherUser.avatar}
                   alt={c.otherUser.username}
-                  className="peerfusion-peer-avatar"
+                  className="peerfusion-chat-peer-avatar"
                   onError={(e) => {
                     e.target.src = "/default-avatar.png";
                   }}
                 />
                 {c.hasUnread && (
-                  <div className="peerfusion-unread-indicator">
+                  <div className="peerfusion-chat-unread-indicator">
                     {c.unreadCount > 0 && c.unreadCount < 10 ? c.unreadCount : ""}
                   </div>
                 )}
               </div>
-              <div className="peerfusion-peer-info">
-                <div className={`peerfusion-peer-name ${c.hasUnread ? "unread" : ""}`}>
+              <div className="peerfusion-chat-peer-info">
+                <div className={`peerfusion-chat-peer-name ${c.hasUnread ? "unread" : ""}`}>
                   {c.otherUser.username}
                 </div>
-                <div className={`peerfusion-peer-message ${c.hasUnread ? "unread" : ""}`}>
+                <div className={`peerfusion-chat-peer-message ${c.hasUnread ? "unread" : ""}`}>
                   {c.lastMessage || "No messages yet"}
                 </div>
-                <div className="peerfusion-peer-time">
+                <div className="peerfusion-chat-peer-time">
                   {formatTime(c.lastMessageTime)}
                 </div>
               </div>
