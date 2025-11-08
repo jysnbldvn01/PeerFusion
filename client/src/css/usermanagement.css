@@ -1,4 +1,4 @@
-/* User Management - Unique Class Names */
+/* User Management - Updated CSS with Reports and Modals */
 .um-container {
   min-height: 100vh;
   background: #f8fafc;
@@ -345,11 +345,13 @@
   border: 1px solid #e2e8f0;
   width: 100%;
   position: relative;
+  overflow: hidden;
 }
 
 .um-table-container {
   width: 100%;
   position: relative;
+  overflow-x: auto;
 }
 
 .um-users-table {
@@ -357,6 +359,7 @@
   border-collapse: collapse;
   font-size: 14px;
   position: relative;
+  min-width: 800px;
 }
 
 .um-users-table th {
@@ -591,7 +594,7 @@
   border: 1px solid #e5e7eb;
 }
 
-/* Strike Indicator - Redesigned with proper progress */
+/* Strike Indicator */
 .um-strikes-cell {
   display: flex;
   flex-direction: column;
@@ -773,9 +776,14 @@
   flex-shrink: 0;
 }
 
-/* Actions Dropdown - COMPLETELY FIXED positioning */
+.um-no-reports {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* FIXED Actions Dropdown - Completely rewritten positioning */
 .um-actions-dropdown-container {
-  position: static;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -805,16 +813,33 @@
 }
 
 .um-dropdown-menu {
-  position: fixed;
+  position: absolute;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   padding: 6px;
-  z-index: 9999;
+  z-index: 1000;
   min-width: 200px;
   margin: 0;
-  transform: translate(-150px, 10px);
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+}
+
+/* Ensure dropdown stays within viewport */
+.um-dropdown-menu {
+  right: 0;
+  left: auto;
+}
+
+/* For the last few rows, position above instead */
+.um-users-table tr:last-child .um-dropdown-menu,
+.um-users-table tr:nth-last-child(2) .um-dropdown-menu {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 8px;
 }
 
 .um-dropdown-item {
@@ -936,7 +961,282 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Modal Overlay */
+/* ===== REPORTS MODAL DESIGN ===== */
+.um-reports-modal {
+  max-width: 700px !important;
+}
+
+.um-reports-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.um-reports-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.um-reports-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.um-reports-user-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.um-reports-user-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.um-reports-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.um-reports-stat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.um-reports-stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.um-reports-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.um-reports-stat-pending {
+  border-color: #fef3c7;
+  background: #fffbeb;
+}
+
+.um-reports-stat-pending .um-reports-stat-number {
+  color: #d97706;
+}
+
+.um-reports-stat-resolved {
+  border-color: #dcfce7;
+  background: #f0fdf9;
+}
+
+.um-reports-stat-resolved .um-reports-stat-number {
+  color: #059669;
+}
+
+.um-reports-stat-total {
+  border-color: #e0e7ff;
+  background: #f8fafc;
+}
+
+.um-reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.um-report-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.um-report-item:hover {
+  border-color: #cbd5e1;
+  background: white;
+}
+
+.um-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.um-report-type {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  text-transform: capitalize;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.um-report-type-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.um-report-type-spam {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.um-report-type-harassment {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.um-report-type-inappropriate {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.um-report-type-other {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.um-report-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.um-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.um-status-resolved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.um-status-dismissed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.um-report-description {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #e2e8f0;
+}
+
+.um-report-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.um-report-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.um-report-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.um-report-action-btn {
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.um-report-action-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.um-report-action-resolve {
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.um-report-action-dismiss {
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+.um-empty-reports {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.um-empty-reports-icon {
+  width: 48px;
+  height: 48px;
+  color: #d1d5db;
+  margin-bottom: 12px;
+}
+
+.um-empty-reports h4 {
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-size: 16px;
+}
+
+.um-empty-reports p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ===== ACTION MODALS DESIGN ===== */
 .um-modal-overlay {
   position: fixed;
   top: 0;
@@ -1022,6 +1322,7 @@
   border-radius: 8px;
   padding: 16px;
   align-items: flex-start;
+  margin-bottom: 20px;
 }
 
 .um-warning-icon {
@@ -1032,10 +1333,21 @@
   margin-top: 2px;
 }
 
+.um-warning-content {
+  flex: 1;
+}
+
+.um-warning-title {
+  font-weight: 600;
+  color: #92400e;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
 .um-warning-text {
   font-size: 13px;
   color: #92400e;
-  margin: 8px 0 0 0;
+  margin: 0;
   line-height: 1.4;
 }
 
@@ -1043,8 +1355,67 @@
   background: white;
   border-radius: 6px;
   padding: 12px;
-  margin-top: 8px;
+  margin-top: 12px;
   border: 1px solid #fde68a;
+}
+
+.um-penalty-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #fef3c7;
+}
+
+.um-penalty-item:last-child {
+  border-bottom: none;
+}
+
+.um-penalty-label {
+  font-size: 13px;
+  color: #92400e;
+}
+
+.um-penalty-value {
+  font-weight: 600;
+  color: #92400e;
+  font-size: 13px;
+}
+
+/* User Info in Modals */
+.um-modal-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.um-modal-user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.um-modal-user-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.um-modal-user-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
 }
 
 /* Modal Variants */
@@ -1054,6 +1425,55 @@
 
 .um-modal-danger .um-modal-header h3 {
   color: #dc2626;
+}
+
+.um-modal-success .um-modal-header h3 {
+  color: #059669;
+}
+
+/* Form Elements in Modals */
+.um-form-group {
+  margin-bottom: 16px;
+}
+
+.um-form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.um-form-input,
+.um-form-select,
+.um-form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  box-sizing: border-box;
+}
+
+.um-form-input:focus,
+.um-form-select:focus,
+.um-form-textarea:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.um-form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.um-form-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
 }
 
 /* Buttons */
@@ -1176,78 +1596,21 @@
   background: #6d28d9;
 }
 
-/* Reports List */
-.um-reports-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.um-report-item {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.um-report-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.um-report-type {
-  font-weight: 600;
-  color: #374151;
+.um-btn-resolve-confirm {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
   font-size: 14px;
-  text-transform: capitalize;
-}
-
-.um-report-status {
-  font-size: 12px;
   font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
   line-height: 1;
 }
 
-.um-status-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.um-status-resolved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.um-status-dismissed {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.um-report-description {
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 8px;
-}
-
-.um-report-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.2;
-}
-
-.um-empty-reports {
-  text-align: center;
-  padding: 40px 20px;
-  color: #6b7280;
+.um-btn-resolve-confirm:hover {
+  background: #059669;
 }
 
 /* Responsive Design */
@@ -1315,12 +1678,34 @@
     width: 100%;
   }
   
+  .um-reports-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .um-report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .um-report-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .um-report-actions {
+    align-self: flex-end;
+  }
+  
+  /* Mobile dropdown adjustments */
   .um-dropdown-menu {
     position: fixed;
     left: 50% !important;
     transform: translateX(-50%) !important;
     top: 50% !important;
     margin: 0 !important;
+    z-index: 10000;
   }
 }
 
@@ -1347,8 +1732,13 @@
     flex-wrap: wrap;
   }
   
-  .um-report-meta {
+  .um-modal-user-info {
     flex-direction: column;
-    gap: 4px;
+    text-align: center;
+  }
+  
+  .um-reports-user-info {
+    flex-direction: column;
+    text-align: center;
   }
 }

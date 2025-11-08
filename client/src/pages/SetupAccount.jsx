@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FiUpload, FiUser, FiAward, FiFileText, FiCalendar, FiUsers, FiLink, FiPhone, FiSave, FiX, FiClock } from 'react-icons/fi';
+import { FiUpload, FiUser, FiAward, FiFileText, FiCalendar, FiUsers, FiLink, FiPhone, FiSave, FiX, FiClock, FiChevronRight, FiChevronLeft, FiCheck } from 'react-icons/fi';
 import '../css/setup.css';
 
 const SetupAccount = () => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState({
     username: '',
     bio: '',
@@ -21,6 +22,18 @@ const SetupAccount = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [availability, setAvailability] = useState([]);
   const [subjectCategories, setSubjectCategories] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
+
+  const navigate = useNavigate();
+
+  const steps = [
+    { id: 1, title: 'Basic Info', icon: FiUser },
+    { id: 2, title: 'Subjects', icon: FiAward },
+    { id: 3, title: 'Availability', icon: FiClock },
+    { id: 4, title: 'Contact', icon: FiLink }
+  ];
 
   const yearLevels = [
     'First Year',
@@ -40,32 +53,48 @@ const SetupAccount = () => {
     '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
   ];
 
-  const navigate = useNavigate();
-
   useEffect(() => {
     const checkExistingProfile = async () => {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setHasCheckedProfile(true);
+        navigate('/login');
+        return;
+      }
+
       try {
         const res = await axios.get('http://localhost:5000/api/profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (res.data?.username) {
+        if (res.data?.username && res.data.username !== `User ${res.data.user_id}`) {
+          console.log('Profile already exists, redirecting to /profile');
           navigate('/profile');
+        } else {
+          console.log('No complete profile found, continuing setup');
         }
       } catch (err) {
         // Profile doesn't exist, continue with setup
+        console.log('No existing profile found, continuing with setup');
+      } finally {
+        setHasCheckedProfile(true);
       }
     };
+    
     checkExistingProfile();
   }, [navigate]);
 
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
+        setIsLoadingSubjects(true);
         const res = await axios.get('http://localhost:5000/api/profile/subjects');
+        console.log('Fetched subjects:', res.data);
         setSubjectCategories(res.data);
       } catch (err) {
         console.error('Error fetching subjects:', err);
+        alert('Failed to load subjects. Please refresh the page.');
+      } finally {
+        setIsLoadingSubjects(false);
       }
     };
     fetchSubjects();
@@ -84,14 +113,58 @@ const SetupAccount = () => {
     }
   }, [form.role]);
 
+  const validateStep = (step) => {
+    const newErrors = {};
+
+    switch (step) {
+      case 1:
+        if (!form.username.trim()) newErrors.username = 'Username is required';
+        if (!form.role) newErrors.role = 'Role is required';
+        if (!form.year_level) newErrors.year_level = 'Year level is required';
+        break;
+      
+      case 2:
+        if (form.role !== 'Skill Learner' && selectedSubjects.length === 0) {
+          newErrors.subjects = 'At least one subject is required for Skill Sharers';
+        }
+        break;
+      
+      case 3:
+        // No validation for step 3 - it's completely optional
+        break;
+      
+      case 4:
+        // Only validate contact number for step 4
+        if (!form.contact_number.trim()) {
+          newErrors.contact_number = 'Contact number is required';
+        } else if (!/^\+?[\d\s\-\(\)]+$/.test(form.contact_number)) {
+          newErrors.contact_number = 'Please enter a valid contact number';
+        }
+        break;
+      
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (errors[e.target.name]) {
+      setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+    }
   };
 
   const handleSubjectSelect = (e) => {
     const value = e.target.value;
     if (value && !selectedSubjects.includes(value)) {
       setSelectedSubjects([...selectedSubjects, value]);
+      if (errors.subjects) {
+        setErrors(prev => ({ ...prev, subjects: '' }));
+      }
     }
     e.target.value = '';
   };
@@ -151,9 +224,53 @@ const SetupAccount = () => {
     ));
   };
 
+  const nextStep = () => {
+    console.log('Next button clicked from step:', currentStep);
+    
+    // Validate current step before moving forward
+    if (validateStep(currentStep)) {
+      console.log('Step validation passed, moving to step:', currentStep + 1);
+      setCurrentStep(prev => Math.min(prev + 1, steps.length));
+    } else {
+      console.log('Step validation failed, staying on step:', currentStep);
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('Complete Profile Setup clicked - validating all steps');
+    
+    // Validate ALL steps before submitting
+    let allValid = true;
+    let firstInvalidStep = 1;
+    
+    for (let step = 1; step <= steps.length; step++) {
+      if (!validateStep(step)) {
+        allValid = false;
+        firstInvalidStep = step;
+        break;
+      }
+    }
+
+    if (!allValid) {
+      console.log('Validation failed at step:', firstInvalidStep);
+      setCurrentStep(firstInvalidStep);
+      alert(`Please complete all required fields in step ${firstInvalidStep} before submitting.`);
+      return;
+    }
+
     const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in again.');
+      navigate('/login');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -163,6 +280,8 @@ const SetupAccount = () => {
         subject: selectedSubjects.join(','),
         availability: form.role !== 'Skill Learner' ? JSON.stringify(availability) : '[]'
       };
+      
+      console.log('Submitting form data:', formWithSubjects);
       
       for (const key in formWithSubjects) {
         if (formWithSubjects[key] !== null && formWithSubjects[key] !== undefined) {
@@ -174,182 +293,215 @@ const SetupAccount = () => {
         formData.append('avatar', avatarFile);
       }
 
-      await axios.post('http://localhost:5000/api/profile/setup', formData, {
+      const response = await axios.post('http://localhost:5000/api/profile/setup', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      navigate('/profile');
+      console.log('Setup response:', response);
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log('Profile setup successful, redirecting to /profile');
+        navigate('/profile');
+      }
     } catch (err) {
-      console.error(err);
-      alert('Failed to save setup info');
+      console.error('Setup error:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert('Failed to save setup info: ' + (err.response?.data?.message || 'Please try again'));
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div 
-        className="auth-container"
-        style={{
-          background: `url('/background.svg') no-repeat center center fixed`,
-          backgroundSize: 'cover'
-        }}
-      >
-      <div className="peerfusion-setup-card">
-        <header className="peerfusion-setup-header">
-          <h1 className="peerfusion-setup-title">Complete Your Profile</h1>
-          <p className="peerfusion-setup-subtitle">Let's get to know you better</p>
-        </header>
-
-        <form onSubmit={handleSubmit} className="peerfusion-setup-form">
-          {/* Avatar Upload Section */}
-          <div className="peerfusion-avatar-section">
-            <div className="peerfusion-avatar-container">
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar Preview" className="peerfusion-avatar-image" />
-              ) : (
-                <div className="peerfusion-avatar-placeholder">
-                  <FiUser size={32} />
-                </div>
-              )}
-            </div>
-            <label className="peerfusion-upload-btn">
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleAvatarChange} 
-                className="peerfusion-upload-input" 
-              />
-              <FiUpload className="peerfusion-upload-icon" />
-              <span>Upload Photo</span>
-            </label>
+  // Loading state while checking profile
+  if (!hasCheckedProfile) {
+    return (
+      <div className="progressive-setup-container">
+        <div className="setup-header">
+          <div className="header-content">
+            <h1 className="setup-title">Loading...</h1>
+            <p className="setup-subtitle">Checking your profile status</p>
           </div>
+        </div>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
 
-          {/* Basic Information Section */}
-          <div className="peerfusion-form-section">
-            <h2 className="peerfusion-section-title">
-              <FiUser className="peerfusion-section-icon" />
-              Basic Information
-            </h2>
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="step-content">
+            <h2 className="step-title">Basic Information</h2>
+            <p className="step-description">Let's start with the essentials about you</p>
             
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">Username</label>
-              <input 
-                type="text" 
-                name="username" 
-                value={form.username} 
-                onChange={handleChange} 
-                placeholder="Enter your username" 
-                className="peerfusion-form-input"
-                required 
-              />
-            </div>
-
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">
-                <FiFileText className="peerfusion-label-icon" />
-                Bio
-              </label>
-              <textarea 
-                name="bio" 
-                value={form.bio} 
-                onChange={handleChange} 
-                placeholder="Tell us about yourself..."
-                rows="4"
-                className="peerfusion-form-textarea"
-              />
-            </div>
-
-            <div className="peerfusion-form-row">
-              <div className="peerfusion-form-group">
-                <label className="peerfusion-form-label">
-                  <FiCalendar className="peerfusion-label-icon" />
-                  Birthday
-                </label>
+            <div className="avatar-section">
+              <div className="avatar-container">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Avatar Preview" className="avatar-image" />
+                ) : (
+                  <div className="avatar-placeholder">
+                    <FiUser size={32} />
+                  </div>
+                )}
+              </div>
+              <label className="upload-btn">
                 <input 
-                  type="date" 
-                  name="birthday" 
-                  value={form.birthday} 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleAvatarChange} 
+                  className="upload-input" 
+                />
+                <FiUpload className="upload-icon" />
+                <span>Upload Photo</span>
+              </label>
+            </div>
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Username *</label>
+                <input 
+                  type="text" 
+                  name="username" 
+                  value={form.username} 
                   onChange={handleChange} 
-                  className="peerfusion-form-input"
+                  placeholder="Enter your username" 
+                  className={`form-input ${errors.username ? 'error' : ''}`}
+                  required 
+                />
+                {errors.username && <span className="error-message">{errors.username}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <FiFileText className="label-icon" />
+                  Bio
+                </label>
+                <textarea 
+                  name="bio" 
+                  value={form.bio} 
+                  onChange={handleChange} 
+                  placeholder="Tell us about yourself..."
+                  rows="4"
+                  className="form-textarea"
                 />
               </div>
 
-              <div className="peerfusion-form-group">
-                <label className="peerfusion-form-label">
-                  <FiUsers className="peerfusion-label-icon" />
-                  Gender
-                </label>
-                <select name="gender" value={form.gender} onChange={handleChange} className="peerfusion-form-select">
-                  <option value="">Select...</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">
+                    <FiCalendar className="label-icon" />
+                    Birthday
+                  </label>
+                  <input 
+                    type="date" 
+                    name="birthday" 
+                    value={form.birthday} 
+                    onChange={handleChange} 
+                    className="form-input"
+                  />
+                </div>
 
-            <div className="peerfusion-form-row">
-              <div className="peerfusion-form-group">
-                <label className="peerfusion-form-label">Role</label>
-                <select name="role" value={form.role} onChange={handleChange} className="peerfusion-form-select">
-                  <option value="Skill Learner">Skill Learner</option>
-                  <option value="Skill Sharer">Skill Sharer</option>
-                  <option value="Skill Sharer & Learner">Skill Sharer & Learner</option>
-                </select>
+                <div className="form-group">
+                  <label className="form-label">
+                    <FiUsers className="label-icon" />
+                    Gender
+                  </label>
+                  <select name="gender" value={form.gender} onChange={handleChange} className="form-select">
+                    <option value="">Select...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="peerfusion-form-group">
-                <label className="peerfusion-form-label">Year Level</label>
-                <select name="year_level" value={form.year_level} onChange={handleChange} className="peerfusion-form-select">
-                  <option value="">Select Year Level</option>
-                  {yearLevels.map((level, index) => (
-                    <option key={index} value={level}>{level}</option>
-                  ))}
-                </select>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Role *</label>
+                  <select name="role" value={form.role} onChange={handleChange} className={`form-select ${errors.role ? 'error' : ''}`}>
+                    <option value="Skill Learner">Skill Learner</option>
+                    <option value="Skill Sharer">Skill Sharer</option>
+                    <option value="Skill Sharer & Learner">Skill Sharer & Learner</option>
+                  </select>
+                  {errors.role && <span className="error-message">{errors.role}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Year Level *</label>
+                  <select name="year_level" value={form.year_level} onChange={handleChange} className={`form-select ${errors.year_level ? 'error' : ''}`}>
+                    <option value="">Select Year Level</option>
+                    {yearLevels.map((level, index) => (
+                      <option key={index} value={level}>{level}</option>
+                    ))}
+                  </select>
+                  {errors.year_level && <span className="error-message">{errors.year_level}</span>}
+                </div>
               </div>
             </div>
           </div>
+        );
 
-          {/* Subjects Section */}
-          <div className="peerfusion-form-section">
-            <h2 className="peerfusion-section-title">
-              <FiAward className="peerfusion-section-icon" />
-              Subjects
-            </h2>
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">Subjects</label>
-              <div className="peerfusion-subject-container">
-                <select 
-                  name="subject" 
-                  onChange={handleSubjectSelect}
-                  disabled={form.role === 'Skill Learner'}
-                  className="peerfusion-subject-select"
-                >
-                  <option value="">Select Subject</option>
-                  {subjectCategories.map(category => (
-                    <optgroup key={category.id} label={category.name}>
-                      {category.subjects.map(subject => (
-                        !selectedSubjects.includes(subject.name) && (
-                          <option key={subject.id} value={subject.name}>
-                            {subject.name}
-                          </option>
-                        )
+      case 2:
+        return (
+          <div className="step-content">
+            <h2 className="step-title">Subjects & Skills</h2>
+            <p className="step-description">
+              {form.role === 'Skill Learner' 
+                ? "Select subjects you're interested in learning"
+                : "Select subjects you can teach or share knowledge about"
+              }
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">
+                Subjects {form.role !== 'Skill Learner' && '*'}
+              </label>
+              <div className="subject-container">
+                {isLoadingSubjects ? (
+                  <div className="loading-subjects">
+                    <div className="loading-spinner"></div>
+                    <span>Loading subjects...</span>
+                  </div>
+                ) : (
+                  <>
+                    <select 
+                      name="subject" 
+                      onChange={handleSubjectSelect}
+                      disabled={form.role === 'Skill Learner'}
+                      className={`subject-select ${errors.subjects ? 'error' : ''}`}
+                    >
+                      <option value="">Select Subject</option>
+                      {subjectCategories.map(category => (
+                        <optgroup key={category.id || category._id} label={category.name}>
+                          {category.subjects && category.subjects.map(subject => (
+                            !selectedSubjects.includes(subject.name) && (
+                              <option key={subject.id || subject._id} value={subject.name}>
+                                {subject.name}
+                              </option>
+                            )
+                          ))}
+                        </optgroup>
                       ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <div className="peerfusion-subjects-list">
+                    </select>
+                    {errors.subjects && <span className="error-message">{errors.subjects}</span>}
+                  </>
+                )}
+                <div className="subjects-list">
                   {selectedSubjects.map((subject, index) => (
-                    <span key={index} className="peerfusion-subject-tag">
+                    <span key={index} className="subject-tag">
                       {subject}
                       <button 
                         type="button" 
                         onClick={() => removeSubject(subject)}
-                        className="peerfusion-remove-subject"
+                        className="remove-subject"
                       >
                         <FiX size={14} />
                       </button>
@@ -359,129 +511,219 @@ const SetupAccount = () => {
               </div>
             </div>
           </div>
+        );
 
-          {/* Schedule Availability Section */}
-          {form.role !== 'Skill Learner' && (
-            <div className="peerfusion-form-section">
-              <h2 className="peerfusion-section-title">
-                <FiClock className="peerfusion-section-icon" />
-                Schedule Availability
-              </h2>
-              <p className="peerfusion-section-description">
-                Set your available time slots for sessions. Students will see this when requesting sessions.
+      case 3:
+        if (form.role === 'Skill Learner') {
+          return (
+            <div className="step-content">
+              <h2 className="step-title">Schedule Availability</h2>
+              <p className="step-description">
+                As a Skill Learner, you don't need to set availability. You'll be able to book sessions with available Skill Sharers.
               </p>
-              
-              <div className="peerfusion-availability-container">
-                {availability.map((daySchedule) => (
-                  <div key={daySchedule.day} className={`peerfusion-day-availability ${daySchedule.enabled ? 'enabled' : ''}`}>
-                    <div className="peerfusion-day-header">
-                      <label className="peerfusion-day-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={daySchedule.enabled}
-                          onChange={() => toggleDayAvailability(daySchedule.day)}
-                          className="peerfusion-checkbox-input"
-                        />
-                        <span className="peerfusion-day-name">{daySchedule.day}</span>
-                      </label>
-                    </div>
-                    
-                    {daySchedule.enabled && (
-                      <div className="peerfusion-time-slots">
-                        {daySchedule.slots.map((slot, index) => (
-                          <div key={index} className="peerfusion-time-slot">
-                            <select
-                              value={slot.start}
-                              onChange={(e) => updateTimeSlot(daySchedule.day, index, 'start', e.target.value)}
-                              className="peerfusion-time-select"
-                            >
-                              {timeOptions.map(time => (
-                                <option key={time} value={time}>{time}</option>
-                              ))}
-                            </select>
-                            <span className="peerfusion-time-separator">to</span>
-                            <select
-                              value={slot.end}
-                              onChange={(e) => updateTimeSlot(daySchedule.day, index, 'end', e.target.value)}
-                              className="peerfusion-time-select"
-                            >
-                              {timeOptions.map(time => (
-                                <option key={time} value={time}>{time}</option>
-                              ))}
-                            </select>
-                            {daySchedule.slots.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeTimeSlot(daySchedule.day, index)}
-                                className="peerfusion-remove-time-btn"
-                                title="Remove time slot"
-                              >
-                                <FiX size={14} />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => addTimeSlot(daySchedule.day)}
-                          className="peerfusion-add-time-btn"
-                        >
-                          + Add Another Time
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="skip-notice">
+                <FiCheck className="skip-icon" />
+                <span>This step is optional for Skill Learners</span>
               </div>
             </div>
-          )}
+          );
+        }
 
-          {/* Contact Information Section */}
-          <div className="peerfusion-form-section">
-            <h2 className="peerfusion-section-title">
-              <FiLink className="peerfusion-section-icon" />
-              Contact Information
-            </h2>
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">Social Links (one per line)</label>
-              <textarea 
-                name="social_links" 
-                value={form.social_links} 
-                onChange={handleChange} 
-                placeholder="https://linkedin.com/yourprofile&#10;https://github.com/yourusername"
-                rows="3"
-                className="peerfusion-form-textarea"
-              />
+        return (
+          <div className="step-content">
+            <h2 className="step-title">Schedule Availability</h2>
+            <p className="step-description">
+              Set your available time slots for sessions. Students will see this when requesting sessions.
+            </p>
+            
+            <div className="availability-info">
+              <FiCheck className="info-icon" />
+              <span>This step is optional. You can set your availability later.</span>
             </div>
-
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">
-                <FiPhone className="peerfusion-label-icon" />
-                Contact Number
-              </label>
-              <input 
-                type="text" 
-                name="contact_number" 
-                value={form.contact_number} 
-                onChange={handleChange} 
-                placeholder="+(63) 945189326" 
-                className="peerfusion-form-input"
-              />
+            
+            <div className="availability-container">
+              {availability.map((daySchedule) => (
+                <div key={daySchedule.day} className={`day-availability ${daySchedule.enabled ? 'enabled' : ''}`}>
+                  <div className="day-header">
+                    <label className="day-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={daySchedule.enabled}
+                        onChange={() => toggleDayAvailability(daySchedule.day)}
+                        className="checkbox-input"
+                      />
+                      <span className="day-name">{daySchedule.day}</span>
+                    </label>
+                  </div>
+                  
+                  {daySchedule.enabled && (
+                    <div className="time-slots">
+                      {daySchedule.slots.map((slot, index) => (
+                        <div key={index} className="time-slot">
+                          <select
+                            value={slot.start}
+                            onChange={(e) => updateTimeSlot(daySchedule.day, index, 'start', e.target.value)}
+                            className="time-select"
+                          >
+                            {timeOptions.map(time => (
+                              <option key={time} value={time}>{time}</option>
+                            ))}
+                          </select>
+                          <span className="time-separator">to</span>
+                          <select
+                            value={slot.end}
+                            onChange={(e) => updateTimeSlot(daySchedule.day, index, 'end', e.target.value)}
+                            className="time-select"
+                          >
+                            {timeOptions.map(time => (
+                              <option key={time} value={time}>{time}</option>
+                            ))}
+                          </select>
+                          {daySchedule.slots.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeTimeSlot(daySchedule.day, index)}
+                              className="remove-time-btn"
+                              title="Remove time slot"
+                            >
+                              <FiX size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => addTimeSlot(daySchedule.day)}
+                        className="add-time-btn"
+                      >
+                        + Add Another Time
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
+        );
 
-          {/* Submit Button */}
-          <button type="submit" className="peerfusion-submit-btn" disabled={isLoading}>
-            {isLoading ? (
-              'Saving...'
-            ) : (
-              <>
-                <FiSave className="peerfusion-submit-icon" />
-                Complete Profile Setup
-              </>
-            )}
+      case 4:
+        return (
+          <div className="step-content">
+            <h2 className="step-title">Contact Information</h2>
+            <p className="step-description">Share how others can connect with you</p>
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Social Links (one per line)</label>
+                <textarea 
+                  name="social_links" 
+                  value={form.social_links} 
+                  onChange={handleChange} 
+                  placeholder="https://linkedin.com/yourprofile&#10;https://github.com/yourusername"
+                  rows="3"
+                  className="form-textarea"
+                />
+                <small className="help-text">Add one link per line</small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <FiPhone className="label-icon" />
+                  Contact Number *
+                </label>
+                <input 
+                  type="text" 
+                  name="contact_number" 
+                  value={form.contact_number} 
+                  onChange={handleChange} 
+                  placeholder="+(63) 945189326" 
+                  className={`form-input ${errors.contact_number ? 'error' : ''}`}
+                  required
+                />
+                {errors.contact_number && <span className="error-message">{errors.contact_number}</span>}
+                <small className="help-text">Required for session coordination</small>
+              </div>
+            </div>
+
+            <div className="completion-section">
+              <h3>Almost Done!</h3>
+              <p>Review your information and click "Complete Profile Setup" to finish.</p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="progressive-setup-container">
+      <div className="setup-header">
+        <div className="header-content">
+          <h1 className="setup-title">Complete Your Profile</h1>
+          <p className="setup-subtitle">Let's get to know you better</p>
+        </div>
+      </div>
+
+      <div className="progress-container">
+        <div className="progress-steps">
+          {steps.map((step, index) => (
+            <div key={step.id} className="step-indicator">
+              <div className={`step-circle ${currentStep > step.id ? 'completed' : ''} ${currentStep === step.id ? 'active' : ''}`}>
+                {currentStep > step.id ? <FiCheck size={16} /> : <step.icon size={16} />}
+              </div>
+              <span className="step-label">{step.title}</span>
+              {index < steps.length - 1 && (
+                <div className={`step-connector ${currentStep > step.id ? 'completed' : ''}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Using div instead of form to prevent automatic submission */}
+      <div className="setup-form">
+        {renderStepContent()}
+
+        <div className="navigation-actions">
+          <button 
+            type="button" 
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="nav-btn nav-btn-secondary"
+          >
+            <FiChevronLeft className="nav-icon" />
+            Back
           </button>
-        </form>
+
+          {currentStep < steps.length ? (
+            <button 
+              type="button" 
+              onClick={nextStep}
+              className="nav-btn nav-btn-primary"
+            >
+              Next
+              <FiChevronRight className="nav-icon" />
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              onClick={handleSubmit} 
+              className="submit-btns" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                'Saving...'
+              ) : (
+                <>
+                  <FiSave className="submit-icon" />
+                  Complete Profile Setup
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

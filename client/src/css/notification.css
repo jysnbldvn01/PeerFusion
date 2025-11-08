@@ -73,16 +73,6 @@
   pointer-events: none;
 }
 
-/* User Avatar in Header */
-.peerfusion-header-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e8efe5;
-  flex-shrink: 0;
-}
-
 /* Tabs */
 .peerfusion-notification-tabs {
   display: flex;
@@ -534,17 +524,6 @@
   box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
 }
 
-.peerfusion-notification-btn-secondary {
-  background: #ef4444;
-  color: white;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-}
-
-.peerfusion-notification-btn-secondary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
-}
-
 /* Feedback Details */
 .peerfusion-notification-feedback-details {
   margin-top: 1.5rem;
@@ -636,53 +615,7 @@
   text-decoration: none;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .peerfusion-notification-container {
-    padding: 1.5rem;
-  }
-  
-  .peerfusion-notification-search-container {
-    width: 250px;
-  }
-}
-
-@media (max-width: 768px) {
-  .peerfusion-notification-container {
-    padding: 1rem;
-  }
-  
-  .peerfusion-notification-header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-  
-  .peerfusion-notification-header-left {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-  
-  .peerfusion-notification-search-container {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .peerfusion-notification-container {
-    padding: 0.5rem;
-  }
-  
-  .peerfusion-notification-title {
-    font-size: 2rem;
-  }
-  
-  .peerfusion-header-avatar {
-    width: 40px;
-    height: 40px;
-  }
-}/* Approved notification styles - GREEN INDICATOR */
+/* Approved notification styles - GREEN INDICATOR */
 .peerfusion-notification-approved {
   border-left: 4px solid #4a7c3a !important;
   background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%) !important;
@@ -714,23 +647,7 @@
   background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
 }
 
-/* Accepted notification styles - DARK GREEN INDICATOR */
-.peerfusion-notification-accepted {
-  border-left: 4px solid #2d5a27 !important;
-  background: linear-gradient(90deg, #f0f7ed 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-accepted.unread {
-  border-left: 4px solid #2d5a27 !important;
-  background: linear-gradient(90deg, #e0efe0 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-accepted.read {
-  border-left: 4px solid #2d5a27 !important;
-  background: linear-gradient(90deg, #f0f7ed 0%, #ffffff 10%) !important;
-}
-
-/* Badge styles for approved/rejected/accepted */
+/* Badge styles for approved/rejected */
 .peerfusion-badge-approved {
   background: linear-gradient(135deg, #4a7c3a, #6ba84f);
   color: white;
@@ -754,19 +671,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
-  border: none;
-}
-
-.peerfusion-badge-accepted {
-  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.3);
   border: none;
 }
 
@@ -840,17 +744,6 @@
   margin: 1.5rem 0;
 }
 
-.peerfusion-notice-accepted {
-  background: #f0f7ed;
-  border-left: 4px solid #2d5a27;
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin: 1.5rem 0;
-}
-
 .peerfusion-notice-approved p {
   color: #2d5a27;
   margin: 0;
@@ -863,19 +756,12 @@
   line-height: 1.5;
 }
 
-.peerfusion-notice-accepted p {
-  color: #2d5a27;
-  margin: 0;
-  line-height: 1.5;
-}
-
 .peerfusion-notification-important-icon {
   font-size: 1.5rem;
   flex-shrink: 0;
   display: flex;
   align-items: center;
 }
-
 
 /* Mark All Button - Responsive */
 .peerfusion-mark-all-btn {
@@ -912,18 +798,112 @@
   box-shadow: 0 2px 6px rgba(45, 90, 39, 0.08);
 }
 
-/* Tabs Container - Responsive */
-.peerfusion-notification-tabs {
+/* Skeleton Loading Styles */
+.peerfusion-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: peerfusion-skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes peerfusion-skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.peerfusion-skeleton-notification {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
+  border: 1px solid #f0f7ed;
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.peerfusion-skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.peerfusion-skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-  margin: 2rem 0;
-  padding: 0 0.5rem;
+}
+
+.peerfusion-skeleton-header {
+  display: flex;
+  gap: 1rem;
   align-items: center;
 }
 
-/* Mobile Responsive */
+.peerfusion-skeleton-username {
+  width: 120px;
+  height: 16px;
+}
+
+.peerfusion-skeleton-time {
+  width: 80px;
+  height: 12px;
+}
+
+.peerfusion-skeleton-message {
+  width: 100%;
+  height: 14px;
+}
+
+.peerfusion-skeleton-message-short {
+  width: 70%;
+  height: 14px;
+}
+
+.peerfusion-skeleton-badge {
+  width: 60px;
+  height: 20px;
+  border-radius: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .peerfusion-notification-container {
+    padding: 1.5rem;
+  }
+  
+  .peerfusion-notification-search-container {
+    width: 250px;
+  }
+}
+
 @media (max-width: 768px) {
+  .peerfusion-notification-container {
+    padding: 1rem;
+  }
+  
+  .peerfusion-notification-header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .peerfusion-notification-header-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .peerfusion-notification-search-container {
+    width: 100%;
+  }
+  
   .peerfusion-notification-tabs {
     gap: 0.5rem;
   }
@@ -940,8 +920,15 @@
   }
 }
 
-/* Small Mobile Responsive */
 @media (max-width: 480px) {
+  .peerfusion-notification-container {
+    padding: 0.5rem;
+  }
+  
+  .peerfusion-notification-title {
+    font-size: 2rem;
+  }
+  
   .peerfusion-notification-tabs {
     gap: 0.4rem;
   }
@@ -955,9 +942,16 @@
     padding: 0.5rem 0.8rem;
     font-size: 0.8rem;
   }
+  
+  .peerfusion-notification-item {
+    padding: 1rem;
+  }
+  
+  .peerfusion-skeleton-notification {
+    padding: 1rem;
+  }
 }
 
-/* Very Small Mobile */
 @media (max-width: 360px) {
   .peerfusion-mark-all-btn {
     padding: 0.5rem 0.7rem;
@@ -967,5 +961,318 @@
   .peerfusion-notification-tab {
     padding: 0.5rem 0.7rem;
     font-size: 0.75rem;
+  }
+}
+/* Session Request Status Badges */
+.peerfusion-badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.peerfusion-badge-accepted {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
+  border: none;
+}
+
+.peerfusion-badge-rejected {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+  border: none;
+}
+
+/* Penalty and Strike Badges */
+.peerfusion-badge-penalty {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  border: none;
+}
+
+/* Strike Count Badge Variations */
+.peerfusion-badge-strike-1 {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.peerfusion-badge-strike-2 {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: white;
+  border: 1px solid #ea580c;
+}
+
+.peerfusion-badge-strike-3 {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  border: 1px solid #dc2626;
+}
+
+/* System Notification Badges */
+.peerfusion-badge-system {
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+  border: none;
+}
+
+.peerfusion-badge-info {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  border: none;
+}
+
+/* Notification Item Status Indicators */
+.peerfusion-notification-item.peerfusion-notification-pending {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fefce8 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-pending.unread {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-accepted {
+  border-left: 4px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #f0f9f0 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-accepted.unread {
+  border-left: 4px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #e8efe5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-rejected {
+  border-left: 4px solid #8b4513 !important;
+  background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-rejected.unread {
+  border-left: 4px solid #8b4513 !important;
+  background: linear-gradient(90deg, #fae8e5 0%, #ffffff 10%) !important;
+}
+
+/* Strike Count Notification Styles */
+.peerfusion-notification-item.peerfusion-notification-strike-1 {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fefce8 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-1.unread {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-2 {
+  border-left: 4px solid #ea580c !important;
+  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-2.unread {
+  border-left: 4px solid #ea580c !important;
+  background: linear-gradient(90deg, #ffedd5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-3 {
+  border-left: 4px solid #dc2626 !important;
+  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-3.unread {
+  border-left: 4px solid #dc2626 !important;
+  background: linear-gradient(90deg, #fee2e2 0%, #ffffff 10%) !important;
+}
+
+/* Modal Action Buttons for Session Requests */
+.peerfusion-notification-btn-accept {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-notification-btn-accept:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
+  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
+}
+
+.peerfusion-notification-btn-reject {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+}
+
+.peerfusion-notification-btn-reject:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
+  background: linear-gradient(135deg, #654321, #8b4513);
+}
+
+/* Strike Display in Notification Badges */
+.peerfusion-strike-display {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.peerfusion-strike-count {
+  background: #dc2626;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+/* Notification Message Styling for Strike Information */
+.peerfusion-strike-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #dc2626;
+}
+
+.peerfusion-strike-message strong {
+  color: #991b1b;
+}
+
+/* Warning Level Indicators */
+.peerfusion-warning-level-low {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.peerfusion-warning-level-medium {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.peerfusion-warning-level-high {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Session Request Specific Styles */
+.peerfusion-session-request-info {
+  background: #f8faf7;
+  border: 1px solid #e8efe5;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.peerfusion-session-request-info p {
+  margin: 0.3rem 0;
+  color: #5a7c55;
+  font-size: 0.9rem;
+}
+
+.peerfusion-session-request-info strong {
+  color: #2d5a27;
+}
+
+/* Time-sensitive Notifications */
+.peerfusion-notification-urgent {
+  border-left: 4px solid #dc2626 !important;
+  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 10%) !important;
+  animation: peerfusion-pulse 2s infinite;
+}
+
+@keyframes peerfusion-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.15);
+  }
+}
+
+/* Responsive Badge Styles */
+@media (max-width: 480px) {
+  .peerfusion-notification-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+  }
+  
+  .peerfusion-notification-btn-accept,
+  .peerfusion-notification-btn-reject {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .peerfusion-session-request-info {
+    padding: 0.75rem;
   }
 }

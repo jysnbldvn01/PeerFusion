@@ -20,8 +20,8 @@ const Home = () => {
 
   const slides = [
     { image: "/images/banner1.png", alt: "Share your skills" },
-    { image: "/images/banner1.png", alt: "Learn new things" },
-    { image: "/images/banner1.png", alt: "Build your network" }
+    { image: "/images/banner2.png", alt: "Learn new things" },
+    { image: "/images/banner3.png", alt: "Build your network" }
   ];
 
   useEffect(() => {
@@ -87,6 +87,28 @@ const Home = () => {
 
     return () => clearInterval(slideInterval);
   }, [slides.length]);
+
+  // Skeleton Loading Component
+  const SkeletonCard = () => (
+    <div className="peerfusion-skeleton-card">
+      <div className="peerfusion-card-avatar-container">
+        <div className="peerfusion-skeleton peerfusion-skeleton-avatar"></div>
+        <div className="peerfusion-skeleton peerfusion-skeleton-rating"></div>
+      </div>
+      <div className="peerfusion-user-info">
+        <div className="peerfusion-skeleton peerfusion-skeleton-text" style={{ width: '70%', height: '24px', marginBottom: '1rem' }}></div>
+        <div className="peerfusion-user-details">
+          <div className="peerfusion-skeleton peerfusion-skeleton-text" style={{ width: '90%' }}></div>
+          <div className="peerfusion-skeleton peerfusion-skeleton-text" style={{ width: '80%' }}></div>
+          <div className="peerfusion-skeleton peerfusion-skeleton-text" style={{ width: '85%' }}></div>
+        </div>
+        <div className="peerfusion-social-links-preview">
+          <div className="peerfusion-skeleton peerfusion-skeleton-text-sm" style={{ width: '100%', height: '32px' }}></div>
+          <div className="peerfusion-skeleton peerfusion-skeleton-text-sm" style={{ width: '80%', height: '32px' }}></div>
+        </div>
+      </div>
+    </div>
+  );
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -312,12 +334,13 @@ const Home = () => {
         ))}
       </div>
 
-      {/* Pinterest-style User Cards */}
+      {/* Pinterest-style User Cards with Skeleton Loading */}
       <div className="peerfusion-user-list">
         {isLoading ? (
-          <div className="peerfusion-loading-container">
-            <div className="peerfusion-loading-spinner"></div>
-          </div>
+          // Skeleton loading state
+          Array.from({ length: 6 }).map((_, index) => (
+            <SkeletonCard key={index} />
+          ))
         ) : (
           filteredUsers.map(user => {
             const isRecommended = recommendedUsers.some(recUser => recUser.id === user.id);

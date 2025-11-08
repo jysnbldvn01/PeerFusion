@@ -876,4 +876,378 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 });
 // ------------------- End Change Password --------------------------- //
 
+// ------------------- Change Email --------------------------- //
+router.post('/change-email', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newEmail } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newEmail) {
+      return res.status(400).json({ error: 'Current password and new email are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Get user's current password hash and email
+    const userSql = 'SELECT password, email FROM users WHERE id = ?';
+    const [userResults] = await db.query(userSql, [userId]);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const currentPasswordHash = userResults[0].password;
+    const currentEmail = userResults[0].email;
+
+    // Check if new email is the same as current email
+    if (newEmail === currentEmail) {
+      return res.status(400).json({ error: 'New email cannot be the same as current email' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentPasswordHash);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Check if new email already exists
+    const emailCheckSql = 'SELECT id FROM users WHERE email = ? AND id != ?';
+    const [emailResults] = await db.query(emailCheckSql, [newEmail, userId]);
+
+    if (emailResults.length > 0) {
+      return res.status(409).json({ error: 'This email is already in use' });
+    }
+
+    // Generate verification code (6 digits)
+    const verificationCode = generateSixDigitCode();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Store verification code in database
+    const updateSql = `
+      UPDATE users 
+      SET email_verification_code = ?, email_verification_expires = ?, pending_email = ?
+      WHERE id = ?
+    `;
+    
+    await db.query(updateSql, [hashedCode, codeExpires, newEmail, userId]);
+
+    // Send verification email to the new email address
+    try {
+      const mailOptions = {
+        from: '"PeerFusion" <onboarding@resend.dev>',
+        to: newEmail,
+        subject: 'Verify Your New Email Address - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Email Change Verification</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Verification</h2>
+                <p>Hello,</p>
+                <p>You requested to change your PeerFusion account email to this address. Use the following 6-digit verification code to confirm this change:</p>
+                <div style="text-align:center; margin: 30px 0;">
+                  <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
+                  </div>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px;">
+                  This code will expire in <strong>15 minutes</strong>.
+                </p>
+                <p>If you didn't request this email change, please ignore this email or contact support immediately.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`Verification code sent to: ${newEmail}`);
+      
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Clear the pending email and code if email sending fails
+      await db.query(
+        'UPDATE users SET email_verification_code = NULL, email_verification_expires = NULL, pending_email = NULL WHERE id = ?',
+        [userId]
+      );
+      return res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification code sent to your new email address. Please check your inbox and enter the code to complete the email change.',
+      requiresVerification: true,
+      email: newEmail
+    });
+  } catch (err) {
+    console.error('Email change error:', err);
+    res.status(500).json({ error: 'Failed to change email' });
+  }
+});
+
+// ------------------- Verify Email Change Code --------------------------- //
+router.post('/verify-email-change', authenticateToken, async (req, res) => {
+  try {
+    const { verificationCode } = req.body;
+    const userId = req.user.id;
+
+    if (!verificationCode) {
+      return res.status(400).json({ error: 'Verification code is required' });
+    }
+
+    // Get user's pending email and verification code
+    const userSql = 'SELECT pending_email, email_verification_code, email_verification_expires FROM users WHERE id = ?';
+    const [userResults] = await db.query(userSql, [userId]);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResults[0];
+
+    // Check if there's a pending email change
+    if (!user.pending_email || !user.email_verification_code) {
+      return res.status(400).json({ error: 'No pending email change request found. The request may have expired or been cancelled.' });
+    }
+
+    // Check if verification code has expired
+    if (new Date(user.email_verification_expires) < new Date()) {
+      // Clear expired data automatically
+      await db.query(
+        'UPDATE users SET email_verification_code = NULL, email_verification_expires = NULL, pending_email = NULL WHERE id = ?',
+        [userId]
+      );
+      return res.status(400).json({ error: 'Verification code has expired. Please request a new email change.' });
+    }
+
+    // Verify the code
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    if (user.email_verification_code !== hashedCode) {
+      return res.status(400).json({ error: 'Invalid verification code' });
+    }
+
+    // Check if the pending email is still available (not taken by another user)
+    const emailCheckSql = 'SELECT id FROM users WHERE email = ? AND id != ?';
+    const [emailResults] = await db.query(emailCheckSql, [user.pending_email, userId]);
+
+    if (emailResults.length > 0) {
+      // Clear pending data since email is no longer available
+      await db.query(
+        'UPDATE users SET email_verification_code = NULL, email_verification_expires = NULL, pending_email = NULL WHERE id = ?',
+        [userId]
+      );
+      return res.status(409).json({ error: 'This email is no longer available. Please try a different email.' });
+    }
+
+    // Update the email and clear verification data
+    const updateSql = `
+      UPDATE users 
+      SET email = ?, 
+          is_verified = FALSE, 
+          email_verification_code = NULL, 
+          email_verification_expires = NULL, 
+          pending_email = NULL,
+          verification_token = ?,
+          verification_expires = ?
+      WHERE id = ?
+    `;
+    
+    const newVerificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await db.query(updateSql, [
+      user.pending_email, 
+      newVerificationToken, 
+      verificationExpires, 
+      userId
+    ]);
+
+    // Send welcome email to the new email address
+    try {
+      const welcomeMailOptions = {
+        from: '"PeerFusion" <onboarding@resend.dev>',
+        to: user.pending_email,
+        subject: 'Email Changed Successfully - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Email Changed Successfully</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Changed Successfully</h2>
+                <p>Hello,</p>
+                <p>Your PeerFusion account email has been successfully changed to this address.</p>
+                <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #f0f9f0; border-radius: 8px;">
+                  <p style="margin: 0; color: #0ea050ff; font-weight: bold;">Your email has been updated!</p>
+                </div>
+                <p><strong>Important:</strong> You will need to verify this email address to access all features.</p>
+                <p>If you did not make this change, please contact our support team immediately.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
+
+      await transporter.sendMail(welcomeMailOptions);
+      
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Continue even if confirmation email fails
+    }
+
+    res.json({
+      success: true,
+      message: 'Email changed successfully! Please check your new email for verification instructions.',
+      newEmail: user.pending_email
+    });
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.status(500).json({ error: 'Failed to verify email change' });
+  }
+});
+
+// ------------------- Resend Email Change Code --------------------------- //
+router.post('/resend-email-change-code', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user's pending email
+    const userSql = 'SELECT pending_email FROM users WHERE id = ?';
+    const [userResults] = await db.query(userSql, [userId]);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResults[0];
+
+    if (!user.pending_email) {
+      return res.status(400).json({ error: 'No pending email change request found' });
+    }
+
+    // Generate new verification code
+    const verificationCode = generateSixDigitCode();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update verification code in database
+    const updateSql = `
+      UPDATE users 
+      SET email_verification_code = ?, email_verification_expires = ?
+      WHERE id = ?
+    `;
+    
+    await db.query(updateSql, [hashedCode, codeExpires, userId]);
+
+    // Resend verification email
+    try {
+      const mailOptions = {
+        from: '"PeerFusion" <onboarding@resend.dev>',
+        to: user.pending_email,
+        subject: 'New Verification Code - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>New Verification Code</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">New Verification Code</h2>
+                <p>Hello,</p>
+                <p>You requested a new verification code for your email change request. Use the following 6-digit code:</p>
+                <div style="text-align:center; margin: 30px 0;">
+                  <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
+                  </div>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px;">
+                  This code will expire in <strong>15 minutes</strong>.
+                </p>
+                <p>If you didn't request this code, please contact support immediately.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`New verification code sent to: ${user.pending_email}`);
+      
+    } catch (emailError) {
+      console.error('Failed to resend verification email:', emailError);
+      return res.status(500).json({ error: 'Failed to resend verification code. Please try again.' });
+    }
+
+    res.json({
+      success: true,
+      message: 'New verification code sent to your email address.'
+    });
+  } catch (err) {
+    console.error('Resend verification code error:', err);
+    res.status(500).json({ error: 'Failed to resend verification code' });
+  }
+});
+
 module.exports = router;

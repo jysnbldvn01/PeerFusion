@@ -1,0 +1,1244 @@
+/* LandingPage.css - Light Mode with Animated Gradient */
+.peerfusion-landing-page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* Navigation - Transparent Light */
+.peerfusion-landing-page .peerfusion-landing-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(107, 168, 79, 0.2);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .peerfusion-landing-nav.scrolled {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(30px);
+  box-shadow: 0 2px 20px rgba(107, 168, 79, 0.1);
+}
+
+.peerfusion-landing-page .nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.peerfusion-landing-page .nav-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d5a27;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.peerfusion-landing-page .logo-image {
+  height: 40px;
+  width: auto;
+  border-radius: 8px;
+}
+
+.peerfusion-landing-page .nav-links {
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.peerfusion-landing-page .nav-link {
+  color: #2d3748;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.peerfusion-landing-page .nav-link:hover {
+  color: #2d5a27;
+}
+
+.peerfusion-landing-page .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6ba84f, #4a7c3a);
+  transition: width 0.3s ease;
+}
+
+.peerfusion-landing-page .nav-link:hover::after {
+  width: 100%;
+}
+
+.peerfusion-landing-page .nav-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.peerfusion-landing-page .nav-login {
+  background: transparent;
+  border: 1.5px solid rgba(107, 168, 79, 0.3);
+  color: #2d5a27;
+  padding: 0.6rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .nav-login:hover {
+  background: rgba(107, 168, 79, 0.1);
+  border-color: #6ba84f;
+}
+
+.peerfusion-landing-page .nav-get-started {
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  border: none;
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(107, 168, 79, 0.3);
+}
+
+.peerfusion-landing-page .nav-get-started:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(107, 168, 79, 0.4);
+}
+
+/* Mobile Menu */
+.peerfusion-landing-page .mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #2d5a27;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .mobile-menu-toggle:hover {
+  background: rgba(107, 168, 79, 0.1);
+}
+
+.peerfusion-landing-page .mobile-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(30px);
+  border-bottom: 1px solid rgba(107, 168, 79, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.peerfusion-landing-page .mobile-dropdown-menu.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.peerfusion-landing-page .mobile-nav-links {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 2rem;
+}
+
+.peerfusion-landing-page .mobile-nav-link {
+  padding: 1rem 0;
+  color: #2d3748;
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(107, 168, 79, 0.1);
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .mobile-nav-link:last-child {
+  border-bottom: none;
+}
+
+.peerfusion-landing-page .mobile-nav-link:hover {
+  color: #2d5a27;
+  padding-left: 0.5rem;
+}
+
+.peerfusion-landing-page .mobile-nav-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border-top: 1px solid rgba(107, 168, 79, 0.1);
+}
+
+.peerfusion-landing-page .mobile-nav-login {
+  background: transparent;
+  border: 1.5px solid rgba(107, 168, 79, 0.3);
+  color: #2d5a27;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .mobile-nav-login:hover {
+  background: rgba(107, 168, 79, 0.1);
+  border-color: #6ba84f;
+}
+
+.peerfusion-landing-page .mobile-nav-get-started {
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .mobile-nav-get-started:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 168, 79, 0.3);
+}
+
+/* Hero Section */
+.peerfusion-landing-page .hero-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding-top: 80px;
+  scroll-margin-top: 80px;
+}
+
+.peerfusion-landing-page .hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #f8fafc 0%, rgba(74, 124, 58, 0.3) 25%, #6ba84f 50%, rgba(74, 124, 58, 0.3) 75%, #f8fafc 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.peerfusion-landing-page .hero-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(107, 168, 79, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(74, 124, 58, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+.peerfusion-landing-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.peerfusion-landing-page .hero-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  min-height: 80vh;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.peerfusion-landing-page .hero-text {
+  text-align: left;
+  max-width: 100%;
+  margin: 0;
+  animation: fadeInUp 1s ease-out;
+}
+
+.peerfusion-landing-page .hero-graphic {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeInUp 1s ease-out 0.3s both;
+  position: relative;
+}
+
+.peerfusion-landing-page .graphic-container {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.peerfusion-landing-page .graphic-svg {
+  width: 750px;
+  height: 750px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(107, 168, 79, 0.2));
+  z-index: 2;
+  position: relative;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.peerfusion-landing-page .hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #1a202c 0%, #2d5a27 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from {
+    text-shadow: 0 0 20px rgba(107, 168, 79, 0.1);
+  }
+  to {
+    text-shadow: 0 0 30px rgba(107, 168, 79, 0.2);
+  }
+}
+
+.peerfusion-landing-page .gradient-text {
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientPulse 2s ease-in-out infinite;
+}
+
+@keyframes gradientPulse {
+  0%, 100% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(10deg);
+  }
+}
+
+.peerfusion-landing-page .hero-description {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: #4a5568;
+  margin-bottom: 3rem;
+  max-width: 600px;
+  animation: fadeInUp 1s ease-out 0.2s both;
+}
+
+.peerfusion-landing-page .hero-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  animation: fadeInUp 1s ease-out 0.6s both;
+}
+
+.peerfusion-landing-page .sbtn-primary {
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  border: none;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(107, 168, 79, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.peerfusion-landing-page .sbtn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(107, 168, 79, 0.4);
+}
+
+.peerfusion-landing-page .btn-secondary {
+  background: rgba(107, 168, 79, 0.1);
+  border: 1px solid rgba(107, 168, 79, 0.3);
+  color: #2d5a27;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.peerfusion-landing-page .btn-secondary:hover {
+  background: rgba(107, 168, 79, 0.2);
+  border-color: rgba(107, 168, 79, 0.5);
+}
+
+.peerfusion-landing-page .btn-outline {
+  background: transparent;
+  border: 2px solid #6ba84f;
+  color: #6ba84f;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .btn-outline:hover {
+  background: rgba(107, 168, 79, 0.1);
+}
+
+/* About Section */
+.peerfusion-landing-page .about-section {
+  padding: 6rem 0;
+  background: #f8fafc;
+  scroll-margin-top: 80px;
+}
+
+.peerfusion-landing-page .about-content {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.peerfusion-landing-page .about-content h2 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  background: linear-gradient(135deg, #1a202c, #2d5a27);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.peerfusion-landing-page .about-statement {
+  font-size: 1.3rem;
+  line-height: 1.7;
+  color: #4a5568;
+  margin-bottom: 4rem;
+}
+
+.peerfusion-landing-page .about-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 4rem;
+}
+
+.peerfusion-landing-page .pillar {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.peerfusion-landing-page .pillar:hover {
+  transform: translateY(-10px);
+  border-color: rgba(107, 168, 79, 0.5);
+  box-shadow: 0 20px 40px rgba(107, 168, 79, 0.15);
+}
+
+.peerfusion-landing-page .pillar-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  background: rgba(107, 168, 79, 0.1);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6ba84f;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .pillar:hover .pillar-icon {
+  transform: scale(1.1);
+  background: rgba(107, 168, 79, 0.2);
+}
+
+.peerfusion-landing-page .pillar-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.peerfusion-landing-page .pillar h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #1a202c;
+}
+
+.peerfusion-landing-page .pillar p {
+  color: #718096;
+  line-height: 1.6;
+}
+
+/* Features Section */
+.peerfusion-landing-page .features-section {
+  padding: 6rem 0;
+  scroll-margin-top: 80px;
+}
+
+.peerfusion-landing-page .section-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.peerfusion-landing-page .section-header h2 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #1a202c, #2d5a27);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.peerfusion-landing-page .section-header p {
+  font-size: 1.2rem;
+  color: #718096;
+}
+
+.peerfusion-landing-page .features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.peerfusion-landing-page .features-row {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+}
+
+.peerfusion-landing-page .features-row.first-row {
+  justify-content: space-between;
+}
+
+.peerfusion-landing-page .features-row.second-row {
+  justify-content: center;
+}
+
+.peerfusion-landing-page .feature-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  flex: 0 1 calc(33.333% - 1.34rem);
+}
+
+.peerfusion-landing-page .features-row.second-row .feature-card {
+  flex: 0 1 calc(33.333% - 1.34rem);
+  max-width: calc(33.333% - 1.34rem);
+}
+
+.peerfusion-landing-page .feature-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(107, 168, 79, 0.5);
+  box-shadow: 0 15px 30px rgba(107, 168, 79, 0.15);
+}
+
+.peerfusion-landing-page .feature-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  background: rgba(107, 168, 79, 0.1);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6ba84f;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-landing-page .feature-card:hover .feature-icon {
+  transform: scale(1.1);
+  background: rgba(107, 168, 79, 0.2);
+}
+
+.peerfusion-landing-page .feature-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.peerfusion-landing-page .feature-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #1a202c;
+}
+
+.peerfusion-landing-page .feature-card p {
+  color: #718096;
+  line-height: 1.6;
+}
+
+/* Responsive Design for Features */
+@media (max-width: 1024px) {
+  .peerfusion-landing-page .features-grid {
+    gap: 1.5rem;
+  }
+  
+  .peerfusion-landing-page .features-row {
+    gap: 1.5rem;
+  }
+  
+  .peerfusion-landing-page .feature-card {
+    flex: 0 1 calc(33.333% - 1rem);
+    padding: 1.5rem;
+  }
+  
+  .peerfusion-landing-page .features-row.second-row .feature-card {
+    flex: 0 1 calc(33.333% - 1rem);
+    max-width: calc(33.333% - 1rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .peerfusion-landing-page .features-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .peerfusion-landing-page .features-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .peerfusion-landing-page .feature-card {
+    flex: none;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .peerfusion-landing-page .features-row.second-row .feature-card {
+    flex: none;
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .peerfusion-landing-page .section-header h2 {
+    font-size: 2.2rem;
+  }
+  
+  .peerfusion-landing-page .section-header p {
+    font-size: 1.1rem;
+  }
+  
+  .peerfusion-landing-page .feature-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .peerfusion-landing-page .feature-card h3 {
+    font-size: 1.3rem;
+  }
+  
+  .peerfusion-landing-page .feature-card p {
+    font-size: 1rem;
+  }
+  
+  .peerfusion-landing-page .feature-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .peerfusion-landing-page .feature-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Community Section */
+.peerfusion-landing-page .community-section {
+  padding: 5rem 0 5rem 0;
+  background: #f8fafc;
+  scroll-margin-top: 80px;
+}
+
+.peerfusion-landing-page .community-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.peerfusion-landing-page .community-text {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.peerfusion-landing-page .community-text h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #1a202c, #2d5a27);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.peerfusion-landing-page .community-text p {
+  line-height: 1.7;
+  color: #4a5568;
+  margin: 0 auto;
+}
+
+.peerfusion-landing-page .community-visual {
+  overflow: hidden;
+  padding: 0.5rem 0;
+  height: 400px;
+  width: 100%;
+  margin-top: 0;
+  position: relative;
+}
+
+.peerfusion-landing-page .testimonial-track {
+  display: flex;
+  gap: 1rem;
+  height: fit-content;
+  width: max-content;
+  animation: seamlessScroll 60s linear infinite;
+  padding-right: 3rem;
+  will-change: transform;
+}
+
+@keyframes seamlessScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - 1.5rem));
+  }
+}
+
+.peerfusion-landing-page .testimonial-track:hover {
+  animation-play-state: paused;
+}
+
+/* Each column container - Desktop */
+.peerfusion-landing-page .testimonial-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.peerfusion-landing-page .testimonial-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.peerfusion-landing-page .testimonial-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(107, 168, 79, 0.3);
+  box-shadow: 0 4px 15px rgba(107, 168, 79, 0.1);
+}
+
+.peerfusion-landing-page .testimonial-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.peerfusion-landing-page .testimonial-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6ba84f, #4a7c3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.peerfusion-landing-page .testimonial-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.peerfusion-landing-page .testimonial-user {
+  flex: 1;
+  min-width: 0;
+}
+
+.peerfusion-landing-page .testimonial-username {
+  font-weight: 700;
+  color: #1a202c;
+  font-size: 1rem;
+  margin-bottom: 0.1rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peerfusion-landing-page .testimonial-handle {
+  color: #6ba84f;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peerfusion-landing-page .testimonial-content {
+  color: #4a5568;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Gradient Shadows - Desktop only */
+.peerfusion-landing-page .community-visual .left-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 200px;
+  background: linear-gradient(82deg, #f8fafc 30%, transparent 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.peerfusion-landing-page .community-visual .right-shadow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  background: linear-gradient(283deg, #f8fafc 30%, transparent 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.peerfusion-landing-page .community-visual .bottom-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 130px;
+  background: linear-gradient(0deg, #f8fafc 20%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .peerfusion-landing-page .community-section {
+    padding: 3rem 0 3rem 0;
+  }
+  
+  .peerfusion-landing-page .community-text h2 {
+    font-size: 2rem;
+  }
+  
+  .peerfusion-landing-page .community-text p {
+    font-size: 1.1rem;
+  }
+  
+  .peerfusion-landing-page .community-visual {
+    height: 320px;
+  }
+  
+  /* Change to single item horizontal scrolling - SLOWER */
+  .peerfusion-landing-page .testimonial-track {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    animation: mobileSingleScroll 300s linear infinite; /* Much slower: 300s */
+    padding-right: 1rem;
+    height: 100%;
+    align-items: center;
+  }
+  
+  /* Single item scroll animation - SLOWER */
+  @keyframes mobileSingleScroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-50% - 0.5rem)); /* Only move 50% for slower effect */
+    }
+  }
+  
+  /* Remove columns completely on mobile */
+  .peerfusion-landing-page .testimonial-column {
+    display: none !important;
+  }
+  
+  /* Direct testimonial cards for mobile */
+  .peerfusion-landing-page .testimonial-card {
+    width: 280px;
+    flex-shrink: 0;
+    padding: 1.5rem;
+    margin: 0;
+    height: auto;
+  }
+  
+  /* Hide shadows on mobile since it's single item scrolling */
+  .peerfusion-landing-page .community-visual .left-shadow,
+  .peerfusion-landing-page .community-visual .right-shadow,
+  .peerfusion-landing-page .community-visual .bottom-shadow {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .peerfusion-landing-page .community-section {
+    padding: 2rem 0 2rem 0;
+  }
+  
+  .peerfusion-landing-page .community-text h2 {
+    font-size: 1.8rem;
+  }
+  
+  .peerfusion-landing-page .community-text p {
+    font-size: 1rem;
+  }
+  
+  .peerfusion-landing-page .community-visual {
+    height: 280px;
+  }
+  
+  .peerfusion-landing-page .testimonial-track {
+    animation: mobileSingleScroll 240s linear infinite; /* Slower: 100s instead of 50s */
+    gap: 0.8rem;
+  }
+  
+  .peerfusion-landing-page .testimonial-card {
+    width: 260px;
+    padding: 1rem;
+  }
+  
+  .peerfusion-landing-page .testimonial-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .peerfusion-landing-page .testimonial-username {
+    font-size: 0.9rem;
+  }
+  
+  .peerfusion-landing-page .testimonial-handle {
+    font-size: 0.75rem;
+  }
+  
+  .peerfusion-landing-page .testimonial-content {
+    font-size: 0.85rem;
+  }
+}
+
+/* Very small mobile devices */
+@media (max-width: 360px) {
+  .peerfusion-landing-page .community-visual {
+    height: 280px;
+  }
+  
+  .peerfusion-landing-page .testimonial-card {
+    width: 240px;
+    padding: 1rem;
+  }
+  
+  .peerfusion-landing-page .testimonial-track {
+    animation: mobileSingleScroll 200s linear infinite; /* Slower: 200s */
+    gap: 0.7rem;
+  }
+}
+
+/* CTA Section */
+.peerfusion-landing-page .cta-section {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, rgba(107, 168, 79, 0.1), rgba(74, 124, 58, 0.1));
+  position: relative;
+  overflow: hidden;
+}
+
+.peerfusion-landing-page .cta-content {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.peerfusion-landing-page .cta-content h2 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #1a202c, #2d5a27);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.peerfusion-landing-page .cta-content p {
+  font-size: 1.2rem;
+  color: #4a5568;
+  margin-bottom: 3rem;
+}
+
+.peerfusion-landing-page .cta-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Footer */
+.peerfusion-landing-page .peerfusion-footer {
+  background: #2d5a27;
+  border-top: 1px solid #e2e8f0;
+  padding: 3rem 0 1rem;
+}
+
+.peerfusion-landing-page .footer-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 4rem;
+  margin-bottom: 2rem;
+}
+
+.peerfusion-landing-page .footer-brand {
+  max-width: 300px;
+}
+
+.peerfusion-landing-page .footer-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.peerfusion-landing-page .footer-brand p {
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.peerfusion-landing-page .footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.peerfusion-landing-page .link-group h4 {
+  color: #f1f5f9;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.peerfusion-landing-page .link-group a {
+  display: block;
+  color: #e2e8f0;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.peerfusion-landing-page .link-group a:hover {
+  color: #6ba84f;
+}
+
+.peerfusion-landing-page .footer-bottom {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+  color: #ffffff9c;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .peerfusion-landing-page .hero-content,
+  .peerfusion-landing-page .community-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  
+  .peerfusion-landing-page .about-pillars,
+  .peerfusion-landing-page .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .peerfusion-landing-page .footer-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+}
+
+/* Mobile Responsive Hero Section */
+@media (max-width: 768px) {
+  .peerfusion-landing-page .nav-container {
+    padding: 1rem;
+  }
+  
+  .peerfusion-landing-page .nav-links {
+    display: none;
+  }
+  
+  .peerfusion-landing-page .nav-actions {
+    display: none;
+  }
+  
+  .peerfusion-landing-page .mobile-menu-toggle {
+    display: block;
+  }
+  
+  /* Hero Section Mobile */
+  .peerfusion-landing-page .hero-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .peerfusion-landing-page .hero-text {
+    text-align: center;
+  }
+  
+  .peerfusion-landing-page .hero-graphic {
+    display: none !important;
+  }
+  
+  .peerfusion-landing-page .hero-title {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+  
+  .peerfusion-landing-page .hero-description {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .peerfusion-landing-page .hero-actions {
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .peerfusion-landing-page .hero-actions button {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .peerfusion-landing-page .about-content h2,
+  .peerfusion-landing-page .section-header h2,
+  .peerfusion-landing-page .community-text h2,
+  .peerfusion-landing-page .cta-content h2 {
+    font-size: 2.2rem;
+  }
+  
+  .peerfusion-landing-page .about-pillars,
+  .peerfusion-landing-page .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .peerfusion-landing-page .footer-links {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .peerfusion-landing-page .container {
+    padding: 0 1rem;
+  }
+  
+  .peerfusion-landing-page .hero-title {
+    font-size: 2rem;
+  }
+  
+  .peerfusion-landing-page .hero-description {
+    font-size: 1.1rem;
+  }
+  
+  .peerfusion-landing-page .cta-content h2 {
+    font-size: 2.2rem;
+  }
+}

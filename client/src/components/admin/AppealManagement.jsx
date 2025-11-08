@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaGavel, FaSearch, FaCheck, FaTimes, FaEye, FaClock, FaUserCheck, FaExclamationTriangle, FaFilter, FaDownload, FaImage, FaFilePdf, FaVideo, FaUser, FaGlobe } from 'react-icons/fa';
 import '../../css/appealmanagement.css';
 
-// Professional SVG Icons (keep your existing icons)
+// Professional SVG Icons
 const GavelIcon = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14 7L9 12L11 14L16 9M5 20H19C19.5523 20 20 19.5523 20 19V15C20 14.4477 19.5523 14 19 14H5C4.44772 14 4 14.4477 4 15V19C4 19.5523 4.44772 20 5 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -206,7 +206,7 @@ const AppealManagement = () => {
         body: JSON.stringify({
           status,
           apply_user_action: applyUserAction,
-          resolution_notes: status === 'approved' ? 'Appeal approved by moderator' : 'Appeal rejected after review'
+          resolution_notes: status === 'approved' ? 'Appeal approved by PeerFusion Team' : 'Appeal rejected after review'
         })
       });
       const data = await response.json();

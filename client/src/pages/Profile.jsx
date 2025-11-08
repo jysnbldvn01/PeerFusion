@@ -8,6 +8,219 @@ const CloseIcon = () => (
   </svg>
 );
 
+// Skeleton Loading Components
+const SkeletonSidebar = () => (
+  <div className="peerfusion-skeleton-sidebar">
+    <div className="peerfusion-skeleton peerfusion-skeleton-avatar"></div>
+    <div className="peerfusion-skeleton peerfusion-skeleton-username"></div>
+    <div className="peerfusion-skeleton peerfusion-skeleton-bio"></div>
+  </div>
+);
+
+const SkeletonMainContent = () => (
+  <div className="peerfusion-skeleton-main">
+    <div className="peerfusion-skeleton-section">
+      <div className="peerfusion-skeleton peerfusion-skeleton-section-title"></div>
+      <div className="peerfusion-skeleton-grid">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="peerfusion-skeleton-item">
+            <div className="peerfusion-skeleton peerfusion-skeleton-label"></div>
+            <div className="peerfusion-skeleton peerfusion-skeleton-value"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="peerfusion-skeleton-section">
+      <div className="peerfusion-skeleton peerfusion-skeleton-section-title"></div>
+      <div className="peerfusion-skeleton-grid">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="peerfusion-skeleton-item">
+            <div className="peerfusion-skeleton peerfusion-skeleton-label"></div>
+            <div className="peerfusion-skeleton peerfusion-skeleton-value"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+// Add Email Change Modal Component
+const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
+  const [emailForm, setEmailForm] = useState({
+    currentPassword: '',
+    newEmail: '',
+    confirmEmail: ''
+  });
+  const [emailErrors, setEmailErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleEmailInputChange = (e) => {
+    const { name, value } = e.target;
+    setEmailForm(prev => ({ ...prev, [name]: value }));
+    if (emailErrors[name]) {
+      setEmailErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateEmail = () => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailForm.currentPassword) {
+      errors.currentPassword = 'Current password is required';
+    }
+
+    if (!emailForm.newEmail) {
+      errors.newEmail = 'New email is required';
+    } else if (!emailRegex.test(emailForm.newEmail)) {
+      errors.newEmail = 'Please enter a valid email address';
+    }
+
+    if (!emailForm.confirmEmail) {
+      errors.confirmEmail = 'Please confirm your new email';
+    } else if (emailForm.newEmail !== emailForm.confirmEmail) {
+      errors.confirmEmail = 'Email addresses do not match';
+    }
+
+    setEmailErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateEmail()) {
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await onEmailChange(emailForm.currentPassword, emailForm.newEmail);
+    setIsLoading(false);
+    
+    if (success) {
+      setEmailForm({
+        currentPassword: '',
+        newEmail: '',
+        confirmEmail: ''
+      });
+      setEmailErrors({});
+    }
+  };
+
+  const handleClose = () => {
+    setEmailForm({
+      currentPassword: '',
+      newEmail: '',
+      confirmEmail: ''
+    });
+    setEmailErrors({});
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="peerfusion-modal-overlay" onClick={handleClose}>
+      <div className="peerfusion-modal-content peerfusion-email-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="peerfusion-close-modal" onClick={handleClose}>
+          <CloseIcon />
+        </button>
+
+        <div className="peerfusion-email-header">
+          <h3 className="peerfusion-email-title">Change Email Address</h3>
+          <p className="peerfusion-email-subtitle">Enter your current password and new email address</p>
+        </div>
+
+        <div className="peerfusion-modal-main">
+          <form onSubmit={handleSubmit} className="peerfusion-email-form">
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Current Password</label>
+              <input 
+                type="password" 
+                name="currentPassword"
+                value={emailForm.currentPassword}
+                onChange={handleEmailInputChange}
+                className={`peerfusion-email-input ${emailErrors.currentPassword ? 'peerfusion-email-input-error' : ''}`}
+                placeholder="Enter your current password"
+                disabled={isLoading}
+              />
+              {emailErrors.currentPassword && (
+                <span className="peerfusion-email-error">{emailErrors.currentPassword}</span>
+              )}
+            </div>
+
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">New Email Address</label>
+              <input 
+                type="email" 
+                name="newEmail"
+                value={emailForm.newEmail}
+                onChange={handleEmailInputChange}
+                className={`peerfusion-email-input ${emailErrors.newEmail ? 'peerfusion-email-input-error' : ''}`}
+                placeholder="Enter your new email address"
+                disabled={isLoading}
+              />
+              {emailErrors.newEmail && (
+                <span className="peerfusion-email-error">{emailErrors.newEmail}</span>
+              )}
+            </div>
+
+            <div className="peerfusion-form-group">
+              <label className="peerfusion-form-label">Confirm New Email</label>
+              <input 
+                type="email" 
+                name="confirmEmail"
+                value={emailForm.confirmEmail}
+                onChange={handleEmailInputChange}
+                className={`peerfusion-email-input ${emailErrors.confirmEmail ? 'peerfusion-email-input-error' : ''}`}
+                placeholder="Confirm your new email address"
+                disabled={isLoading}
+              />
+              {emailErrors.confirmEmail && (
+                <span className="peerfusion-email-error">{emailErrors.confirmEmail}</span>
+              )}
+            </div>
+
+            <div className="peerfusion-email-notice">
+              <p className="peerfusion-email-notice-title">Important Note</p>
+              <ul className="peerfusion-email-notice-list">
+                <li className="peerfusion-email-notice-item">You will need to verify your new email address</li>
+                <li className="peerfusion-email-notice-item">Your login credentials will be updated immediately</li>
+                <li className="peerfusion-email-notice-item">All future communications will be sent to the new email</li>
+              </ul>
+            </div>
+
+            <div className="peerfusion-email-actions">
+              <button 
+                type="button" 
+                className="peerfusion-email-cancel"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="peerfusion-email-submit"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="peerfusion-email-loading"></span>
+                    Changing...
+                  </>
+                ) : (
+                  'Change Email'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -66,7 +279,6 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
     setIsLoading(false);
     
     if (success) {
-      // Reset form on successful submission
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -192,7 +404,20 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
 };
 
 // Settings Dropdown Component
-const SettingsDropdown = ({ setEditMode, editMode, setViewAs, setShowChangePassword, profile, form, selectedSubjects, setSelectedSubjects, availability, handleSave, resetForm }) => {
+const SettingsDropdown = ({ 
+  setEditMode, 
+  editMode, 
+  setViewAs, 
+  setShowChangePassword, 
+  setShowChangeEmail, 
+  profile, 
+  form, 
+  selectedSubjects, 
+  setSelectedSubjects, 
+  availability, 
+  handleSave, 
+  resetForm 
+}) => {
   const [showSettings, setShowSettings] = useState(false);
 
   // Close settings dropdown when clicking outside
@@ -229,6 +454,16 @@ const SettingsDropdown = ({ setEditMode, editMode, setViewAs, setShowChangePassw
           >
             <span className="peerfusion-edit-icon"></span>
             Edit Profile
+          </button>
+          <button 
+            className="peerfusion-settings-item"
+            onClick={() => {
+              setShowChangeEmail(true);
+              setShowSettings(false);
+            }}
+          >
+            <span className="peerfusion-email-icon"></span>
+            Change Email
           </button>
           <button 
             className="peerfusion-settings-item"
@@ -474,6 +709,8 @@ const Profile = () => {
   const [viewAs, setViewAs] = useState(false);
   const [availability, setAvailability] = useState([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState({
     username: '',
     bio: '',
@@ -600,6 +837,8 @@ const Profile = () => {
         }
       } catch (err) {
         console.error('Profile fetch error:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -766,6 +1005,48 @@ const Profile = () => {
     }
   };
 
+  const handleEmailChange = async (currentPassword, newEmail) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/profile/change-email',
+        {
+          currentPassword,
+          newEmail
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Email changed successfully! Please check your new email for verification.');
+        
+        // Update the profile state with new email
+        setProfile(prev => ({
+          ...prev,
+          email: newEmail
+        }));
+        
+        return true;
+      }
+    } catch (err) {
+      console.error('Email change error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to change email';
+      if (err.response?.status === 401) {
+        alert('Error: Current password is incorrect');
+      } else if (err.response?.status === 409) {
+        alert('Error: This email is already in use');
+      } else {
+        alert(`Error: ${errorMessage}`);
+      }
+      return false;
+    }
+  };
+
   return (
     <div className="peerfusion-profile-container">
       {/* Header */}
@@ -777,6 +1058,7 @@ const Profile = () => {
             editMode={editMode}
             setViewAs={setViewAs}
             setShowChangePassword={setShowChangePassword}
+            setShowChangeEmail={setShowChangeEmail}
             profile={profile}
             form={form}
             selectedSubjects={selectedSubjects}
@@ -792,53 +1074,65 @@ const Profile = () => {
       <div className="peerfusion-profile-content">
         {/* Sidebar */}
         <div className="peerfusion-profile-sidebar">
-          <div className="peerfusion-avatar-section">
-            <div
-              className="peerfusion-avatar-wrapper"
-              onMouseEnter={() => setShowAvatarEdit(true)}
-              onMouseLeave={() => !avatarFile && setShowAvatarEdit(false)}
-            >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Profile" className="peerfusion-avatar" />
-              ) : (
-                <div className="peerfusion-avatar-placeholder">
-                  <span className="peerfusion-user-icon"></span>
+          {isLoading ? (
+            <SkeletonSidebar />
+          ) : (
+            <div className="peerfusion-avatar-section">
+              <div
+                className="peerfusion-avatar-wrapper"
+                onMouseEnter={() => setShowAvatarEdit(true)}
+                onMouseLeave={() => !avatarFile && setShowAvatarEdit(false)}
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Profile" className="peerfusion-avatar" />
+                ) : (
+                  <div className="peerfusion-avatar-placeholder">
+                    <span className="peerfusion-user-icon"></span>
+                  </div>
+                )}
+                {showAvatarEdit && (
+                  <label className="peerfusion-avatar-edit">
+                    <span className="peerfusion-edit-icon"></span>
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                  </label>
+                )}
+              </div>
+              
+              {avatarFile && (
+                <div className="peerfusion-avatar-actions">
+                  <button className="peerfusion-avatar-btn peerfusion-avatar-save" onClick={handleAvatarSave}>
+                    <span className="peerfusion-save-icon"></span>
+                    Save
+                  </button>
+                  <button className="peerfusion-avatar-btn peerfusion-avatar-cancel" onClick={() => {
+                    setAvatarFile(null);
+                    setAvatarPreview(profile?.avatar ? `http://localhost:5000/uploads/${profile.avatar}` : '');
+                  }}>
+                    <span className="peerfusion-cancel-icon"></span>
+                    Cancel
+                  </button>
                 </div>
               )}
-              {showAvatarEdit && (
-                <label className="peerfusion-avatar-edit">
-                  <span className="peerfusion-edit-icon"></span>
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
-                </label>
-              )}
-            </div>
-            
-            {avatarFile && (
-              <div className="peerfusion-avatar-actions">
-                <button className="peerfusion-avatar-btn peerfusion-avatar-save" onClick={handleAvatarSave}>
-                  <span className="peerfusion-save-icon"></span>
-                  Save
-                </button>
-                <button className="peerfusion-avatar-btn peerfusion-avatar-cancel" onClick={() => {
-                  setAvatarFile(null);
-                  setAvatarPreview(profile?.avatar ? `http://localhost:5000/uploads/${profile.avatar}` : '');
-                }}>
-                  <span className="peerfusion-cancel-icon"></span>
-                  Cancel
-                </button>
-              </div>
-            )}
 
-            <div className="peerfusion-user-info">
-              <h2 className="peerfusion-username">{profile?.username || 'User'}</h2>
-              <p className="peerfusion-user-bio">{profile?.bio || 'No bio yet'}</p>
+              <div className="peerfusion-user-info">
+                <h2 className="peerfusion-username">{profile?.username || 'User'}</h2>
+                <p className="peerfusion-user-bio">{profile?.bio || 'No bio yet'}</p>
+                {profile?.email && (
+                  <p className="peerfusion-user-email">
+                    <span className="peerfusion-email-icon-small"></span>
+                    {profile.email}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Main Content */}
         <div className="peerfusion-profile-main">
-          {profile && (
+          {isLoading ? (
+            <SkeletonMainContent />
+          ) : profile && (
             <div className="peerfusion-profile-sections">
               {/* Personal Information */}
               <div className="peerfusion-profile-section">
@@ -857,6 +1151,13 @@ const Profile = () => {
                         onChange={handleChange}
                         className="peerfusion-form-input"
                       />
+                    </div>
+                    <div className="peerfusion-form-group">
+                      <label className="peerfusion-form-label">Email</label>
+                      <div className="peerfusion-email-display">
+                        <span className="peerfusion-email-value">{profile.email}</span>
+                        <span className="peerfusion-email-note">(Change email from Settings)</span>
+                      </div>
                     </div>
                     <div className="peerfusion-form-group">
                       <label className="peerfusion-form-label">Bio</label>
@@ -955,6 +1256,13 @@ const Profile = () => {
                     <div className="peerfusion-info-item">
                       <span className="peerfusion-info-label">Username</span>
                       <span className="peerfusion-info-value">{profile.username}</span>
+                    </div>
+                    <div className="peerfusion-info-item">
+                      <span className="peerfusion-info-label">Email</span>
+                      <span className="peerfusion-info-value">
+                        <span className="peerfusion-email-icon-small"></span>
+                        {profile.email}
+                      </span>
                     </div>
                     <div className="peerfusion-info-item">
                       <span className="peerfusion-info-label">Bio</span>
@@ -1179,6 +1487,13 @@ const Profile = () => {
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}
         onPasswordChange={handlePasswordChange}
+      />
+
+      {/* Change Email Modal */}
+      <ChangeEmailModal 
+        isOpen={showChangeEmail}
+        onClose={() => setShowChangeEmail(false)}
+        onEmailChange={handleEmailChange}
       />
     </div>
   );

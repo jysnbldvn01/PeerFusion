@@ -408,12 +408,6 @@ const handleSubmit = async (e) => {
   const renderAccountStatus = () => {
     return (
       <div className="peerfusion-appeal-card">
-        <div className="peerfusion-appeal-card-header">
-          <h3 className="peerfusion-appeal-card-title">
-            <FaUserSlash />
-            Account Status
-          </h3>
-        </div>
         <div className="peerfusion-appeal-card-body">
           <div className="peerfusion-account-status-display">
             <div className="peerfusion-account-status-main">

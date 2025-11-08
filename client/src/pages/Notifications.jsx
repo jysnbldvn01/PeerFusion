@@ -65,52 +65,82 @@ const Notification = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const menuRefs = useRef({});
   const unreadCount = notifications.filter(n => !n.is_read).length;
   
   const navigate = useNavigate();
 
-  // Add debug logging
-  useEffect(() => {
-    console.log('Current notifications:', notifications);
-    console.log('Filtered notifications:', filteredNotifications);
-  }, [notifications]);
+  // Skeleton Loading Component
+  const SkeletonNotification = () => (
+    <div className="peerfusion-skeleton-notification">
+      <div className="peerfusion-skeleton peerfusion-skeleton-avatar"></div>
+      <div className="peerfusion-skeleton-content">
+        <div className="peerfusion-skeleton-header">
+          <div className="peerfusion-skeleton peerfusion-skeleton-username"></div>
+          <div className="peerfusion-skeleton peerfusion-skeleton-time"></div>
+        </div>
+        <div className="peerfusion-skeleton peerfusion-skeleton-message"></div>
+        <div className="peerfusion-skeleton peerfusion-skeleton-message-short"></div>
+        <div className="peerfusion-skeleton peerfusion-skeleton-badge"></div>
+      </div>
+    </div>
+  );
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
     
     let formattedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     formattedMessage = formattedMessage.replace(/\n/g, '<br />');
-    formattedMessage = formattedMessage.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="notification-link">$1</a>');
-    formattedMessage = formattedMessage.replace(/\[(.*?)\]\(\/(.*?)\)/g, '<a href="#" class="notification-internal-link" data-route="/$2">$1</a>');
+
+    formattedMessage = formattedMessage.replace(
+      /\[Terms and Conditions\]\(\/terms\)/g, 
+      '<a href="/terms" class="notification-link" data-route="/terms">Terms and Conditions</a>'
+    );
+    formattedMessage = formattedMessage.replace(
+      /\[Submit Appeal\]\(\/appeal\)/g,
+      '<a href="/appeal" class="notification-link" data-route="/appeal">Submit Appeal</a>'
+    );
     
     return formattedMessage;
   };
 
-  // Handle internal link clicks
   useEffect(() => {
-    const handleInternalLinkClick = (event) => {
-      if (event.target.classList.contains('notification-internal-link')) {
+    const handleLinkClick = (event) => {
+      if (event.target.classList.contains('notification-link')) {
         event.preventDefault();
         event.stopPropagation();
+        
         const route = event.target.getAttribute('data-route');
-        if (route === '/appeal') {
+        console.log('Link clicked, navigating to:', route);
+        
+        if (route === '/terms') {
+          navigate('/terms');
+          closeModal();
+        } else if (route === '/appeal') {
           navigate('/appeal');
           closeModal();
         }
       }
     };
 
-    document.addEventListener('click', handleInternalLinkClick);
-    return () => document.removeEventListener('click', handleInternalLinkClick);
+    document.addEventListener('click', handleLinkClick);
+    
+    return () => {
+      document.removeEventListener('click', handleLinkClick);
+    };
   }, [navigate]);
 
-  // Handle modal message clicks specifically
   const handleModalMessageClick = (event) => {
-    if (event.target.classList.contains('notification-internal-link')) {
+    if (event.target.classList.contains('notification-link')) {
       event.preventDefault();
       const route = event.target.getAttribute('data-route');
-      if (route === '/appeal') {
+      console.log('Modal link clicked, navigating to:', route);
+      
+      if (route === '/terms') {
+        navigate('/terms');
+        closeModal();
+      } else if (route === '/appeal') {
         navigate('/appeal');
         closeModal();
       }
@@ -133,6 +163,8 @@ const Notification = () => {
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
+    } finally {
+      setIsLoading(false);
     }
   }, [activeTab]);
 
@@ -168,7 +200,6 @@ const Notification = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [fetchNotifications]);
 
-  // Enhanced helper functions to determine display name and avatar
   const getDisplayName = (notification) => {
     console.log('Processing notification:', {
       id: notification.id,
@@ -178,17 +209,14 @@ const Notification = () => {
       message: notification.message?.substring(0, 100)
     });
 
-    // ALWAYS show PeerFusion Team for penalty type (from report.js and user management)
     if (notification.type === 'penalty') {
       return 'PeerFusion Team';
     }
     
-    // Also show PeerFusion Team for NULL sender_id or system sender
     if (notification.sender_id === null || notification.sender_id === 0) {
       return 'PeerFusion Team';
     }
     
-    // Show PeerFusion Team for specific notification types
     if (notification.type === 'warning' || 
         notification.type === 'suspension' || 
         notification.type === 'ban' || 
@@ -199,7 +227,6 @@ const Notification = () => {
       return 'PeerFusion Team';
     }
 
-    // For feedback from admin/moderator, show as PeerFusion Team
     if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
       return 'PeerFusion Team';
     }
@@ -208,7 +235,6 @@ const Notification = () => {
   };
 
   const getDisplayAvatar = (notification) => {
-    // No avatar for PeerFusion Team notifications
     if (notification.type === 'penalty' || 
         notification.sender_id === null || 
         notification.sender_id === 0 ||
@@ -222,7 +248,6 @@ const Notification = () => {
       return null;
     }
     
-    // No avatar for admin/moderator feedback
     if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
       return null;
     }
@@ -337,7 +362,6 @@ const Notification = () => {
     }
   };
 
-  // Mark all notifications as read
   const markAllAsRead = async () => {
     if (!notifications || notifications.length === 0) return;
     const token = localStorage.getItem('token');
@@ -406,7 +430,6 @@ const Notification = () => {
     setFeedbackDetails(null);
   };
 
-  // Accept session request
   const handleAccept = async (notification) => {
     const token = localStorage.getItem("token");
     try {
@@ -435,7 +458,6 @@ const Notification = () => {
     }
   };
 
-  // Decline session request
   const handleDecline = async (notification) => {
     const token = localStorage.getItem("token");
     try {
@@ -457,83 +479,92 @@ const Notification = () => {
     }
   };
 
-  const getNotificationBadge = (notification) => {
-    switch (notification.type) {
-      case 'feedback': {
-        const ratingMatch = notification.message.match(/(\d)-star/);
-        const rating = ratingMatch ? ratingMatch[1] : '0';
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-rating">
-            <InternetIcons.Rating /> {rating}/5
-          </span>
-        );
-      }
-      case 'session_request': {
-        return notification.status && (
-          <span className={`peerfusion-notification-badge peerfusion-badge-${notification.status}`}>
-            <InternetIcons.Session /> {notification.status}
-          </span>
-        );
-      }
-      case 'warning': {
-        const strikeMatch = notification.message.match(/strike.*?(\d)\/3/i) || 
-                           notification.message.match(/Strike.*?(\d)\/3/i);
-        const strikeCount = strikeMatch ? strikeMatch[1] : '1';
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-warning">
-            <InternetIcons.Warning /> Strike {strikeCount}/3
-          </span>
-        );
-      }
-      case 'penalty': {
-        const strikeMatch = notification.message.match(/strike.*?(\d+)/i) || 
-                           notification.message.match(/Strike.*?(\d+)/i);
-        const strikeCount = strikeMatch ? strikeMatch[1] : '1';
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-penalty">
-            <InternetIcons.Penalty /> Strike {strikeCount}/3
-          </span>
-        );
-      }
-      case 'suspension': {
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-suspension">
-            <InternetIcons.Suspension /> Suspended
-          </span>
-        );
-      }
-      case 'ban': {
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-ban">
-            <InternetIcons.Ban /> Banned
-          </span>
-        );
-      }
-      case 'appeal_approved': {
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-approved">
-            <InternetIcons.Approved /> Approved
-          </span>
-        );
-      }
-      case 'appeal_rejected': {
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-rejected">
-            <InternetIcons.Rejected /> Rejected
-          </span>
-        );
-      }
-      case 'account_reactivated': {
-        return (
-          <span className="peerfusion-notification-badge peerfusion-badge-approved">
-            <InternetIcons.Approved /> Reactivated
-          </span>
-        );
-      }
-      default:
-        return null;
+const getNotificationBadge = (notification) => {
+  switch (notification.type) {
+    case 'feedback': {
+      const ratingMatch = notification.message.match(/(\d)-star/);
+      const rating = ratingMatch ? ratingMatch[1] : '0';
+      return (
+        <span className="peerfusion-notification-badge peerfusion-badge-rating">
+          <InternetIcons.Rating /> {rating}/5
+        </span>
+      );
     }
-  };
+    case 'session_request': {
+      return notification.status && (
+        <span className={`peerfusion-notification-badge peerfusion-badge-${notification.status}`}>
+          <InternetIcons.Session /> {notification.status}
+        </span>
+      );
+    }
+    case 'warning': {
+      const strikeMatch = notification.message.match(/strike.*?(\d)\/3/i) || 
+                         notification.message.match(/Strike.*?(\d)\/3/i);
+      const strikeCount = strikeMatch ? strikeMatch[1] : '1';
+      return (
+        <span className={`peerfusion-notification-badge peerfusion-badge-strike-${strikeCount}`}>
+          <InternetIcons.Warning /> Strike {strikeCount}/3
+        </span>
+      );
+    }
+    case 'penalty': {
+      const strikeMatch = notification.message.match(/strike.*?(\d+)/i) || 
+                         notification.message.match(/Strike.*?(\d+)/i);
+      const strikeCount = strikeMatch ? strikeMatch[1] : '1';
+      return (
+        <span className={`peerfusion-notification-badge peerfusion-badge-strike-${strikeCount}`}>
+          <InternetIcons.Penalty /> Strike {strikeCount}/3
+        </span>
+      );
+    }
+    case 'suspension': {
+      return (
+        <span className="peerfusion-notification-badge peerfusion-badge-suspension">
+          <InternetIcons.Suspension /> Suspended
+        </span>
+      );
+    }
+    case 'ban': {
+      return (
+        <span className="peerfusion-notification-badge peerfusion-badge-ban">
+          <InternetIcons.Ban /> Banned
+        </span>
+      );
+    }
+    case 'appeal_approved': {
+      return (
+        <span className="peerfusion-notification-badge peerfusion-badge-approved">
+          <InternetIcons.Approved /> Approved
+        </span>
+      );
+    }
+    case 'appeal_rejected': {
+      return (
+        <span className="peerfusion-notification-badge peerfusion-badge-rejected">
+          <InternetIcons.Rejected /> Rejected
+        </span>
+      );
+    }
+    case 'account_reactivated': {
+      return (
+        <span className="peerfusion-notification-badge peerfusion-badge-approved">
+          <InternetIcons.Approved /> Reactivated
+        </span>
+      );
+    }
+    case 'strikes_adjusted': {
+      const strikeMatch = notification.message.match(/strike.*?(\d+)/i);
+      const strikeCount = strikeMatch ? strikeMatch[1] : '1';
+      return (
+        <span className={`peerfusion-notification-badge peerfusion-badge-strike-${strikeCount}`}>
+          <InternetIcons.Warning /> Strike {strikeCount}/3
+        </span>
+      );
+    }
+    default:
+      return null;
+  }
+};
 
   const filteredNotifications = notifications.filter(
     (notification) =>
@@ -591,7 +622,12 @@ const Notification = () => {
 
       {/* Single Row Notifications List */}
       <div className="peerfusion-notification-list">
-        {filteredNotifications.length === 0 ? (
+        {isLoading ? (
+          // Skeleton loading state
+          Array.from({ length: 5 }).map((_, index) => (
+            <SkeletonNotification key={index} />
+          ))
+        ) : filteredNotifications.length === 0 ? (
           <div className="peerfusion-notification-empty">
             <div className="peerfusion-notification-empty-icon">📭</div>
             <h3>No notifications found</h3>

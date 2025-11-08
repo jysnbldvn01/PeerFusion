@@ -12,11 +12,14 @@ import SetupAccount from './pages/SetupAccount';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import UserAppealPage from './components/UserAppealPage';
+import Appeal from './pages/Appeal';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
-import Appeal from './pages/Appeal';
+
 
 // Moderator Pages
 import ModeratorDashboard from './pages/ModeratorDashboard';
@@ -28,12 +31,15 @@ import VideoLayout from './components/layout/VideoLayout';
 
 import { AuthProvider } from './context/AuthContext';
 
+import LandingPage from './pages/LandingPage';
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -41,6 +47,8 @@ function App() {
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/appeal" element={<Appeal/>} />
           <Route path="/user-appeal" element={<UserAppealPage />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
 
             <Route
               path="/setup-account"
@@ -117,7 +125,7 @@ function App() {
           />
 
           {/* Default Redirect */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </Router>
