@@ -898,3 +898,205 @@
 .al-modal-body::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+/* Add these to your activitylogs.css file */
+
+/* Skeleton Loading Styles */
+.skeleton {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+/* Header skeleton styles */
+.al-header.skeleton .al-main-title {
+  height: 28px;
+  width: 200px;
+  margin-bottom: 8px;
+}
+
+.al-header.skeleton .al-subtitle {
+  height: 18px;
+  width: 300px;
+}
+
+.al-stat-card.skeleton .al-stat-number {
+  height: 24px;
+  width: 60px;
+  margin: 8px 0;
+}
+
+.al-stat-card.skeleton .al-stat-label {
+  height: 16px;
+  width: 80px;
+}
+
+/* Toolbar skeleton styles */
+.al-toolbar.skeleton .al-filter-select {
+  height: 40px;
+  border: none;
+}
+
+.al-toolbar.skeleton .al-search-container {
+  height: 40px;
+  border: none;
+}
+
+/* Table skeleton styles */
+.al-action-cell .al-icon.skeleton-pulse {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.al-status-badge.skeleton-pulse {
+  height: 24px;
+  width: 120px;
+  border-radius: 12px;
+}
+
+.al-btn-view.skeleton-pulse {
+  height: 32px;
+  width: 80px;
+  border-radius: 4px;
+}
+
+/* Pagination Styles */
+.al-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.al-pagination-info {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.al-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.al-pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.al-pagination-btn:hover:not(.disabled) {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.al-pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #6c757d;
+}
+
+.al-pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.al-page-number {
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 40px;
+  transition: all 0.2s;
+}
+
+.al-page-number:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.al-page-number.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.al-page-ellipsis {
+  padding: 8px 4px;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .al-pagination {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .al-pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .al-pagination-numbers {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+}
+
+/* Skeleton pagination */
+.al-pagination.skeleton .al-pagination-info {
+  height: 16px;
+  width: 200px;
+}
+
+.al-pagination.skeleton .al-pagination-btn {
+  height: 36px;
+  width: 100px;
+  border: none;
+}
+
+.al-pagination.skeleton .al-page-number {
+  height: 36px;
+  width: 36px;
+  border: none;
+}

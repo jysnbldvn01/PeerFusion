@@ -157,7 +157,21 @@ async function requireModeratorOrAdmin(req, res, next) {
 // GET all regular users (excluding admins and moderators) - Accessible by both admin and moderators
 router.get('/users', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
-    const sql = `
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const status = req.query.status || 'all';
+
+    // Build base query
+    let baseQuery = `
+      FROM users u
+      LEFT JOIN user_profiles up ON u.id = up.user_id
+      WHERE u.role NOT IN ('admin', 'moderator')
+    `;
+    
+    let countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+    let dataQuery = `
       SELECT 
         u.id,
         u.name as username,
@@ -173,15 +187,60 @@ router.get('/users', authenticateToken, requireModeratorOrAdmin, async (req, res
         up.availability,
         up.avatar,
         up.bio
-      FROM users u
-      LEFT JOIN user_profiles up ON u.id = up.user_id
-      WHERE u.role NOT IN ('admin', 'moderator')
-      ORDER BY u.created_at DESC
+      ${baseQuery}
     `;
 
-    const [rows] = await pool.query(sql);
+    const queryParams = [];
+
+    // Add search condition
+    if (search) {
+      baseQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    // Add status filter
+    if (status !== 'all') {
+      baseQuery += ` AND u.status = ?`;
+      queryParams.push(status);
+    }
+
+    // Update queries with conditions
+    countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+    dataQuery = `
+      SELECT 
+        u.id,
+        u.name as username,
+        u.email,
+        u.created_at,
+        u.role,
+        u.status,
+        u.strike_count,
+        u.total_reports,
+        u.suspended_until,
+        up.rating,
+        up.total_reviews,
+        up.availability,
+        up.avatar,
+        up.bio
+      ${baseQuery}
+      ORDER BY u.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    // Get total count
+    const [countRows] = await pool.query(countQuery, queryParams);
+    const total = countRows[0].total;
+
+    // Get paginated data
+    const dataParams = [...queryParams, limit, offset];
+    const [rows] = await pool.query(dataQuery, dataParams);
     
-    res.json(rows);
+    res.json({
+      users: rows,
+      total: total,
+      page: page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (err) {
     handleError(res, err, 'Error fetching users');
   }
@@ -878,6 +937,15 @@ router.put('/change-password', authenticateToken, requireModeratorOrAdmin, async
 // GET admin logs - Admin only
 router.get('/logs', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    // Get total count - keep it simple
+    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM admin_logs');
+    const total = countRows[0].total;
+
+    // Keep the original query exactly as it was, just add LIMIT and OFFSET
     const sql = `
       SELECT 
         al.id,
@@ -894,14 +962,18 @@ router.get('/logs', authenticateToken, requireAdmin, async (req, res) => {
       LEFT JOIN users t ON al.target_user_id = t.id
       LEFT JOIN user_profiles up ON al.target_user_id = up.user_id
       ORDER BY al.timestamp DESC
-      LIMIT 100
+      LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(sql);
+    const [rows] = await pool.query(sql, [limit, offset]);
     
+    // Return the same structure as before, just add pagination info
     res.json({
       success: true,
-      logs: rows
+      logs: rows,
+      total: total,
+      page: page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (err) {
     handleError(res, err, 'Error fetching admin logs');
@@ -1350,6 +1422,13 @@ const checkAndApplyStrikes = async (reportedUserId, connection, adminId) => {
 // Reports management routes - Accessible by both admin and moderators
 router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM reports');
+    const total = countRows[0].total;
+
     const sql = `
       SELECT 
         r.id,
@@ -1380,17 +1459,11 @@ router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, r
       LEFT JOIN users reported_user ON r.reported_user_id = reported_user.id
       LEFT JOIN user_profiles resolver_profile ON r.resolved_by = resolver_profile.user_id
       LEFT JOIN users u ON r.reported_user_id = u.id
-      ORDER BY 
-        CASE r.severity 
-          WHEN 'high' THEN 1
-          WHEN 'medium' THEN 2
-          WHEN 'low' THEN 3
-          ELSE 4
-        END,
-        r.created_at DESC
+      ORDER BY r.created_at DESC, r.id DESC
+      LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(sql);
+    const [rows] = await pool.query(sql, [limit, offset]);
     
     // Parse evidence JSON safely with better error handling
     const reportsWithEvidence = rows.map(report => {
@@ -1402,7 +1475,6 @@ router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, r
         try {
           // If it's already a string that looks like JSON, parse it
           if (typeof report.evidence === 'string') {
-            // Check if it starts with [ or { (JSON indicators)
             const trimmedEvidence = report.evidence.trim();
             if (trimmedEvidence.startsWith('[') || trimmedEvidence.startsWith('{')) {
               evidence = JSON.parse(trimmedEvidence);
@@ -1417,12 +1489,10 @@ router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, r
               }];
             }
           } else {
-            // If it's not a string, use it as-is (should be JSON object)
             evidence = report.evidence;
           }
         } catch (error) {
           console.error(`Error parsing evidence for report ${report.id}:`, error);
-          // Fallback: treat it as a single filename
           evidence = [{
             filename: String(report.evidence),
             originalname: String(report.evidence),
@@ -1432,12 +1502,11 @@ router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, r
           }];
         }
       }
-      
-      // Generate evidence URLs
+
       if (evidence && Array.isArray(evidence)) {
         evidence_urls = evidence.map(evidenceItem => ({
           ...evidenceItem,
-          url: `/api/reports/evidence/${evidenceItem.filename}`
+          url: `/api/admin/reports/evidence/${evidenceItem.filename}`
         }));
       }
       
@@ -1450,7 +1519,10 @@ router.get('/reports', authenticateToken, requireModeratorOrAdmin, async (req, r
     
     res.json({
       success: true,
-      reports: reportsWithEvidence
+      reports: reportsWithEvidence,
+      total: total,
+      page: page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (err) {
     console.error('Error fetching reports:', err);
@@ -2070,10 +2142,29 @@ router.get('/feedback/unique-users-with-recommended', authenticateToken, require
 
 //-----------------------------Appeal Page ---------------------------------//
 // Appeals Management Routes - Accessible by both admin and moderators
-
 router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, res) => {
   try {
-    const sql = `
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const status = req.query.status || 'all';
+    const type = req.query.type || 'all';
+    const source = req.query.source || 'all';
+
+    // Build base query
+    let baseQuery = `
+      FROM appeals a
+      LEFT JOIN users u ON a.user_id = u.id
+      LEFT JOIN user_profiles up ON a.user_id = up.user_id
+      LEFT JOIN reports r ON a.report_id = r.id
+      LEFT JOIN users reviewer ON a.reviewed_by = reviewer.id
+      LEFT JOIN user_profiles reviewer_profile ON a.reviewed_by = reviewer_profile.user_id
+      WHERE 1=1
+    `;
+    
+    let countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+    let dataQuery = `
       SELECT 
         a.id,
         a.user_id,
@@ -2098,17 +2189,86 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
         a.appellant_name,
         a.appellant_email,
         a.appellant_role,
-        -- Determine if it's a public appeal
         CASE 
           WHEN a.user_id IS NULL THEN 'public'
           ELSE 'user'
         END as appeal_source
-      FROM appeals a
-      LEFT JOIN users u ON a.user_id = u.id
-      LEFT JOIN user_profiles up ON a.user_id = up.user_id
-      LEFT JOIN reports r ON a.report_id = r.id
-      LEFT JOIN users reviewer ON a.reviewed_by = reviewer.id
-      LEFT JOIN user_profiles reviewer_profile ON a.reviewed_by = reviewer_profile.user_id
+      ${baseQuery}
+    `;
+
+    const queryParams = [];
+
+    // Add search condition
+    if (search) {
+      baseQuery += ` AND (
+        a.appellant_name LIKE ? OR 
+        a.appellant_email LIKE ? OR 
+        a.reason LIKE ? OR 
+        up.username LIKE ? OR 
+        u.email LIKE ?
+      )`;
+      queryParams.push(
+        `%${search}%`, 
+        `%${search}%`, 
+        `%${search}%`, 
+        `%${search}%`, 
+        `%${search}%`
+      );
+    }
+
+    // Add status filter
+    if (status !== 'all') {
+      baseQuery += ` AND a.status = ?`;
+      queryParams.push(status);
+    }
+
+    // Add type filter
+    if (type !== 'all') {
+      baseQuery += ` AND a.appeal_type = ?`;
+      queryParams.push(type);
+    }
+
+    // Add source filter
+    if (source !== 'all') {
+      if (source === 'public') {
+        baseQuery += ` AND a.user_id IS NULL`;
+      } else if (source === 'user') {
+        baseQuery += ` AND a.user_id IS NOT NULL`;
+      }
+    }
+
+    // Update queries with conditions
+    countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+    dataQuery = `
+      SELECT 
+        a.id,
+        a.user_id,
+        u.email as user_email,
+        up.username as user_username,
+        a.report_id,
+        r.report_type,
+        r.severity as report_severity,
+        a.appeal_type,
+        a.reason,
+        a.status,
+        a.evidence,
+        a.created_at,
+        a.reviewed_at,
+        a.reviewed_by,
+        reviewer.email as reviewer_email,
+        reviewer_profile.username as reviewer_username,
+        a.resolution_notes,
+        u.status as user_status,
+        u.strike_count,
+        u.suspended_until,
+        a.appellant_name,
+        a.appellant_email,
+        a.appellant_role,
+        CASE 
+          WHEN a.user_id IS NULL THEN 'public'
+          ELSE 'user'
+        END as appeal_source
+      ${baseQuery}
       ORDER BY 
         CASE a.status 
           WHEN 'pending' THEN 1
@@ -2117,9 +2277,16 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
           ELSE 4
         END,
         a.created_at DESC
+      LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(sql);
+    // Get total count
+    const [countRows] = await pool.query(countQuery, queryParams);
+    const total = countRows[0].total;
+
+    // Get paginated data
+    const dataParams = [...queryParams, limit, offset];
+    const [rows] = await pool.query(dataQuery, dataParams);
     
     // Parse evidence JSON and add file URLs
     const appealsWithEvidence = rows.map(appeal => {
@@ -2134,7 +2301,6 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
             if (trimmedEvidence.startsWith('[') || trimmedEvidence.startsWith('{')) {
               evidence = JSON.parse(trimmedEvidence);
             } else {
-              // Fallback for plain filename strings
               evidence = [{
                 filename: appeal.evidence,
                 originalname: appeal.evidence,
@@ -2158,7 +2324,6 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
         }
       }
       
-      // Generate evidence URLs for admin access
       if (evidence && Array.isArray(evidence)) {
         evidence_urls = evidence.map(evidenceItem => ({
           ...evidenceItem,
@@ -2172,7 +2337,6 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
         ...appeal,
         evidence: evidence,
         evidence_urls: evidence_urls,
-        // Add appeal source flag
         is_public_appeal: appeal.appeal_source === 'public',
         display_name: appeal.appeal_source === 'public' ? 
           appeal.appellant_name : (appeal.user_username || 'Unknown User'),
@@ -2185,7 +2349,10 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
     
     res.json({
       success: true,
-      appeals: appealsWithEvidence
+      appeals: appealsWithEvidence,
+      total: total,
+      page: page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (err) {
     handleError(res, err, 'Error fetching appeals');

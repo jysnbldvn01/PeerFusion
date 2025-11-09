@@ -24,9 +24,117 @@ import {
   FaVideo as FaVideoCall,
   FaSort,
   FaSortUp,
-  FaSortDown
+  FaSortDown,
+  FaChevronLeft,
+  FaChevronRight
 } from 'react-icons/fa';
 import '../../css/reportmanagement.css';
+
+// Skeleton Loading Components
+const HeaderSkeleton = () => (
+  <div className="rm-header skeleton">
+    <div className="rm-header-content">
+      <div className="rm-title-section">
+        <div className="rm-header-icon skeleton-pulse"></div>
+        <div>
+          <div className="rm-main-title skeleton-text skeleton-pulse"></div>
+          <div className="rm-subtitle skeleton-text skeleton-pulse"></div>
+        </div>
+      </div>
+      <div className="rm-stats">
+        {[1, 2, 3].map((item) => (
+          <div key={item} className="rm-stat-card skeleton">
+            <div className="rm-stat-icon skeleton-pulse"></div>
+            <div className="rm-stat-info">
+              <div className="rm-stat-number skeleton-text skeleton-pulse"></div>
+              <div className="rm-stat-label skeleton-text skeleton-pulse"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const ToolbarSkeleton = () => (
+  <div className="rm-toolbar skeleton">
+    <div className="rm-filters-container">
+      {[1, 2, 3, 4].map((item) => (
+        <div key={item} className="rm-filter-group">
+          <div className="skeleton-text skeleton-pulse"></div>
+          <div className="rm-filter-select skeleton-pulse"></div>
+        </div>
+      ))}
+    </div>
+    <div className="rm-search-container skeleton-pulse">
+      <div className="rm-search-icon skeleton-pulse"></div>
+      <div className="rm-search-input skeleton-pulse"></div>
+    </div>
+  </div>
+);
+
+const TableRowSkeleton = () => (
+  <tr className="skeleton">
+    <td>
+      <div className="skeleton-text skeleton-pulse"></div>
+    </td>
+    <td>
+      <div className="rm-user-info">
+        <div className="rm-user-name skeleton-text skeleton-pulse"></div>
+        <div className="rm-user-email skeleton-text skeleton-pulse"></div>
+      </div>
+    </td>
+    <td>
+      <div className="rm-user-info">
+        <div className="rm-user-name skeleton-text skeleton-pulse"></div>
+        <div className="rm-user-email skeleton-text skeleton-pulse"></div>
+      </div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse"></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '80px', height: '24px' }}></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse"></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '60px' }}></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '80px', height: '24px' }}></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '100px', height: '24px' }}></div>
+    </td>
+    <td>
+      <div className="rm-user-info">
+        <div className="skeleton-text skeleton-pulse"></div>
+      </div>
+    </td>
+    <td>
+      <div className="rm-action-buttons">
+        <div className="rm-btn-view skeleton-pulse"></div>
+      </div>
+    </td>
+  </tr>
+);
+
+const PaginationSkeleton = () => (
+  <div className="rm-pagination skeleton">
+    <div className="rm-pagination-info skeleton-text skeleton-pulse"></div>
+    <div className="rm-pagination-controls">
+      <div className="rm-pagination-btn skeleton-pulse"></div>
+      <div className="rm-pagination-numbers">
+        {[1, 2, 3, 4, 5].map((item) => (
+          <div key={item} className="rm-page-number skeleton-pulse"></div>
+        ))}
+      </div>
+      <div className="rm-pagination-btn skeleton-pulse"></div>
+    </div>
+  </div>
+);
 
 const ReportManagement = () => {
   const [reports, setReports] = useState([]);
@@ -34,7 +142,6 @@ const ReportManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [applyPenalty, setApplyPenalty] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
   const [filters, setFilters] = useState({
@@ -42,6 +149,22 @@ const ReportManagement = () => {
     reportType: 'all',
     severity: 'all',
     source: 'all'
+  });
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalReports, setTotalReports] = useState(0);
+  const ITEMS_PER_PAGE = 50;
+
+  // Skeleton loading state
+  const [skeletonLoading, setSkeletonLoading] = useState({
+    header: true,
+    toolbar: true,
+    table: true,
+    pagination: true
   });
 
   const getExpectedConsequence = (currentStrikes, reportType, severity) => {
@@ -76,95 +199,105 @@ const ReportManagement = () => {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [currentPage]);
 
   useEffect(() => {
     filterAndSortReports();
   }, [reports, filters, searchTerm, sortConfig]);
 
   const fetchReports = async () => {
+    setSkeletonLoading({
+      header: true,
+      toolbar: true,
+      table: true,
+      pagination: true
+    });
+    
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/admin/reports', {
+      const response = await axios.get(`http://localhost:5000/api/admin/reports?page=${currentPage}&limit=${ITEMS_PER_PAGE}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      let reportsData = [];
+      let totalCount = 0;
+
+      // Handle both array response and paginated response
+      if (Array.isArray(response.data)) {
+        reportsData = response.data;
+        totalCount = response.data.length;
+      } else if (response.data.reports) {
+        // Paginated response
+        reportsData = response.data.reports;
+        totalCount = response.data.total || response.data.reports.length;
+      } else if (response.data.success && response.data.reports) {
+        reportsData = response.data.reports;
+        totalCount = response.data.total || response.data.reports.length;
+      } else {
+        reportsData = response.data;
+        totalCount = response.data.length;
+      }
+      
       // Sort reports by created_at in descending order (newest first)
-      const sortedReports = (response.data.reports || []).sort((a, b) => 
+      const sortedReports = reportsData.sort((a, b) => 
         new Date(b.created_at) - new Date(a.created_at)
       );
       
       setReports(sortedReports);
+      setTotalReports(totalCount);
+      setTotalPages(Math.ceil(totalCount / ITEMS_PER_PAGE));
     } catch (error) {
       console.error('Error fetching reports:', error);
       alert('Failed to load reports: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
+      setSkeletonLoading({
+        header: false,
+        toolbar: false,
+        table: false,
+        pagination: false
+      });
     }
   };
 
-  const filterAndSortReports = () => {
-    let filtered = reports;
+const filterAndSortReports = () => {
+  let filtered = reports;
 
-    // Apply status filter
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(report => report.status === filters.status);
-    }
+  // Apply status filter
+  if (filters.status !== 'all') {
+    filtered = filtered.filter(report => report.status === filters.status);
+  }
 
-    // Apply report type filter
-    if (filters.reportType !== 'all') {
-      filtered = filtered.filter(report => report.report_type === filters.reportType);
-    }
+  // Apply report type filter
+  if (filters.reportType !== 'all') {
+    filtered = filtered.filter(report => report.report_type === filters.reportType);
+  }
 
-    // Apply severity filter
-    if (filters.severity !== 'all') {
-      filtered = filtered.filter(report => report.severity === filters.severity);
-    }
+  // Apply severity filter
+  if (filters.severity !== 'all') {
+    filtered = filtered.filter(report => report.severity === filters.severity);
+  }
 
-    // Apply source filter
-    if (filters.source !== 'all') {
-      filtered = filtered.filter(report => report.source === filters.source);
-    }
+  // Apply source filter
+  if (filters.source !== 'all') {
+    filtered = filtered.filter(report => report.source === filters.source);
+  }
 
-    // Apply search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(report => 
-        (report.reporter_username && report.reporter_username.toLowerCase().includes(searchLower)) ||
-        (report.reported_username && report.reported_username.toLowerCase().includes(searchLower)) ||
-        (report.report_type && report.report_type.toLowerCase().includes(searchLower)) ||
-        (report.description && report.description.toLowerCase().includes(searchLower)) ||
-        (report.source && report.source.toLowerCase().includes(searchLower))
-      );
-    }
+  // Apply search filter
+  if (searchTerm) {
+    const searchLower = searchTerm.toLowerCase();
+    filtered = filtered.filter(report => 
+      (report.reporter_username && report.reporter_username.toLowerCase().includes(searchLower)) ||
+      (report.reported_username && report.reported_username.toLowerCase().includes(searchLower)) ||
+      (report.report_type && report.report_type.toLowerCase().includes(searchLower)) ||
+      (report.description && report.description.toLowerCase().includes(searchLower)) ||
+      (report.source && report.source.toLowerCase().includes(searchLower))
+    );
+  }
 
-    // Apply sorting
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortConfig.key === 'created_at') {
-        return sortConfig.direction === 'desc' 
-          ? new Date(b.created_at) - new Date(a.created_at)
-          : new Date(a.created_at) - new Date(b.created_at);
-      }
-      
-      if (sortConfig.key === 'severity') {
-        const severityOrder = { high: 3, medium: 2, low: 1 };
-        return sortConfig.direction === 'desc'
-          ? severityOrder[b.severity] - severityOrder[a.severity]
-          : severityOrder[a.severity] - severityOrder[b.severity];
-      }
-
-      if (sortConfig.key === 'status') {
-        const statusOrder = { pending: 4, reviewed: 3, resolved: 2, dismissed: 1 };
-        return sortConfig.direction === 'desc'
-          ? statusOrder[b.status] - statusOrder[a.status]
-          : statusOrder[a.status] - statusOrder[b.status];
-      }
-
-      return 0;
-    });
-
-    setFilteredReports(sorted);
-  };
+  // No need for client-side sorting - backend already returns newest first
+  setFilteredReports(filtered);
+};
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -319,7 +452,7 @@ const ReportManagement = () => {
 
   const getStatusCounts = () => {
     return {
-      total: reports.length,
+      total: totalReports,
       pending: reports.filter(r => r.status === 'pending').length,
       reviewed: reports.filter(r => r.status === 'reviewed').length,
       resolved: reports.filter(r => r.status === 'resolved').length,
@@ -437,16 +570,102 @@ const ReportManagement = () => {
     return formatDate(dateString);
   };
 
-  if (loading) {
+  // Pagination functions
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
     return (
-      <div className="report-management">
-        <div className="report-management-loading">
-          <div className="rm-loading-spinner"></div>
-          <p>Loading reports...</p>
+      <div className="rm-pagination">
+        <div className="rm-pagination-info">
+          Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalReports)} of {totalReports} reports
+        </div>
+        <div className="rm-pagination-controls">
+          <button
+            className={`rm-pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <FaChevronLeft /> Previous
+          </button>
+          
+          <div className="rm-pagination-numbers">
+            {startPage > 1 && (
+              <>
+                <button
+                  className={`rm-page-number ${1 === currentPage ? 'active' : ''}`}
+                  onClick={() => handlePageChange(1)}
+                >
+                  1
+                </button>
+                {startPage > 2 && <span className="rm-page-ellipsis">...</span>}
+              </>
+            )}
+            
+            {pageNumbers.map(page => (
+              <button
+                key={page}
+                className={`rm-page-number ${page === currentPage ? 'active' : ''}`}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </button>
+            ))}
+            
+            {endPage < totalPages && (
+              <>
+                {endPage < totalPages - 1 && <span className="rm-page-ellipsis">...</span>}
+                <button
+                  className={`rm-page-number ${totalPages === currentPage ? 'active' : ''}`}
+                  onClick={() => handlePageChange(totalPages)}
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+          </div>
+          
+          <button
+            className={`rm-pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next <FaChevronRight />
+          </button>
         </div>
       </div>
     );
-  }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilters({
+      status: 'all',
+      reportType: 'all',
+      severity: 'all',
+      source: 'all'
+    });
+    setCurrentPage(1);
+  };
 
   const statusCounts = getStatusCounts();
   const sourceCounts = getSourceCounts();
@@ -454,240 +673,277 @@ const ReportManagement = () => {
   return (
     <div className="report-management">
       {/* Header Section */}
-      <div className="rm-header">
-        <div className="rm-header-content">
-          <div className="rm-title-section">
-            <FaFlag className="rm-header-icon" />
-            <div>
-              <h1 className="rm-main-title">Report Management</h1>
-              <p className="rm-subtitle">Manage and resolve user reports with evidence</p>
+      {skeletonLoading.header ? (
+        <HeaderSkeleton />
+      ) : (
+        <div className="rm-header">
+          <div className="rm-header-content">
+            <div className="rm-title-section">
+              <FaFlag className="rm-header-icon" />
+              <div>
+                <h1 className="rm-main-title">Report Management</h1>
+                <p className="rm-subtitle">Manage and resolve user reports with evidence</p>
+              </div>
             </div>
-          </div>
-          
-          <div className="rm-stats">
-            <div className="rm-stat-card">
-              <FaFlag className="rm-stat-icon total" />
-              <span className="rm-stat-number total">{statusCounts.total}</span>
-              <span className="rm-stat-label">Total Reports</span>
-            </div>
-            <div className="rm-stat-card">
-              <FaClock className="rm-stat-icon pending" />
-              <span className="rm-stat-number pending">{statusCounts.pending}</span>
-              <span className="rm-stat-label">Pending</span>
-            </div>
-            <div className="rm-stat-card">
-              <FaExclamationTriangle className="rm-stat-icon high" />
-              <span className="rm-stat-number high">
-                {reports.filter(r => r.severity === 'high').length}
-              </span>
-              <span className="rm-stat-label">High Severity</span>
+            
+            <div className="rm-stats">
+              <div className="rm-stat-card">
+                <FaFlag className="rm-stat-icon total" />
+                <span className="rm-stat-number total">{statusCounts.total}</span>
+                <span className="rm-stat-label">Total Reports</span>
+              </div>
+              <div className="rm-stat-card">
+                <FaClock className="rm-stat-icon pending" />
+                <span className="rm-stat-number pending">{statusCounts.pending}</span>
+                <span className="rm-stat-label">Pending</span>
+              </div>
+              <div className="rm-stat-card">
+                <FaExclamationTriangle className="rm-stat-icon high" />
+                <span className="rm-stat-number high">
+                  {reports.filter(r => r.severity === 'high').length}
+                </span>
+                <span className="rm-stat-label">High Severity</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Toolbar Section */}
-      <div className="rm-toolbar">
-        <div className="rm-filters-container">
-          <div className="rm-filter-group">
-            <label>
-              <FaFilter /> Status:
-            </label>
-            <select 
-              className="rm-filter-select"
-              value={filters.status} 
-              onChange={(e) => setFilters({...filters, status: e.target.value})}
-            >
-              <option value="all">All Status ({statusCounts.total})</option>
-              <option value="pending">Pending ({statusCounts.pending})</option>
-              <option value="reviewed">Reviewed ({statusCounts.reviewed})</option>
-              <option value="resolved">Resolved ({statusCounts.resolved})</option>
-              <option value="dismissed">Dismissed ({statusCounts.dismissed})</option>
-            </select>
-          </div>
-          
-          <div className="rm-filter-group">
-            <label>
-              <FaFilter /> Report Type:
-            </label>
-            <select 
-              className="rm-filter-select"
-              value={filters.reportType} 
-              onChange={(e) => setFilters({...filters, reportType: e.target.value})}
-            >
-              <option value="all">All Types</option>
-              {getReportTypes().map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
+      {skeletonLoading.toolbar ? (
+        <ToolbarSkeleton />
+      ) : (
+        <div className="rm-toolbar">
+          <div className="rm-filters-container">
+            <div className="rm-filter-group">
+              <label>
+                <FaFilter /> Status:
+              </label>
+              <select 
+                className="rm-filter-select"
+                value={filters.status} 
+                onChange={(e) => setFilters({...filters, status: e.target.value})}
+              >
+                <option value="all">All Status ({statusCounts.total})</option>
+                <option value="pending">Pending ({statusCounts.pending})</option>
+                <option value="reviewed">Reviewed ({statusCounts.reviewed})</option>
+                <option value="resolved">Resolved ({statusCounts.resolved})</option>
+                <option value="dismissed">Dismissed ({statusCounts.dismissed})</option>
+              </select>
+            </div>
+            
+            <div className="rm-filter-group">
+              <label>
+                <FaFilter /> Report Type:
+              </label>
+              <select 
+                className="rm-filter-select"
+                value={filters.reportType} 
+                onChange={(e) => setFilters({...filters, reportType: e.target.value})}
+              >
+                <option value="all">All Types</option>
+                {getReportTypes().map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rm-filter-group">
+              <label>
+                <FaFilter /> Severity:
+              </label>
+              <select 
+                className="rm-filter-select"
+                value={filters.severity} 
+                onChange={(e) => setFilters({...filters, severity: e.target.value})}
+              >
+                <option value="all">All Severity</option>
+                {getSeverityTypes().map(severity => (
+                  <option key={severity} value={severity}>
+                    {severity.charAt(0).toUpperCase() + severity.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rm-filter-group">
+              <label>
+                <FaFilter /> Source:
+              </label>
+              <select 
+                className="rm-filter-select"
+                value={filters.source} 
+                onChange={(e) => setFilters({...filters, source: e.target.value})}
+              >
+                <option value="all">All Sources</option>
+                <option value="chat_page">Chat Page ({sourceCounts.chat_page})</option>
+                <option value="chat_message">Messages ({sourceCounts.chat_message})</option>
+                <option value="video_call">Video Calls ({sourceCounts.video_call})</option>
+              </select>
+            </div>
           </div>
 
-          <div className="rm-filter-group">
-            <label>
-              <FaFilter /> Severity:
-            </label>
-            <select 
-              className="rm-filter-select"
-              value={filters.severity} 
-              onChange={(e) => setFilters({...filters, severity: e.target.value})}
-            >
-              <option value="all">All Severity</option>
-              {getSeverityTypes().map(severity => (
-                <option key={severity} value={severity}>
-                  {severity.charAt(0).toUpperCase() + severity.slice(1)}
-                </option>
-              ))}
-            </select>
+          <div className="rm-search-container">
+            <FaSearch className="rm-search-icon" />
+            <input
+              type="text"
+              className="rm-search-input"
+              placeholder="Search reports..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button 
+                className="rm-search-clear"
+                onClick={clearSearch}
+                title="Clear search"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
 
-          <div className="rm-filter-group">
-            <label>
-              <FaFilter /> Source:
-            </label>
-            <select 
-              className="rm-filter-select"
-              value={filters.source} 
-              onChange={(e) => setFilters({...filters, source: e.target.value})}
-            >
-              <option value="all">All Sources</option>
-              <option value="chat_page">Chat Page ({sourceCounts.chat_page})</option>
-              <option value="chat_message">Messages ({sourceCounts.chat_message})</option>
-              <option value="video_call">Video Calls ({sourceCounts.video_call})</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="rm-search-container">
-          <FaSearch className="rm-search-icon" />
-          <input
-            type="text"
-            className="rm-search-input"
-            placeholder="Search reports..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
+          {(searchTerm || filters.status !== 'all' || filters.reportType !== 'all' || filters.severity !== 'all' || filters.source !== 'all') && (
             <button 
-              className="rm-search-clear"
-              onClick={clearSearch}
-              title="Clear search"
+              className="rm-clear-filters"
+              onClick={clearFilters}
+              title="Clear all filters"
             >
-              <FaTimes />
+              <FaTimes /> Clear Filters
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* Reports Table */}
       <div className="rm-table-container">
-        {filteredReports.length > 0 ? (
+        {skeletonLoading.table ? (
           <table className="rm-table">
             <thead>
               <tr>
-                <th onClick={() => handleSort('id')} className="rm-sortable-header">
-                  <span>ID {getSortIcon('id')}</span>
-                </th>
-                <th>Reporter</th>
-                <th>Reported User</th>
-                <th>Type</th>
-                <th onClick={() => handleSort('severity')} className="rm-sortable-header">
-                  <span>Severity {getSortIcon('severity')}</span>
-                </th>
-                <th>Description</th>
-                <th>Evidence</th>
-                <th>Source</th>
-                <th onClick={() => handleSort('status')} className="rm-sortable-header">
-                  <span>Status {getSortIcon('status')}</span>
-                </th>
-                <th onClick={() => handleSort('created_at')} className="rm-sortable-header">
-                  <span>Date Reported {getSortIcon('created_at')}</span>
-                </th>
-                <th>Actions</th>
+                {['ID', 'Reporter', 'Reported', 'Type', 'Severity', 'Description', 'Evidence', 'Source', 'Status', 'Date', 'Actions'].map((header) => (
+                  <th key={header}>
+                    <div className="skeleton-text skeleton-pulse"></div>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filteredReports.map(report => (
-                <tr 
-                  key={report.id} 
-                  className={`${report.status === 'pending' ? 'rm-urgent-row' : ''} ${report.severity === 'high' ? 'rm-high-severity' : ''}`}
-                >
-                  <td>
-                    {report.status === 'pending' && (
-                      <FaExclamationTriangle className="rm-urgent-indicator" />
-                    )}
-                    #{report.id}
-                  </td>
-                  <td>
-                    <div className="rm-user-info">
-                      <span className="rm-user-name">
-                        <FaUser /> {report.reporter_username || `User ${report.reporter_id}`}
-                      </span>
-                      <span className="rm-user-email">
-                        <FaEnvelope /> {report.reporter_email || 'No email'}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="rm-user-info">
-                      <span className="rm-user-name">
-                        <FaUser /> {report.reported_username || `User ${report.reported_user_id}`}
-                      </span>
-                      <span className="rm-user-email">
-                        <FaEnvelope /> {report.reported_email || 'No email'}
-                      </span>
-                      {report.reported_user_strikes > 0 && (
-                        <span className="rm-user-strikes">
-                          <FaBan /> {report.reported_user_strikes} strikes
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>{report.report_type}</td>
-                  <td>{getSeverityBadge(report.severity)}</td>
-                  <td className="rm-description-cell">
-                    <div className="rm-description-truncated">
-                      {report.description || 'No description provided'}
-                    </div>
-                  </td>
-                  <td>
-                    {report.evidence && report.evidence.length > 0 ? (
-                      <div className="rm-evidence-preview">
-                        {getEvidenceIcon(report.evidence_type)}
-                        <span className="rm-evidence-count">
-                          {report.evidence.length} file{report.evidence.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="rm-no-evidence">No evidence</span>
-                    )}
-                  </td>
-                  <td>{getSourceBadge(report.source)}</td>
-                  <td>{getStatusBadge(report.status)}</td>
-                  <td>
-                    <div className="rm-user-info">
-                      <span className="rm-user-name">
-                        <FaCalendar /> {formatDate(report.created_at)}
-                      </span>
-                      <span className="rm-time-ago">
-                        {getTimeAgo(report.created_at)}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="rm-action-buttons">
-                      <button 
-                        onClick={() => setSelectedReport(report)}
-                        className="rm-btn-view"
-                        title="View report details"
-                      >
-                        <FaEye /> View
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+              {Array.from({ length: 10 }).map((_, index) => (
+                <TableRowSkeleton key={index} />
               ))}
             </tbody>
           </table>
+        ) : filteredReports.length > 0 ? (
+          <>
+            <table className="rm-table">
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('id')} className="rm-sortable-header">
+                    <span>ID {getSortIcon('id')}</span>
+                  </th>
+                  <th>Reporter</th>
+                  <th>Reported User</th>
+                  <th>Type</th>
+                  <th onClick={() => handleSort('severity')} className="rm-sortable-header">
+                    <span>Severity {getSortIcon('severity')}</span>
+                  </th>
+                  <th>Description</th>
+                  <th>Evidence</th>
+                  <th>Source</th>
+                  <th onClick={() => handleSort('status')} className="rm-sortable-header">
+                    <span>Status {getSortIcon('status')}</span>
+                  </th>
+                  <th onClick={() => handleSort('created_at')} className="rm-sortable-header">
+                    <span>Date Reported {getSortIcon('created_at')}</span>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredReports.map(report => (
+                  <tr 
+                    key={report.id} 
+                    className={`${report.status === 'pending' ? 'rm-urgent-row' : ''} ${report.severity === 'high' ? 'rm-high-severity' : ''}`}
+                  >
+                    <td>
+                      {report.status === 'pending' && (
+                        <FaExclamationTriangle className="rm-urgent-indicator" />
+                      )}
+                      #{report.id}
+                    </td>
+                    <td>
+                      <div className="rm-user-info">
+                        <span className="rm-user-name">
+                          <FaUser /> {report.reporter_username || `User ${report.reporter_id}`}
+                        </span>
+                        <span className="rm-user-email">
+                          <FaEnvelope /> {report.reporter_email || 'No email'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="rm-user-info">
+                        <span className="rm-user-name">
+                          <FaUser /> {report.reported_username || `User ${report.reported_user_id}`}
+                        </span>
+                        <span className="rm-user-email">
+                          <FaEnvelope /> {report.reported_email || 'No email'}
+                        </span>
+                        {report.reported_user_strikes > 0 && (
+                          <span className="rm-user-strikes">
+                            <FaBan /> {report.reported_user_strikes} strikes
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>{report.report_type}</td>
+                    <td>{getSeverityBadge(report.severity)}</td>
+                    <td className="rm-description-cell">
+                      <div className="rm-description-truncated">
+                        {report.description || 'No description provided'}
+                      </div>
+                    </td>
+                    <td>
+                      {report.evidence && report.evidence.length > 0 ? (
+                        <div className="rm-evidence-preview">
+                          {getEvidenceIcon(report.evidence_type)}
+                          <span className="rm-evidence-count">
+                            {report.evidence.length} file{report.evidence.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="rm-no-evidence">No evidence</span>
+                      )}
+                    </td>
+                    <td>{getSourceBadge(report.source)}</td>
+                    <td>{getStatusBadge(report.status)}</td>
+                    <td>
+                      <div className="rm-user-info">
+                        <span className="rm-user-name">
+                          <FaCalendar /> {formatDate(report.created_at)}
+                        </span>
+                        <span className="rm-time-ago">
+                          {getTimeAgo(report.created_at)}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="rm-action-buttons">
+                        <button 
+                          onClick={() => setSelectedReport(report)}
+                          className="rm-btn-view"
+                          title="View report details"
+                        >
+                          <FaEye /> View
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         ) : (
           <div className="rm-no-data">
             <FaFileAlt className="rm-no-data-icon" />
@@ -701,6 +957,13 @@ const ReportManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {skeletonLoading.pagination ? (
+        <PaginationSkeleton />
+      ) : (
+        renderPagination()
+      )}
 
       {/* Report Detail Modal */}
       {selectedReport && (

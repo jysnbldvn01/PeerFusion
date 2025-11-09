@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel} from 'react-icons/fa';
+import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel, FaHeadset} from 'react-icons/fa';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardOverview from '../components/admin/DashboardOverview';
 import ModeratorSettings from '../components/admin/ModeratorSettings';
@@ -7,6 +7,7 @@ import SubjectManagement from '../components/admin/SubjectManagement';
 import ReportManagement from '../components/admin/ReportManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
 import AppealManagement from '../components/admin/AppealManagement';
+import SupportManagement from '../components/admin/SupportManagement';
 
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
@@ -40,7 +41,7 @@ export default function ModeratorDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview setActiveTab={setActiveTab} />;
       case 'users':
         return <UserManagement />;
       case 'subjects':
@@ -49,12 +50,14 @@ export default function ModeratorDashboard() {
         return <ReportManagement />;
       case 'feedback':
         return <FeedbackManagement />;
+      case 'support':
+        return <SupportManagement />;
       case 'appeals':
         return <AppealManagement />;
       case 'settings':
         return <ModeratorSettings />;
       default:
-        return <DashboardOverview />;
+        return <DashboardOverview setActiveTab={setActiveTab} />;
     }
   };
 
@@ -121,6 +124,13 @@ export default function ModeratorDashboard() {
           >
             <FaComments className="icon" />
             {isSidebarOpen && <span>Feedback Management</span>}
+          </li>
+          <li
+            className={activeTab === 'support' ? 'active' : ''}
+            onClick={() => setActiveTab('support')}
+          >
+            <FaHeadset className="icon" />
+            {isSidebarOpen && <span>Support Management</span>}
           </li>
           <li
             className={activeTab === 'settings' ? 'active' : ''}

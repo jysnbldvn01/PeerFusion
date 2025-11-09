@@ -765,3 +765,177 @@
   align-items: flex-end;
   gap: 4px;
 }
+
+/* Skeleton Loading Styles */
+.skeleton {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-long {
+  height: 14px;
+  margin-bottom: 6px;
+  width: 90%;
+}
+
+.skeleton-text-medium {
+  height: 14px;
+  margin-bottom: 6px;
+  width: 70%;
+}
+
+.skeleton-text-short {
+  height: 14px;
+  width: 50%;
+}
+
+.skeleton-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.skeleton-stars::before {
+  content: '★★★★★';
+  color: transparent;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  border-radius: 2px;
+}
+
+/* Skeleton specific overrides */
+.fm-header.skeleton .fm-header-icon,
+.fm-stat-card.skeleton .fm-stat-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.fm-user-card.skeleton .fm-avatar-placeholder,
+.fm-user-card.skeleton .fm-avatar-placeholder-small,
+.fm-card.skeleton .fm-avatar-placeholder {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.fm-feedback-item.skeleton .fm-feedback-meta .fm-rating {
+  color: transparent;
+}
+
+.fm-search-box.skeleton-pulse {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  height: 40px;
+}
+
+.fm-filter-select.skeleton-pulse {
+  height: 40px;
+  border: none;
+}
+
+.fm-btn.skeleton-pulse {
+  height: 40px;
+  border: none;
+  width: 120px;
+}
+
+/* Header skeleton styles */
+.fm-header.skeleton .fm-main-title {
+  height: 28px;
+  width: 200px;
+  margin-bottom: 8px;
+}
+
+.fm-header.skeleton .fm-subtitle {
+  height: 18px;
+  width: 300px;
+}
+
+.fm-stat-card.skeleton .fm-stat-number {
+  height: 24px;
+  width: 60px;
+  margin: 8px 0;
+}
+
+.fm-stat-card.skeleton .fm-stat-label {
+  height: 16px;
+  width: 80px;
+}
+
+/* Card header skeleton */
+.fm-card-header .fm-card-title.skeleton-text {
+  height: 20px;
+  width: 150px;
+  margin: 0;
+}
+
+/* User info skeleton */
+.fm-user-header.skeleton .fm-username {
+  height: 20px;
+  width: 120px;
+  margin-bottom: 8px;
+}
+
+.fm-user-header.skeleton .fm-user-email {
+  height: 16px;
+  width: 180px;
+}
+
+.fm-user-header.skeleton .fm-feedback-count,
+.fm-user-header.skeleton .fm-user-recommended-badge {
+  height: 20px;
+  width: 140px;
+}
+
+/* Ensure skeleton elements maintain layout */
+.fm-users-list .skeleton,
+.fm-feedback-list .skeleton {
+  opacity: 0.6;
+}
+
+/* Loading state improvements */
+.fm-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #666;
+}
+
+.fm-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

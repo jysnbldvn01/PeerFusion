@@ -307,15 +307,15 @@ const TermsOfUse = () => {
             <p>PeerFusion enforces community safety through a Strike Policy:</p>
             <div className="peerfusion-strike-system">
               <div className="peerfusion-strike-level">
-                <span className="peerfusion-strike-count">0 Strikes</span>
+                <span className="peerfusion-strike-counts">0 Strikes</span>
                 <span className="peerfusion-strike-status">Active</span>
               </div>
               <div className="peerfusion-strike-level">
-                <span className="peerfusion-strike-count">1–2 Strikes</span>
+                <span className="peerfusion-strike-counts">1–2 Strikes</span>
                 <span className="peerfusion-strike-status">Warning</span>
               </div>
               <div className="peerfusion-strike-level">
-                <span className="peerfusion-strike-count">3+ Strikes</span>
+                <span className="peerfusion-strike-counts">3+ Strikes</span>
                 <span className="peerfusion-strike-status">Suspended (unless permanently banned)</span>
               </div>
             </div>
@@ -411,19 +411,22 @@ const TermsOfUse = () => {
             <p>User data will not be shared with third parties without consent, except when required by law.</p>
           </section>
 
-          <section id="intellectual" className="peerfusion-section">
+        <section id="intellectual" className="peerfusion-section">
             <h2>7. Intellectual Property and Copyright</h2>
             <p>
-              All website content, including logos, designs, texts, and features, are the intellectual property of PeerFusion.
-              Users retain ownership of materials they upload (such as notes or learning resources) but grant PeerFusion a 
-              non-exclusive right to display them for educational purposes.
+                All <strong>original</strong> website content, features, and functionality developed by PeerFusion—including the overall design, text, and proprietary software features—are the intellectual property of PeerFusion and protected by the Intellectual Property Code of the Philippines (R.A. 8293) and international copyright laws.
+            </p>
+            <p>
+                <strong>Licensed Materials:</strong> The PeerFusion logo and certain graphic elements used on the website (the "Licensed Elements") may incorporate templates and stock media provided under license by third-party providers, such as Canva. The intellectual property rights for these specific Licensed Elements belong to their respective owners (e.g., Canva or its contributors), and they are used by PeerFusion under a non-exclusive, perpetual license. <strong>PeerFusion does not claim exclusive trademark rights or copyright ownership over these individual Licensed Elements.</strong>
+            </p>
+            <p>
+                <strong>User-Uploaded Content:</strong> Users retain ownership of materials they upload (such as notes or learning resources) but grant PeerFusion a non-exclusive, royalty-free, worldwide right to display, distribute, and reproduce those materials solely for the educational purposes outlined by the platform's services.
             </p>
             <div className="peerfusion-warning">
-              Unauthorized reproduction, redistribution, or misuse of PeerFusion's platform materials is strictly prohibited 
-              and may result in legal action under the Intellectual Property Code of the Philippines (R.A. 8293).
+                Unauthorized reproduction, redistribution, modification, or misuse of PeerFusion's proprietary platform materials and the Licensed Elements (beyond the scope of normal website use) is strictly prohibited. Violation of these terms may result in immediate account termination and potential legal action under applicable intellectual property laws.
             </div>
-          </section>
-
+        </section>
+        
           <section id="legal" className="peerfusion-section">
             <h2>8. Legal Basis</h2>
             <p>PeerFusion operates in compliance with:</p>
@@ -554,7 +557,7 @@ const TermsOfUse = () => {
             </div>
             <div className="peerfusion-link-group">
               <h4>Support</h4>
-              <a href="/help">Help Center</a>
+              <a href="/support">Help Center</a>
               <a href="/user-appeal">Appeals</a>
               <a href="#contact">Contact</a>
             </div>

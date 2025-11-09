@@ -37,6 +37,13 @@ export default function FeedbackManagement() {
   });
   const [feedbackPage, setFeedbackPage] = useState(1);
   const [hasMoreFeedback, setHasMoreFeedback] = useState(false);
+  const [skeletonLoading, setSkeletonLoading] = useState({
+    users: false,
+    feedback: false,
+    stats: false,
+    header: false,
+    filters: false
+  });
 
   // Get avatar URL - handle both full URLs and relative paths
   const getAvatarUrl = (avatar) => {
@@ -66,6 +73,7 @@ export default function FeedbackManagement() {
   const fetchUniqueUsers = async () => {
     const token = localStorage.getItem('token');
     try {
+      setSkeletonLoading(prev => ({ ...prev, users: true, header: true }));
       setLoading(true);
       const response = await axios.get('http://localhost:5000/api/admin/feedback/unique-users-with-recommended', {
         headers: { Authorization: `Bearer ${token}` }
@@ -76,12 +84,14 @@ export default function FeedbackManagement() {
       setError('Failed to load users data');
     } finally {
       setLoading(false);
+      setSkeletonLoading(prev => ({ ...prev, users: false, header: false }));
     }
   };
 
   const fetchStats = async () => {
     const token = localStorage.getItem('token');
     try {
+      setSkeletonLoading(prev => ({ ...prev, stats: true }));
       const response = await axios.get('http://localhost:5000/api/admin/feedback/stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -112,12 +122,15 @@ export default function FeedbackManagement() {
         two_star: 0,
         one_star: 0
       });
+    } finally {
+      setSkeletonLoading(prev => ({ ...prev, stats: false }));
     }
   };
 
   const fetchUserFeedback = async (userId, page = 1, loadMore = false) => {
     const token = localStorage.getItem('token');
     try {
+      setSkeletonLoading(prev => ({ ...prev, feedback: true, filters: true }));
       setLoading(true);
       const response = await axios.get(`http://localhost:5000/api/admin/feedback/user/${userId}?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -140,6 +153,7 @@ export default function FeedbackManagement() {
       setError('Failed to load user feedback');
     } finally {
       setLoading(false);
+      setSkeletonLoading(prev => ({ ...prev, feedback: false, filters: false }));
     }
   };
 
@@ -255,6 +269,164 @@ export default function FeedbackManagement() {
     return user.has_recommended === true;
   };
 
+  // Skeleton Loading Components
+  const HeaderSkeleton = () => (
+    <div className="fm-header skeleton">
+      <div className="fm-header-content">
+        <div className="fm-title-section">
+          <div className="fm-header-icon skeleton-pulse"></div>
+          <div>
+            <div className="fm-main-title skeleton-text skeleton-pulse"></div>
+            <div className="fm-subtitle skeleton-text skeleton-pulse"></div>
+          </div>
+        </div>
+        <div className="fm-stats">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="fm-stat-card skeleton">
+              <div className="fm-stat-icon skeleton-pulse"></div>
+              <div className="fm-stat-number skeleton-text skeleton-pulse"></div>
+              <div className="fm-stat-label skeleton-text skeleton-pulse"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const FiltersSkeleton = () => (
+    <div className="fm-card skeleton">
+      <div className="fm-card-header">
+        <div className="fm-card-title skeleton-text skeleton-pulse"></div>
+      </div>
+      <div className="fm-filters-grid">
+        <div className="fm-search-box skeleton-pulse">
+          <div className="fm-search-icon skeleton-pulse"></div>
+          <div className="fm-search-input skeleton-pulse"></div>
+        </div>
+        <div className="fm-filter-group">
+          <div className="fm-filter-label skeleton-text skeleton-pulse"></div>
+          <div className="fm-filter-select skeleton-pulse"></div>
+        </div>
+        <div className="fm-filter-actions">
+          <div className="fm-btn fm-btn-secondary skeleton-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const UserCardSkeleton = () => (
+    <div className="fm-user-card skeleton">
+      <div className="fm-user-header">
+        <div className="fm-user-avatar">
+          <div className="fm-avatar-placeholder skeleton-pulse"></div>
+        </div>
+        <div className="fm-user-details">
+          <div className="fm-username skeleton-text skeleton-pulse"></div>
+          <div className="fm-user-email skeleton-text skeleton-pulse"></div>
+        </div>
+      </div>
+      <div className="fm-user-stats">
+        <div className="fm-feedback-count skeleton-text skeleton-pulse"></div>
+        <div className="fm-view-history">
+          <span className="skeleton-text skeleton-pulse"></span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const FeedbackItemSkeleton = () => (
+    <div className="fm-feedback-item skeleton">
+      <div className="fm-feedback-header">
+        <div className="fm-feedback-users">
+          <div className="fm-user-pair">
+            <div className="fm-user-info">
+              <div className="fm-user-avatar-small">
+                <div className="fm-avatar-placeholder-small skeleton-pulse"></div>
+              </div>
+              <div className="fm-user-details-small">
+                <div className="fm-username-small skeleton-text skeleton-pulse"></div>
+                <div className="fm-user-role skeleton-text skeleton-pulse"></div>
+              </div>
+            </div>
+            
+            <div className="fm-arrow skeleton-pulse">→</div>
+            
+            <div className="fm-user-info">
+              <div className="fm-user-avatar-small">
+                <div className="fm-avatar-placeholder-small skeleton-pulse"></div>
+              </div>
+              <div className="fm-user-details-small">
+                <div className="fm-username-small skeleton-text skeleton-pulse"></div>
+                <div className="fm-user-role skeleton-text skeleton-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="fm-feedback-meta">
+          <div className="fm-rating skeleton-pulse">
+            <div className="skeleton-stars"></div>
+          </div>
+          <div className="fm-feedback-date skeleton-text skeleton-pulse"></div>
+          <div className="fm-recommended-badge skeleton-text skeleton-pulse"></div>
+        </div>
+      </div>
+      
+      <div className="fm-feedback-message">
+        <div className="skeleton-text-long skeleton-pulse"></div>
+        <div className="skeleton-text-medium skeleton-pulse"></div>
+        <div className="skeleton-text-short skeleton-pulse"></div>
+      </div>
+    </div>
+  );
+
+  const StatsSkeleton = () => (
+    <div className="fm-stats-grid">
+      {[1, 2, 3, 4].map((item) => (
+        <div key={item} className="fm-stat-item skeleton">
+          <div className="fm-stat-value skeleton-pulse"></div>
+          <div className="fm-stat-label skeleton-text skeleton-pulse"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const RatingDistributionSkeleton = () => (
+    <div className="fm-rating-distribution skeleton">
+      <h4 className="fm-distribution-title skeleton-text skeleton-pulse"></h4>
+      {[1, 2, 3, 4, 5].map((item) => (
+        <div key={item} className="fm-rating-bar">
+          <div className="fm-rating-label skeleton-text skeleton-pulse"></div>
+          <div className="fm-bar-container">
+            <div className="fm-bar-fill skeleton-pulse"></div>
+          </div>
+          <div className="fm-rating-count skeleton-text skeleton-pulse"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const UserInfoSkeleton = () => (
+    <div className="fm-card skeleton">
+      <div className="fm-card-header">
+        <h2 className="fm-card-title skeleton-text skeleton-pulse"></h2>
+      </div>
+      <div className="fm-user-header">
+        <div className="fm-user-avatar">
+          <div className="fm-avatar-placeholder skeleton-pulse"></div>
+        </div>
+        <div className="fm-user-details">
+          <div className="fm-username skeleton-text skeleton-pulse"></div>
+          <div className="fm-user-email skeleton-text skeleton-pulse"></div>
+        </div>
+        <div className="fm-user-stats">
+          <div className="fm-feedback-count skeleton-text skeleton-pulse"></div>
+          <div className="fm-user-recommended-badge skeleton-text skeleton-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Update the Rating Distribution to show accurate data
   const RatingDistribution = () => {
     const ratingLabels = ['5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Stars'];
@@ -307,118 +479,130 @@ export default function FeedbackManagement() {
     return (
       <div className="fm-container">
         {/* Header */}
-        <div className="fm-header">
-          <div className="fm-header-content">
-            <div className="fm-title-section">
-              <div className="fm-header-icon">
-                <FiMessageSquare />
-              </div>
-              <div>
-                <h1 className="fm-main-title">Feedback History</h1>
-                <p className="fm-subtitle">
-                  All feedback for {selectedUserDetails?.username || 'User'}
-                  <button 
-                    onClick={() => setSelectedUser(null)}
-                    className="fm-btn fm-btn-secondary fm-btn-small ml-4"
-                  >
-                    ← Back to Users
-                  </button>
-                </p>
+        {skeletonLoading.header ? (
+          <HeaderSkeleton />
+        ) : (
+          <div className="fm-header">
+            <div className="fm-header-content">
+              <div className="fm-title-section">
+                <div className="fm-header-icon">
+                  <FiMessageSquare />
+                </div>
+                <div>
+                  <h1 className="fm-main-title">Feedback History</h1>
+                  <p className="fm-subtitle">
+                    All feedback for {selectedUserDetails?.username || 'User'}
+                    <button 
+                      onClick={() => setSelectedUser(null)}
+                      className="fm-btn fm-btn-secondary fm-btn-small ml-4"
+                    >
+                      ← Back to Users
+                    </button>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* User Info */}
         <div className="fm-content">
-          <div className="fm-card">
-            <div className="fm-card-header">
-              <h2 className="fm-card-title">User Information</h2>
-            </div>
-            <div className="fm-user-header">
-              <div className="fm-user-avatar">
-                {selectedUserDetails?.avatar ? (
-                  <img 
-                    src={getAvatarUrl(selectedUserDetails.avatar)} 
-                    alt={selectedUserDetails.username}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      const fallback = e.target.nextSibling;
-                      if (fallback) fallback.style.display = 'flex';
-                    }} 
-                  />
-                ) : null}
-                <div 
-                  className="fm-avatar-placeholder"
-                  style={{ display: selectedUserDetails?.avatar ? 'none' : 'flex' }}
-                >
-                  {getInitials(selectedUserDetails?.username)}
-                </div>
+          {skeletonLoading.filters ? (
+            <UserInfoSkeleton />
+          ) : (
+            <div className="fm-card">
+              <div className="fm-card-header">
+                <h2 className="fm-card-title">User Information</h2>
               </div>
-              <div className="fm-user-details">
-                <div className="fm-username">{selectedUserDetails?.username || 'Unknown User'}</div>
-                <div className="fm-user-email">
-                  <FiMail size={12} />
-                  {selectedUserDetails?.email || 'No email'}
-                </div>
-              </div>
-              <div className="fm-user-stats">
-                <div className="fm-feedback-count">
-                  {userFeedback.length} feedback entries
-                </div>
-                {/* Show recommended badge on user detail page */}
-                {hasRecommendedFeedback(selectedUserDetails) && (
-                  <div className="fm-user-recommended-badge">
-                    <FiThumbsUp size={12} />
-                    Recommended User
+              <div className="fm-user-header">
+                <div className="fm-user-avatar">
+                  {selectedUserDetails?.avatar ? (
+                    <img 
+                      src={getAvatarUrl(selectedUserDetails.avatar)} 
+                      alt={selectedUserDetails.username}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const fallback = e.target.nextSibling;
+                        if (fallback) fallback.style.display = 'flex';
+                      }} 
+                    />
+                  ) : null}
+                  <div 
+                    className="fm-avatar-placeholder"
+                    style={{ display: selectedUserDetails?.avatar ? 'none' : 'flex' }}
+                  >
+                    {getInitials(selectedUserDetails?.username)}
                   </div>
-                )}
+                </div>
+                <div className="fm-user-details">
+                  <div className="fm-username">{selectedUserDetails?.username || 'Unknown User'}</div>
+                  <div className="fm-user-email">
+                    <FiMail size={12} />
+                    {selectedUserDetails?.email || 'No email'}
+                  </div>
+                </div>
+                <div className="fm-user-stats">
+                  <div className="fm-feedback-count">
+                    {userFeedback.length} feedback entries
+                  </div>
+                  {/* Show recommended badge on user detail page */}
+                  {hasRecommendedFeedback(selectedUserDetails) && (
+                    <div className="fm-user-recommended-badge">
+                      <FiThumbsUp size={12} />
+                      Recommended User
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Filters for User Feedback */}
-          <div className="fm-card">
-            <div className="fm-card-header">
-              <h2 className="fm-card-title">Filter Feedback</h2>
-            </div>
-            
-            <div className="fm-filters-grid">
-              <div className="fm-filter-group">
-                <label className="fm-filter-label">Rating</label>
-                <select
-                  value={filters.rating}
-                  onChange={(e) => setFilters({...filters, rating: e.target.value})}
-                  className="fm-filter-select"
-                >
-                  <option value="">All Ratings</option>
-                  <option value="5">5 Stars</option>
-                  <option value="4">4 Stars</option>
-                  <option value="3">3 Stars</option>
-                  <option value="2">2 Stars</option>
-                  <option value="1">1 Star</option>
-                </select>
+          {skeletonLoading.filters ? (
+            <FiltersSkeleton />
+          ) : (
+            <div className="fm-card">
+              <div className="fm-card-header">
+                <h2 className="fm-card-title">Filter Feedback</h2>
               </div>
               
-              <div className="fm-filter-group">
-                <label className="fm-filter-label">Recommended</label>
-                <select
-                  value={filters.recommended}
-                  onChange={(e) => setFilters({...filters, recommended: e.target.value})}
-                  className="fm-filter-select"
-                >
-                  <option value="">All</option>
-                  <option value="true">Recommended Only</option>
-                </select>
-              </div>
-              
-              <div className="fm-filter-actions">
-                <button onClick={clearFilters} className="fm-btn fm-btn-secondary">
-                  Clear Filters
-                </button>
+              <div className="fm-filters-grid">
+                <div className="fm-filter-group">
+                  <label className="fm-filter-label">Rating</label>
+                  <select
+                    value={filters.rating}
+                    onChange={(e) => setFilters({...filters, rating: e.target.value})}
+                    className="fm-filter-select"
+                  >
+                    <option value="">All Ratings</option>
+                    <option value="5">5 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="3">3 Stars</option>
+                    <option value="2">2 Stars</option>
+                    <option value="1">1 Star</option>
+                  </select>
+                </div>
+                
+                <div className="fm-filter-group">
+                  <label className="fm-filter-label">Recommended</label>
+                  <select
+                    value={filters.recommended}
+                    onChange={(e) => setFilters({...filters, recommended: e.target.value})}
+                    className="fm-filter-select"
+                  >
+                    <option value="">All</option>
+                    <option value="true">Recommended Only</option>
+                  </select>
+                </div>
+                
+                <div className="fm-filter-actions">
+                  <button onClick={clearFilters} className="fm-btn fm-btn-secondary">
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* User Feedback List */}
           <div className="fm-card">
@@ -427,7 +611,13 @@ export default function FeedbackManagement() {
               <div className="fm-card-badge">{filteredFeedback.length} entries</div>
             </div>
 
-            {loading && userFeedback.length === 0 ? (
+            {skeletonLoading.feedback && userFeedback.length === 0 ? (
+              <div className="fm-feedback-list">
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <FeedbackItemSkeleton key={item} />
+                ))}
+              </div>
+            ) : loading && userFeedback.length === 0 ? (
               <div className="fm-loading">
                 <div className="fm-loading-spinner"></div>
                 <p>Loading feedback...</p>
@@ -574,76 +764,84 @@ export default function FeedbackManagement() {
   return (
     <div className="fm-container">
       {/* Header */}
-      <div className="fm-header">
-        <div className="fm-header-content">
-          <div className="fm-title-section">
-            <div className="fm-header-icon">
-              <FiMessageSquare />
+      {skeletonLoading.header ? (
+        <HeaderSkeleton />
+      ) : (
+        <div className="fm-header">
+          <div className="fm-header-content">
+            <div className="fm-title-section">
+              <div className="fm-header-icon">
+                <FiMessageSquare />
+              </div>
+              <div>
+                <h1 className="fm-main-title">Feedback Management</h1>
+                <p className="fm-subtitle">Monitor and manage user feedback and ratings</p>
+              </div>
             </div>
-            <div>
-              <h1 className="fm-main-title">Feedback Management</h1>
-              <p className="fm-subtitle">Monitor and manage user feedback and ratings</p>
-            </div>
-          </div>
-          <div className="fm-stats">
-            <div className="fm-stat-card">
-              <FiMessageSquare className="fm-stat-icon" />
-              <span className="fm-stat-number">{stats.total_feedback}</span>
-              <span className="fm-stat-label">Total Feedback</span>
-            </div>
-            <div className="fm-stat-card">
-              <FiStar className="fm-stat-icon" />
-              <span className="fm-stat-number">{formatNumber(stats.average_rating)}</span>
-              <span className="fm-stat-label">Avg Rating</span>
-            </div>
-            <div className="fm-stat-card">
-              <FiThumbsUp className="fm-stat-icon" />
-              <span className="fm-stat-number">{stats.total_recommended}</span>
-              <span className="fm-stat-label">Recommended</span>
+            <div className="fm-stats">
+              <div className="fm-stat-card">
+                <FiMessageSquare className="fm-stat-icon" />
+                <span className="fm-stat-number">{stats.total_feedback}</span>
+                <span className="fm-stat-label">Total Feedback</span>
+              </div>
+              <div className="fm-stat-card">
+                <FiStar className="fm-stat-icon" />
+                <span className="fm-stat-number">{formatNumber(stats.average_rating)}</span>
+                <span className="fm-stat-label">Avg Rating</span>
+              </div>
+              <div className="fm-stat-card">
+                <FiThumbsUp className="fm-stat-icon" />
+                <span className="fm-stat-number">{stats.total_recommended}</span>
+                <span className="fm-stat-label">Recommended</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="fm-content">
-        <div className="fm-card">
-          <div className="fm-card-header">
-            <h2 className="fm-card-title">Search Users</h2>
-          </div>
-          
-          <div className="fm-filters-grid">
-            <div className="fm-search-box">
-              <FiSearch className="fm-search-icon" />
-              <input
-                type="text"
-                placeholder="Search by username or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="fm-search-input"
-              />
+        {skeletonLoading.filters ? (
+          <FiltersSkeleton />
+        ) : (
+          <div className="fm-card">
+            <div className="fm-card-header">
+              <h2 className="fm-card-title">Search Users</h2>
             </div>
             
-            {/* User list filters */}
-            <div className="fm-filter-group">
-              <label className="fm-filter-label">Show Users</label>
-              <select
-                value={userListFilters.recommended}
-                onChange={(e) => setUserListFilters({...userListFilters, recommended: e.target.value})}
-                className="fm-filter-select"
-              >
-                <option value="">All Users</option>
-                <option value="recommended">Recommended Only</option>
-              </select>
-            </div>
-            
-            <div className="fm-filter-actions">
-              <button onClick={clearFilters} className="fm-btn fm-btn-secondary">
-                Clear All
-              </button>
+            <div className="fm-filters-grid">
+              <div className="fm-search-box">
+                <FiSearch className="fm-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search by username or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="fm-search-input"
+                />
+              </div>
+              
+              {/* User list filters */}
+              <div className="fm-filter-group">
+                <label className="fm-filter-label">Show Users</label>
+                <select
+                  value={userListFilters.recommended}
+                  onChange={(e) => setUserListFilters({...userListFilters, recommended: e.target.value})}
+                  className="fm-filter-select"
+                >
+                  <option value="">All Users</option>
+                  <option value="recommended">Recommended Only</option>
+                </select>
+              </div>
+              
+              <div className="fm-filter-actions">
+                <button onClick={clearFilters} className="fm-btn fm-btn-secondary">
+                  Clear All
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Users List */}
         <div className="fm-card">
@@ -652,7 +850,13 @@ export default function FeedbackManagement() {
             <div className="fm-card-badge">{filteredUsers.length} users</div>
           </div>
 
-          {loading ? (
+          {skeletonLoading.users ? (
+            <div className="fm-users-list">
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <UserCardSkeleton key={item} />
+              ))}
+            </div>
+          ) : loading ? (
             <div className="fm-loading">
               <div className="fm-loading-spinner"></div>
               <p>Loading users...</p>
@@ -725,27 +929,37 @@ export default function FeedbackManagement() {
           <div className="fm-card-header">
             <h2 className="fm-card-title">Feedback Statistics</h2>
           </div>
-          <div className="fm-stats-grid">
-            <div className="fm-stat-item">
-              <div className="fm-stat-value">{stats.total_feedback}</div>
-              <div className="fm-stat-label">Total Feedback</div>
-            </div>
-            <div className="fm-stat-item">
-              <div className="fm-stat-value">{formatNumber(stats.average_rating)}</div>
-              <div className="fm-stat-label">Average Rating</div>
-            </div>
-            <div className="fm-stat-item">
-              <div className="fm-stat-value">{stats.total_recommended}</div>
-              <div className="fm-stat-label">Recommended</div>
-            </div>
-            <div className="fm-stat-item">
-              <div className="fm-stat-value">{stats.five_star}</div>
-              <div className="fm-stat-label">5-Star Ratings</div>
-            </div>
-          </div>
           
-          {/* Use the new RatingDistribution component */}
-          <RatingDistribution />
+          {skeletonLoading.stats ? (
+            <>
+              <StatsSkeleton />
+              <RatingDistributionSkeleton />
+            </>
+          ) : (
+            <>
+              <div className="fm-stats-grid">
+                <div className="fm-stat-item">
+                  <div className="fm-stat-value">{stats.total_feedback}</div>
+                  <div className="fm-stat-label">Total Feedback</div>
+                </div>
+                <div className="fm-stat-item">
+                  <div className="fm-stat-value">{formatNumber(stats.average_rating)}</div>
+                  <div className="fm-stat-label">Average Rating</div>
+                </div>
+                <div className="fm-stat-item">
+                  <div className="fm-stat-value">{stats.total_recommended}</div>
+                  <div className="fm-stat-label">Recommended</div>
+                </div>
+                <div className="fm-stat-item">
+                  <div className="fm-stat-value">{stats.five_star}</div>
+                  <div className="fm-stat-label">5-Star Ratings</div>
+                </div>
+              </div>
+              
+              {/* Use the new RatingDistribution component */}
+              <RatingDistribution />
+            </>
+          )}
         </div>
       </div>
     </div>

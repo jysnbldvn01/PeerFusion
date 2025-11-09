@@ -90,10 +90,6 @@
   min-width: 140px;
 }
 
-.am-stat-card.pending {
-  border-left: 4px solid #f59e0b;
-}
-
 .wam-stat-icon {
   color: #3ff03f;
   width: 24px;
@@ -1277,4 +1273,226 @@
 
 .am-filter-tab:hover:not(.active) {
   background: #e2e8f0;
+}
+/* Appeal Management Pagination Styles */
+.am-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  margin-top: 20px;
+}
+
+.am-pagination-info {
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.am-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.am-pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #3b82f6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.am-pagination-btn:hover:not(.disabled) {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.am-pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #6c757d;
+  background: #f8f9fa;
+}
+
+.am-pagination-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: #f8f9fa;
+  color: #6c757d;
+  border-color: #dee2e6;
+}
+
+.am-pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.am-page-number {
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #3b82f6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 40px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.am-page-number:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+.am-page-number.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.am-page-number.active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.am-page-ellipsis {
+  padding: 8px 4px;
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Clear Filters Button */
+.am-clear-filters {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  height: 40px;
+}
+
+.am-clear-filters:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.am-pagination.skeleton {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.am-pagination.skeleton .am-pagination-info {
+  height: 16px;
+  width: 200px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+.am-pagination.skeleton .am-pagination-btn {
+  height: 36px;
+  width: 100px;
+  border: none;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 6px;
+}
+
+.am-pagination.skeleton .am-page-number {
+  height: 36px;
+  width: 36px;
+  border: none;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .am-pagination {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .am-pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .am-pagination-numbers {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  
+  .am-pagination-info {
+    order: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .am-pagination-numbers {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  
+  .am-page-number {
+    min-width: 36px;
+    height: 32px;
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  
+  .am-pagination-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    min-height: 32px;
+  }
 }

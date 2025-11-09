@@ -32,7 +32,9 @@ import VideoLayout from './components/layout/VideoLayout';
 import { AuthProvider } from './context/AuthContext';
 
 import LandingPage from './pages/LandingPage';
+import SupportPage from './pages/SupportPage';
 
+// In your App.js, update the routes:
 function App() {
   return (
     <AuthProvider>
@@ -49,15 +51,18 @@ function App() {
           <Route path="/user-appeal" element={<UserAppealPage />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/support" element={<SupportPage />} />
 
-            <Route
-              path="/setup-account"
-              element={
-                <ProtectedRoute>
-                  <SetupAccount key="setup-account" />
-                </ProtectedRoute>
-              }
-            />
+          {/* Setup Account */}
+          <Route
+            path="/setup-account"
+            element={
+              <ProtectedRoute>
+                <SetupAccount key="setup-account" />
+              </ProtectedRoute>
+            }
+          />
+
           {/* User Routes with Main Layout */}
           <Route element={<MainLayout />}>
             <Route
@@ -94,7 +99,7 @@ function App() {
             />
           </Route>
 
-          {/* Video Call Route (No Layout) */}
+          {/* Video Call Route */}
           <Route
             path="/videocall"
             element={
@@ -114,7 +119,7 @@ function App() {
             }
           />
 
-          {/* Moderator Routes */}
+          {/* Moderator Dashboard */}
           <Route
             path="/moderator/dashboard"
             element={
@@ -124,9 +129,8 @@ function App() {
             }
           />
 
-          {/* Default Redirect */}
-          <Route path="/" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          {/* Default Redirect for authenticated users */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

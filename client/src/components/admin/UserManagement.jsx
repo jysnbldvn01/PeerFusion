@@ -100,6 +100,126 @@ const PauseIcon = () => (
   </svg>
 );
 
+const ChevronLeftIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ChevronRightIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const UserManagementSkeleton = () => {
+  return (
+    <div className="um-container um-skeleton">
+      {/* Header Skeleton */}
+      <div className="um-header">
+        <div className="um-header-content">
+          <div className="um-title-section">
+            <div className="um-skeleton-icon um-header-icon"></div>
+            <div>
+              <div className="um-skeleton-line um-skeleton-main-title"></div>
+              <div className="um-skeleton-line um-skeleton-subtitle"></div>
+            </div>
+          </div>
+          <div className="um-stats-section">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="um-stat-card">
+                <div className="um-skeleton-icon"></div>
+                <div className="um-stat-info">
+                  <div className="um-skeleton-stat"></div>
+                  <div className="um-skeleton-label"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar Skeleton */}
+      <div className="um-toolbar">
+        <div className="um-skeleton-search"></div>
+        <div className="um-skeleton-tabs"></div>
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="um-table-wrapper">
+        <div className="um-table-container">
+          <table className="um-users-table">
+            <thead>
+              <tr>
+                <th className="um-col-checkbox">
+                  <div className="um-skeleton-checkbox"></div>
+                </th>
+                <th className="um-col-user">User</th>
+                <th className="um-col-email">Email</th>
+                <th className="um-col-joined">Joined</th>
+                <th className="um-col-status">Status</th>
+                <th className="um-col-strikes">Strikes</th>
+                <th className="um-col-reports">Reports</th>
+                <th className="um-col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5].map((row) => (
+                <tr key={row} className="um-skeleton-row">
+                  <td className="um-col-checkbox">
+                    <div className="um-skeleton-checkbox"></div>
+                  </td>
+                  <td className="um-col-user">
+                    <div className="um-user-card">
+                      <div className="um-skeleton-avatar"></div>
+                      <div className="um-user-info">
+                        <div className="um-skeleton-line um-skeleton-name"></div>
+                        <div className="um-skeleton-line um-skeleton-role"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="um-col-email">
+                    <div className="um-skeleton-line um-skeleton-email"></div>
+                  </td>
+                  <td className="um-col-joined">
+                    <div className="um-skeleton-line um-skeleton-date"></div>
+                  </td>
+                  <td className="um-col-status">
+                    <div className="um-skeleton-badge"></div>
+                  </td>
+                  <td className="um-col-strikes">
+                    <div className="um-skeleton-strikes"></div>
+                  </td>
+                  <td className="um-col-reports">
+                    <div className="um-skeleton-reports"></div>
+                  </td>
+                  <td className="um-col-actions">
+                    <div className="um-skeleton-actions"></div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination Skeleton */}
+      <div className="um-pagination skeleton">
+        <div className="um-pagination-info skeleton-text skeleton-pulse"></div>
+        <div className="um-pagination-controls">
+          <div className="um-pagination-btn skeleton-pulse"></div>
+          <div className="um-pagination-numbers">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div key={item} className="um-page-number skeleton-pulse"></div>
+            ))}
+          </div>
+          <div className="um-pagination-btn skeleton-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +235,12 @@ export default function UserManagement() {
   const dropdownRefs = useRef({});
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
+  
+  // Enhanced Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(50);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isModerator = currentUser?.role === 'moderator';
@@ -136,13 +262,43 @@ export default function UserManagement() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchUsers = async () => {
+  // Enhanced fetchUsers with search and filter parameters
+  const fetchUsers = async (page = 1, search = searchTerm, filter = activeFilter) => {
     const token = localStorage.getItem('token');
+    setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/users', {
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: itemsPerPage.toString()
+      });
+
+      // Add search term if provided
+      if (search) {
+        params.append('search', search);
+      }
+
+      // Add status filter if not 'all'
+      if (filter !== 'all') {
+        params.append('status', filter);
+      }
+
+      const res = await axios.get(`http://localhost:5000/api/admin/users?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(res.data);
+      
+      // Handle paginated response
+      if (res.data.users) {
+        setUsers(res.data.users);
+        setTotalUsers(res.data.total || 0);
+        setTotalPages(res.data.totalPages || 1);
+        setCurrentPage(res.data.page || 1);
+      } else {
+        // Fallback for non-paginated response
+        setUsers(Array.isArray(res.data) ? res.data : []);
+        setTotalUsers(Array.isArray(res.data) ? res.data.length : 0);
+        setTotalPages(1);
+      }
       setError('');
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -153,9 +309,10 @@ export default function UserManagement() {
     }
   };
 
+  // Fetch users when page, search term, or filter changes
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(currentPage, searchTerm, activeFilter);
+  }, [currentPage, searchTerm, activeFilter]);
 
   const fetchUserReports = async (userId) => {
     const token = localStorage.getItem('token');
@@ -181,19 +338,8 @@ export default function UserManagement() {
     return `http://localhost:5000/uploads/${avatar}`;
   };
 
-  // Enhanced filtering with status filter
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = activeFilter === 'all' || 
-                         (activeFilter === 'active' && user.status === 'active') ||
-                         (activeFilter === 'warning' && user.status === 'warning') ||
-                         (activeFilter === 'suspended' && user.status === 'suspended') ||
-                         (activeFilter === 'banned' && user.status === 'banned');
-
-    return matchesSearch && matchesFilter;
-  });
+  // Remove client-side filtering since it's now server-side
+  const displayedUsers = users;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -216,10 +362,10 @@ export default function UserManagement() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedUsers.size === filteredUsers.length && filteredUsers.length > 0) {
+    if (selectedUsers.size === displayedUsers.length && displayedUsers.length > 0) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(filteredUsers.map(user => user.id)));
+      setSelectedUsers(new Set(displayedUsers.map(user => user.id)));
     }
   };
 
@@ -241,7 +387,8 @@ export default function UserManagement() {
           });
         }
         
-        setUsers(prevUsers => prevUsers.filter(user => !userIds.includes(user.id)));
+        // Refresh the current page
+        fetchUsers(currentPage, searchTerm, activeFilter);
         setSelectedUsers(new Set());
         alert(`${userIds.length} users deleted successfully`);
         
@@ -254,7 +401,7 @@ export default function UserManagement() {
         }
         
         // Refresh users to get updated statuses
-        fetchUsers();
+        fetchUsers(currentPage, searchTerm, activeFilter);
         setSelectedUsers(new Set());
         alert(`${userIds.length} users reactivated successfully`);
       }
@@ -274,7 +421,8 @@ export default function UserManagement() {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
+      // Refresh the current page instead of client-side filtering
+      fetchUsers(currentPage, searchTerm, activeFilter);
       setDeleteConfirm(null);
       alert('User permanently deleted successfully');
     } catch (err) {
@@ -284,73 +432,58 @@ export default function UserManagement() {
     }
   };
 
-const handleBanUser = async (user) => {
-  const reason = prompt('Enter ban reason:');
-  if (!reason) return;
-  
-  if (!window.confirm(`Are you sure you want to permanently ban ${user.username}? This action cannot be undone.`)) {
-    return;
-  }
-  
-  const token = localStorage.getItem('token');
-  try {
-    const response = await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/ban`, 
-      { reason },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+  const handleBanUser = async (user) => {
+    const reason = prompt('Enter ban reason:');
+    if (!reason) return;
     
-    const result = response.data;
+    if (!window.confirm(`Are you sure you want to permanently ban ${user.username}? This action cannot be undone.`)) {
+      return;
+    }
     
-    setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === user.id ? { 
-          ...u, 
-          status: 'banned',
-          strike_count: 3
-        } : u
-      )
-    );
-    setActionConfirm(null);
-    
-    // Show success message
-    alert('User permanently banned and notification sent');
-  } catch (err) {
-    console.error('Error banning user:', err);
-    const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to ban user.';
-    alert(msg);
-  }
-};
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/ban`, 
+        { reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const result = response.data;
+      
+      // Refresh the current page
+      fetchUsers(currentPage, searchTerm, activeFilter);
+      setActionConfirm(null);
+      
+      // Show success message
+      alert('User permanently banned and notification sent');
+    } catch (err) {
+      console.error('Error banning user:', err);
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to ban user.';
+      alert(msg);
+    }
+  };
 
- const handleReactivateUser = async (user) => {
-  const token = localStorage.getItem('token');
-  try {
-    const response = await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/reactivate`, 
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    
-    const result = response.data;
-    
-    setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === user.id ? { 
-          ...u, 
-          status: result.status,
-          strike_count: result.strike_count,
-          suspended_until: result.suspended_until
-        } : u
-      )
-    );
-    setActionConfirm(null);
-    
-    // Show success message
-    alert('User reactivated successfully and notification sent');
-  } catch (err) {
-    console.error('Error reactivating user:', err);
-    const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to reactivate user.';
-    alert(msg);
-  }
-};
+  const handleReactivateUser = async (user) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/reactivate`, 
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const result = response.data;
+      
+      // Refresh the current page
+      fetchUsers(currentPage, searchTerm, activeFilter);
+      setActionConfirm(null);
+      
+      // Show success message
+      alert('User reactivated successfully and notification sent');
+    } catch (err) {
+      console.error('Error reactivating user:', err);
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to reactivate user.';
+      alert(msg);
+    }
+  };
 
   const handleResetPassword = async (user) => {
     const token = localStorage.getItem('token');
@@ -533,8 +666,6 @@ const handleBanUser = async (user) => {
   const getAvailableActions = (user) => {
     const actions = [];
     
-    // REMOVED: Manual warn and suspend actions
-    
     // Status management actions - ONLY KEEP REACTIVATE AND BAN
     if (user.status === 'active') {
       // Only show ban option for active users
@@ -620,7 +751,6 @@ const handleBanUser = async (user) => {
     setDropdownOpen(null);
     
     switch (action) {
-      // REMOVED: 'warn' and 'suspend' cases
       case 'ban':
         setActionConfirm({ user, action: 'ban' });
         break;
@@ -647,24 +777,126 @@ const handleBanUser = async (user) => {
     setDropdownOpen(dropdownOpen === userId ? null : userId);
   };
 
-  // Stats calculation
+  // Stats calculation - now based on total data from server
   const stats = {
-    total: users.length,
+    total: totalUsers,
+    // Note: For detailed stats by status, you might want to add a separate API endpoint
+    // For now, we'll calculate from current page data (this is approximate)
     active: users.filter(u => u.status === 'active').length,
     warned: users.filter(u => u.status === 'warning').length,
     suspended: users.filter(u => u.status === 'suspended').length,
     banned: users.filter(u => u.status === 'banned').length
   };
 
-  if (loading) {
+  // Enhanced Pagination handlers - same as ReportManagement
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Enhanced Pagination component - same as ReportManagement
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
     return (
-      <div className="um-container">
-        <div className="um-loading-container">
-          <div className="um-loading-spinner"></div>
-          <p>Loading users...</p>
+      <div className="um-pagination">
+        <div className="um-pagination-info">
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalUsers)} of {totalUsers} users
+        </div>
+        <div className="um-pagination-controls">
+          <button
+            className={`um-pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeftIcon /> Previous
+          </button>
+          
+          <div className="um-pagination-numbers">
+            {startPage > 1 && (
+              <>
+                <button
+                  className={`um-page-number ${1 === currentPage ? 'active' : ''}`}
+                  onClick={() => handlePageChange(1)}
+                >
+                  1
+                </button>
+                {startPage > 2 && <span className="um-page-ellipsis">...</span>}
+              </>
+            )}
+            
+            {pageNumbers.map(page => (
+              <button
+                key={page}
+                className={`um-page-number ${page === currentPage ? 'active' : ''}`}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </button>
+            ))}
+            
+            {endPage < totalPages && (
+              <>
+                {endPage < totalPages - 1 && <span className="um-page-ellipsis">...</span>}
+                <button
+                  className={`um-page-number ${totalPages === currentPage ? 'active' : ''}`}
+                  onClick={() => handlePageChange(totalPages)}
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+          </div>
+          
+          <button
+            className={`um-pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next <ChevronRightIcon />
+          </button>
         </div>
       </div>
     );
+  };
+
+  // Clear filters and search
+  const clearFilters = () => {
+    setSearchTerm('');
+    setActiveFilter('all');
+    setCurrentPage(1);
+  };
+
+  // Show skeleton loading
+  if (loading && users.length === 0) {
+    return <UserManagementSkeleton />;
   }
 
   return (
@@ -732,7 +964,6 @@ const handleBanUser = async (user) => {
                 className="um-bulk-select"
               >
                 <option value="">Bulk Actions</option>
-                {/* REMOVED: Warn Users option */}
                 <option value="reactivate">Reactivate Users</option>
                 {!isModerator && (
                   <option value="delete">Delete Users</option>
@@ -809,6 +1040,16 @@ const handleBanUser = async (user) => {
             Banned ({stats.banned})
           </button>
         </div>
+
+        {(searchTerm || activeFilter !== 'all') && (
+          <button 
+            className="um-clear-filters"
+            onClick={clearFilters}
+            title="Clear all filters"
+          >
+            <CloseIcon /> Clear Filters
+          </button>
+        )}
       </div>
 
       {/* Error Display */}
@@ -835,7 +1076,7 @@ const handleBanUser = async (user) => {
                 <th className="um-col-checkbox">
                   <input
                     type="checkbox"
-                    checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                    checked={selectedUsers.size === displayedUsers.length && displayedUsers.length > 0}
                     onChange={toggleSelectAll}
                     className="um-checkbox"
                   />
@@ -850,7 +1091,43 @@ const handleBanUser = async (user) => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                // Loading rows
+                [1, 2, 3, 4, 5].map((row) => (
+                  <tr key={row} className="um-skeleton-row">
+                    <td className="um-col-checkbox">
+                      <div className="um-skeleton-checkbox"></div>
+                    </td>
+                    <td className="um-col-user">
+                      <div className="um-user-card">
+                        <div className="um-skeleton-avatar"></div>
+                        <div className="um-user-info">
+                          <div className="um-skeleton-line um-skeleton-name"></div>
+                          <div className="um-skeleton-line um-skeleton-role"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="um-col-email">
+                      <div className="um-skeleton-line um-skeleton-email"></div>
+                    </td>
+                    <td className="um-col-joined">
+                      <div className="um-skeleton-line um-skeleton-date"></div>
+                    </td>
+                    <td className="um-col-status">
+                      <div className="um-skeleton-badge"></div>
+                    </td>
+                    <td className="um-col-strikes">
+                      <div className="um-skeleton-strikes"></div>
+                    </td>
+                    <td className="um-col-reports">
+                      <div className="um-skeleton-reports"></div>
+                    </td>
+                    <td className="um-col-actions">
+                      <div className="um-skeleton-actions"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : displayedUsers.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="um-empty-state">
                     <div className="um-empty-content">
@@ -861,7 +1138,7 @@ const handleBanUser = async (user) => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => {
+                displayedUsers.map((user) => {
                   const isSelected = selectedUsers.has(user.id);
                   const avatarUrl = getAvatarUrl(user.avatar);
                   const availableActions = getAvailableActions(user);
@@ -982,13 +1259,96 @@ const handleBanUser = async (user) => {
         </div>
       </div>
 
+      {/* Pagination */}
+      {!loading && totalUsers > 0 && (
+        <div className="um-pagination">
+          <div className="um-pagination-info">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalUsers)} of {totalUsers} users
+          </div>
+          <div className="um-pagination-controls">
+            <button
+              className={`um-pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeftIcon /> Previous
+            </button>
+            
+            <div className="um-pagination-numbers">
+              {(() => {
+                const pageNumbers = [];
+                const maxVisiblePages = 5;
+                
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                  startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                if (startPage > 1) {
+                  pageNumbers.push(
+                    <button
+                      key={1}
+                      className={`um-page-number ${1 === currentPage ? 'active' : ''}`}
+                      onClick={() => handlePageChange(1)}
+                    >
+                      1
+                    </button>
+                  );
+                  if (startPage > 2) {
+                    pageNumbers.push(<span key="ellipsis1" className="um-page-ellipsis">...</span>);
+                  }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                  pageNumbers.push(
+                    <button
+                      key={i}
+                      className={`um-page-number ${i === currentPage ? 'active' : ''}`}
+                      onClick={() => handlePageChange(i)}
+                    >
+                      {i}
+                    </button>
+                  );
+                }
+                
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pageNumbers.push(<span key="ellipsis2" className="um-page-ellipsis">...</span>);
+                  }
+                  pageNumbers.push(
+                    <button
+                      key={totalPages}
+                      className={`um-page-number ${totalPages === currentPage ? 'active' : ''}`}
+                      onClick={() => handlePageChange(totalPages)}
+                    >
+                      {totalPages}
+                    </button>
+                  );
+                }
+                
+                return pageNumbers;
+              })()}
+            </div>
+            
+            <button
+              className={`um-pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next <ChevronRightIcon />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Action Confirmation Modal */}
       {actionConfirm && (
         <div className="um-modal-overlay">
           <div className="um-modal um-modal-warning">
             <div className="um-modal-header">
               <h3>
-                {/* REMOVED: Warn and Suspend options */}
                 {actionConfirm.action === 'ban' && <><BanIcon /> Ban User</>}
                 {actionConfirm.action === 'reactivate' && <><RefreshIcon /> Reactivate User</>}
               </h3>

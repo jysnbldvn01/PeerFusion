@@ -401,7 +401,7 @@ export default function Login() {
         </div>
       </main>
 
-      {/* Footer - Same as landing page */}
+      {/* Footer */}
       <footer className="peerfusion-auth-footer">
         <div className="container">
           <div className="footer-content">
@@ -450,7 +450,7 @@ export default function Login() {
               </div>
               <div className="link-group">
                 <h4>Support</h4>
-                <a href="/help">Help Center</a>
+                <a href="/support">Help Center</a>
                 <a href="/user-appeal">Appeals</a>
                 <a href="#contact">Contact</a>
               </div>

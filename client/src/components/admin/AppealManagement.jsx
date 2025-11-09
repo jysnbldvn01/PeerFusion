@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaGavel, FaSearch, FaCheck, FaTimes, FaEye, FaClock, FaUserCheck, FaExclamationTriangle, FaFilter, FaDownload, FaImage, FaFilePdf, FaVideo, FaUser, FaGlobe } from 'react-icons/fa';
+import { FaGavel, FaSearch, FaCheck, FaTimes, FaEye, FaClock, FaUserCheck, FaExclamationTriangle, FaFilter, FaDownload, FaImage, FaFilePdf, FaVideo, FaUser, FaGlobe, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import '../../css/appealmanagement.css';
 
 // Professional SVG Icons
@@ -70,6 +70,107 @@ const GlobeIcon = () => (
   </svg>
 );
 
+// Skeleton Loading Components
+const HeaderSkeleton = () => (
+  <div className="am-header skeleton">
+    <div className="am-header-content">
+      <div className="am-title-section">
+        <div className="wam-header-icon skeleton-pulse"></div>
+        <div>
+          <div className="am-main-title skeleton-text skeleton-pulse"></div>
+          <div className="am-subtitle skeleton-text skeleton-pulse"></div>
+        </div>
+      </div>
+      <div className="am-stats-section">
+        <div className="am-stat-card skeleton">
+          <div className="wam-stat-icon skeleton-pulse"></div>
+          <div className="am-stat-info">
+            <div className="am-stat-number skeleton-text skeleton-pulse"></div>
+            <div className="am-stat-label skeleton-text skeleton-pulse"></div>
+          </div>
+        </div>
+        <div className="am-stat-card skeleton">
+          <div className="wam-stat-icon skeleton-pulse"></div>
+          <div className="am-stat-info">
+            <div className="am-stat-number skeleton-text skeleton-pulse"></div>
+            <div className="am-stat-label skeleton-text skeleton-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ToolbarSkeleton = () => (
+  <div className="am-toolbar skeleton">
+    <div className="am-search-container skeleton-pulse">
+      <div className="am-search-icon skeleton-pulse"></div>
+      <div className="am-search-input skeleton-pulse"></div>
+    </div>
+    <div className="am-filter-tabs">
+      {[1, 2, 3, 4, 5].map((item) => (
+        <div key={item} className="am-filter-tab skeleton-pulse"></div>
+      ))}
+    </div>
+    <div className="am-search-input skeleton-pulse" style={{ width: '160px' }}></div>
+    <div className="am-search-input skeleton-pulse" style={{ width: '140px' }}></div>
+  </div>
+);
+
+const TableRowSkeleton = () => (
+  <tr className="skeleton">
+    <td>
+      <div className="am-user-card">
+        <div className="am-user-avatar skeleton-pulse"></div>
+        <div className="am-user-info">
+          <div className="am-user-name skeleton-text skeleton-pulse"></div>
+          <div className="am-user-email skeleton-text skeleton-pulse"></div>
+          <div className="am-user-role skeleton-text skeleton-pulse"></div>
+        </div>
+      </div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '80px', height: '24px' }}></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '120px', height: '24px' }}></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse"></div>
+    </td>
+    <td>
+      <div className="skeleton-text skeleton-pulse" style={{ width: '100px', height: '24px' }}></div>
+    </td>
+    <td>
+      <div className="am-date-cell">
+        <div className="skeleton-text skeleton-pulse" style={{ width: '80px' }}></div>
+      </div>
+    </td>
+    <td>
+      <div className="am-action-buttons">
+        <div className="am-btn-view skeleton-pulse"></div>
+        <div className="am-btn-approve skeleton-pulse"></div>
+        <div className="am-btn-reject skeleton-pulse"></div>
+      </div>
+    </td>
+  </tr>
+);
+
+const PaginationSkeleton = () => (
+  <div className="am-pagination skeleton">
+    <div className="am-pagination-info skeleton-text skeleton-pulse"></div>
+    <div className="am-pagination-controls">
+      <div className="am-pagination-btn skeleton-pulse"></div>
+      <div className="am-pagination-numbers">
+        {[1, 2, 3, 4, 5].map((item) => (
+          <div key={item} className="am-page-number skeleton-pulse"></div>
+        ))}
+      </div>
+      <div className="am-pagination-btn skeleton-pulse"></div>
+    </div>
+  </div>
+);
+
 const AppealManagement = () => {
   const [appeals, setAppeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,44 +185,86 @@ const AppealManagement = () => {
   const [userProfiles, setUserProfiles] = useState({});
   const [selectedEvidence, setSelectedEvidence] = useState(null);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAppeals, setTotalAppeals] = useState(0);
+  const ITEMS_PER_PAGE = 50;
+
+  // Skeleton loading state
+  const [skeletonLoading, setSkeletonLoading] = useState({
+    header: true,
+    toolbar: true,
+    table: true,
+    pagination: true
+  });
 
   const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     fetchAppeals();
     fetchStats();
-  }, []);
+  }, [currentPage]);
 
-  const fetchAppeals = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/admin/appeals`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setAppeals(data.appeals);
-        // Fetch user profiles only for user appeals (not public)
-        const userAppeals = data.appeals.filter(appeal => !appeal.is_public_appeal);
-        fetchUserProfiles(userAppeals);
+  useEffect(() => {
+    filterAppeals();
+  }, [appeals, statusFilter, typeFilter, sourceFilter, searchTerm]);
+
+const fetchAppeals = async () => {
+  try {
+    setSkeletonLoading({
+      header: true,
+      toolbar: true,
+      table: true,
+      pagination: true
+    });
+    
+    const token = localStorage.getItem('token');
+    
+    const params = new URLSearchParams({
+      page: currentPage.toString(),
+      limit: ITEMS_PER_PAGE.toString()
+    });
+
+    if (searchTerm) params.append('search', searchTerm);
+    if (statusFilter !== 'all') params.append('status', statusFilter);
+    if (typeFilter !== 'all') params.append('type', typeFilter);
+    if (sourceFilter !== 'all') params.append('source', sourceFilter);
+
+    const response = await fetch(`${API_BASE}/admin/appeals?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    } catch (error) {
-      console.error('Error fetching appeals:', error);
-    } finally {
-      setLoading(false);
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      setAppeals(data.appeals);
+      setTotalAppeals(data.total || 0);
+      setTotalPages(data.totalPages || 1);
+      const userAppeals = data.appeals.filter(appeal => !appeal.is_public_appeal);
+      fetchUserProfiles(userAppeals);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching appeals:', error);
+  } finally {
+    setLoading(false);
+    setSkeletonLoading({
+      header: false,
+      toolbar: false,
+      table: false,
+      pagination: false
+    });
+  }
+};
 
   const fetchUserProfiles = async (appealsData) => {
     const token = localStorage.getItem('token');
     const profiles = {};
     
-    // Extract unique user IDs from user appeals only
     const userIds = [...new Set(appealsData.map(appeal => appeal.user_id))];
     
-    // Fetch profiles for each user
     for (const userId of userIds) {
       try {
         const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
@@ -142,7 +285,6 @@ const AppealManagement = () => {
         }
       } catch (error) {
         console.error(`Error fetching profile for user ${userId}:`, error);
-        // Use appeal data as fallback
         const appeal = appealsData.find(a => a.user_id === userId);
         if (appeal) {
           profiles[userId] = {
@@ -278,21 +420,27 @@ const AppealManagement = () => {
     return (bytes / 1048576).toFixed(1) + ' MB';
   };
 
-  const filteredAppeals = appeals.filter(appeal => {
-    const userProfile = userProfiles[appeal.user_id];
-    const matchesSearch = appeal.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appeal.display_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appeal.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         userProfile?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         userProfile?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || appeal.status === statusFilter;
-    const matchesType = typeFilter === 'all' || appeal.appeal_type === typeFilter;
-    const matchesSource = sourceFilter === 'all' || 
-                         (sourceFilter === 'user' && !appeal.is_public_appeal) ||
-                         (sourceFilter === 'public' && appeal.is_public_appeal);
+  const [filteredAppeals, setFilteredAppeals] = useState([]);
+
+  const filterAppeals = () => {
+    const filtered = appeals.filter(appeal => {
+      const userProfile = userProfiles[appeal.user_id];
+      const matchesSearch = appeal.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           appeal.display_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           appeal.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           userProfile?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           userProfile?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || appeal.status === statusFilter;
+      const matchesType = typeFilter === 'all' || appeal.appeal_type === typeFilter;
+      const matchesSource = sourceFilter === 'all' || 
+                           (sourceFilter === 'user' && !appeal.is_public_appeal) ||
+                           (sourceFilter === 'public' && appeal.is_public_appeal);
+      
+      return matchesSearch && matchesStatus && matchesType && matchesSource;
+    });
     
-    return matchesSearch && matchesStatus && matchesType && matchesSource;
-  });
+    setFilteredAppeals(filtered);
+  };
 
   const getStatusBadge = (status) => {
     const statusLabels = {
@@ -378,7 +526,6 @@ const AppealManagement = () => {
   };
 
   const handleViewAppeal = async (appeal) => {
-    // For user appeals, fetch fresh user profile data
     let userProfile = null;
     if (!appeal.is_public_appeal && appeal.user_id) {
       userProfile = await fetchUserProfile(appeal.user_id);
@@ -391,127 +538,243 @@ const AppealManagement = () => {
     setShowDetailModal(true);
   };
 
-  if (loading) {
-    return (
-      <div className="am-container">
-        <div className="am-loading-container">
-          <div className="am-loading-spinner"></div>
-          <p>Loading appeals...</p>
-        </div>
-      </div>
-    );
+  // ==============================================
+  // PAGINATION FUNCTIONS
+  // ==============================================
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+const renderPagination = () => {
+  if (totalAppeals === 0) return null;
+
+  const pageNumbers = [];
+  const maxVisiblePages = 5;
+  
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
   }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pageNumbers.push(i);
+  }
+
+  return (
+    <div className="am-pagination">
+      <div className="am-pagination-info">
+        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalAppeals)} of {totalAppeals} appeals
+      </div>
+      <div className="am-pagination-controls">
+        <button
+          className={`am-pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <FaChevronLeft /> Previous
+        </button>
+        
+        <div className="am-pagination-numbers">
+          {startPage > 1 && (
+            <>
+              <button
+                className={`am-page-number ${1 === currentPage ? 'active' : ''}`}
+                onClick={() => handlePageChange(1)}
+              >
+                1
+              </button>
+              {startPage > 2 && <span className="am-page-ellipsis">...</span>}
+            </>
+          )}
+          
+          {pageNumbers.map(page => (
+            <button
+              key={page}
+              className={`am-page-number ${page === currentPage ? 'active' : ''}`}
+              onClick={() => handlePageChange(page)}
+            >
+              {page}
+            </button>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="am-page-ellipsis">...</span>}
+              <button
+                className={`am-page-number ${totalPages === currentPage ? 'active' : ''}`}
+                onClick={() => handlePageChange(totalPages)}
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+        </div>
+        
+        <button
+          className={`am-pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next <FaChevronRight />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setSourceFilter('all');
+    setCurrentPage(1);
+  };
 
   return (
     <div className="am-container">
       {/* Header */}
-      <div className="am-header">
-        <div className="am-header-content">
-          <div className="am-title-section">
-            <div className="wam-header-icon">
-              <GavelIcon />
-            </div>
-            <div>
-              <h1 className="am-main-title">Appeal Management</h1>
-              <p className="am-subtitle">Review and manage user appeals & public submissions</p>
-            </div>
-          </div>
-          <div className="am-stats-section">
-            <div className="am-stat-card">
-              <div className="wam-stat-icon"><GavelIcon /></div>
-              <div className="am-stat-info">
-                <div className="am-stat-number">{stats.total || 0}</div>
-                <div className="am-stat-label">Total Appeals</div>
+      {skeletonLoading.header ? (
+        <HeaderSkeleton />
+      ) : (
+        <div className="am-header">
+          <div className="am-header-content">
+            <div className="am-title-section">
+              <div className="wam-header-icon">
+                <GavelIcon />
+              </div>
+              <div>
+                <h1 className="am-main-title">Appeal Management</h1>
+                <p className="am-subtitle">Review and manage user appeals & public submissions</p>
               </div>
             </div>
-            <div className="am-stat-card pending">
-              <div className="wam-stat-icon"><ClockIcon /></div>
-              <div className="am-stat-info">
-                <div className="am-stat-number">{stats.byStatus?.pending || 0}</div>
-                <div className="am-stat-label">Pending</div>
+            <div className="am-stats-section">
+              <div className="am-stat-card">
+                <div className="wam-stat-icon"><GavelIcon /></div>
+                <div className="am-stat-info">
+                  <div className="am-stat-number">{totalAppeals || 0}</div>
+                  <div className="am-stat-label">Total Appeals</div>
+                </div>
+              </div>
+              <div className="am-stat-card pending">
+                <div className="wam-stat-icon"><ClockIcon /></div>
+                <div className="am-stat-info">
+                  <div className="am-stat-number">{stats.byStatus?.pending || 0}</div>
+                  <div className="am-stat-label">Pending</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Toolbar */}
-      <div className="am-toolbar">
-        <div className="am-search-container">
-          <input
-            type="text"
-            placeholder="Search appeals by name, email, or reason..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="am-search-input"
-          />
-          <div className="am-search-icon"><SearchIcon /></div>
-          {searchTerm && (
+      {skeletonLoading.toolbar ? (
+        <ToolbarSkeleton />
+      ) : (
+        <div className="am-toolbar">
+          <div className="am-search-container">
+            <input
+              type="text"
+              placeholder="Search appeals by name, email, or reason..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="am-search-input"
+            />
+            <div className="am-search-icon"><SearchIcon /></div>
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="am-search-clear"
+              >
+                <CloseIcon />
+              </button>
+            )}
+          </div>
+          
+          <div className="am-filter-tabs">
             <button 
-              onClick={() => setSearchTerm('')}
-              className="am-search-clear"
+              className={`am-filter-tab ${statusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('all')}
             >
-              <CloseIcon />
+              All Status
+            </button>
+            <button 
+              className={`am-filter-tab ${statusFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('pending')}
+            >
+              Pending ({stats.byStatus?.pending || 0})
+            </button>
+            <button 
+              className={`am-filter-tab ${statusFilter === 'under_review' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('under_review')}
+            >
+              Under Review ({stats.byStatus?.under_review || 0})
+            </button>
+            <button 
+              className={`am-filter-tab ${statusFilter === 'approved' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('approved')}
+            >
+              Approved ({stats.byStatus?.approved || 0})
+            </button>
+            <button 
+              className={`am-filter-tab ${statusFilter === 'rejected' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('rejected')}
+            >
+              Rejected ({stats.byStatus?.rejected || 0})
+            </button>
+          </div>
+
+          <select 
+            className="am-search-input" 
+            style={{ width: 'auto', minWidth: '160px' }}
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            <option value="account_reactivation">Account Reactivation</option>
+            <option value="strike_removal">Strike Removal</option>
+            <option value="content_review">Content Review</option>
+          </select>
+
+          <select 
+            className="am-search-input" 
+            style={{ width: 'auto', minWidth: '140px' }}
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+          >
+            <option value="all">All Sources</option>
+            <option value="user">User Appeals</option>
+            <option value="public">Public Appeals</option>
+          </select>
+
+          {(searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || sourceFilter !== 'all') && (
+            <button 
+              className="am-clear-filters"
+              onClick={clearFilters}
+              title="Clear all filters"
+            >
+              <FaTimes /> Clear Filters
             </button>
           )}
         </div>
-        
-        <div className="am-filter-tabs">
-          <button 
-            className={`am-filter-tab ${statusFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('all')}
-          >
-            All Status
-          </button>
-          <button 
-            className={`am-filter-tab ${statusFilter === 'pending' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('pending')}
-          >
-            Pending ({stats.byStatus?.pending || 0})
-          </button>
-          <button 
-            className={`am-filter-tab ${statusFilter === 'under_review' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('under_review')}
-          >
-            Under Review ({stats.byStatus?.under_review || 0})
-          </button>
-          <button 
-            className={`am-filter-tab ${statusFilter === 'approved' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('approved')}
-          >
-            Approved ({stats.byStatus?.approved || 0})
-          </button>
-          <button 
-            className={`am-filter-tab ${statusFilter === 'rejected' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('rejected')}
-          >
-            Rejected ({stats.byStatus?.rejected || 0})
-          </button>
-        </div>
-
-        <select 
-          className="am-search-input" 
-          style={{ width: 'auto', minWidth: '160px' }}
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-        >
-          <option value="all">All Types</option>
-          <option value="account_reactivation">Account Reactivation</option>
-          <option value="strike_removal">Strike Removal</option>
-          <option value="content_review">Content Review</option>
-        </select>
-
-        <select 
-          className="am-search-input" 
-          style={{ width: 'auto', minWidth: '140px' }}
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-        >
-          <option value="all">All Sources</option>
-          <option value="user">User Appeals</option>
-          <option value="public">Public Appeals</option>
-        </select>
-      </div>
+      )}
 
       {/* Appeals Table */}
       <div className="am-table-wrapper">
@@ -529,7 +792,11 @@ const AppealManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredAppeals.length === 0 ? (
+              {skeletonLoading.table ? (
+                Array.from({ length: 10 }).map((_, index) => (
+                  <TableRowSkeleton key={index} />
+                ))
+              ) : filteredAppeals.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="am-empty-state">
                     <div className="am-empty-content">
@@ -633,7 +900,6 @@ const AppealManagement = () => {
                           {appeal.status === 'pending' && (
                             <>
                               {!appeal.is_public_appeal ? (
-                                // User appeal - can apply actions
                                 <button
                                   className="am-btn-approve"
                                   onClick={() => handleStatusUpdate(appeal.id, 'approved', true)}
@@ -642,7 +908,6 @@ const AppealManagement = () => {
                                   {actionLoading === appeal.id ? '...' : <><CheckIcon />Approve & Apply</>}
                                 </button>
                               ) : (
-                                // Public appeal - approve without actions
                                 <button
                                   className="am-btn-approve"
                                   onClick={() => handleStatusUpdate(appeal.id, 'approved', false)}
@@ -669,6 +934,13 @@ const AppealManagement = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {skeletonLoading.pagination ? (
+          <PaginationSkeleton />
+        ) : (
+          renderPagination()
+        )}
       </div>
 
       {/* Appeal Detail Modal */}

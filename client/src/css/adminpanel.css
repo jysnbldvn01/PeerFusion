@@ -2,17 +2,21 @@
   display: flex;
   min-height: 100vh;
   background: #f5f7fa;
+  position: relative;
 }
 
-/* Sidebar */
 .adminPanel-sidebar {
   background: #1e293b;
   color: white;
   width: 250px;
-  min-height: 100vh;
+  height: 100vh;
   transition: width 0.4s ease;
   overflow: hidden;
-  position: relative;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
@@ -27,6 +31,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 15px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .adminPanel-logo-container {
@@ -72,8 +77,27 @@
 .adminPanel-sidebar-menu {
   list-style: none;
   padding: 0;
-  margin-top: 20px;
-  flex-grow: 1;
+  margin: 20px 0 0 0;
+  flex: 1;
+  overflow-y: auto; /* Allow menu to scroll if too many items */
+  overflow-x: hidden;
+}
+
+.adminPanel-sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.adminPanel-sidebar-menu::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.adminPanel-sidebar-menu::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 2px;
+}
+
+.adminPanel-sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 .adminPanel-sidebar-menu li {
@@ -108,6 +132,7 @@
   background: #1e293b;
   transition: background 0.3s;
   border-top: 1px solid #334155;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .adminPanel-logout-section:hover {
@@ -122,11 +147,20 @@
   font-size: 1.3rem;
 }
 
-/* Main content */
+/* Main content - Scrollable independently */
 .adminPanel-main {
   flex: 1;
+  margin-left: 250px; /* Match sidebar width */
   transition: margin-left 0.4s ease;
   padding: 20px;
+  min-height: 100vh;
+  overflow-y: auto; /* Allow main content to scroll */
+  background: #f5f7fa;
+}
+
+/* Adjust main content when sidebar is collapsed */
+.adminPanel-sidebar.collapsed ~ .adminPanel-main {
+  margin-left: 60px; /* Match collapsed sidebar width */
 }
 
 .adminPanel-topbar {
@@ -276,6 +310,27 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .adminPanel-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  
+  .adminPanel-sidebar.collapsed {
+    width: 100%;
+    height: 60px;
+  }
+  
+  .adminPanel-sidebar.collapsed .adminPanel-sidebar-menu,
+  .adminPanel-sidebar.collapsed .adminPanel-logout-section {
+    display: none;
+  }
+  
+  .adminPanel-main {
+    margin-left: 0;
+    padding: 15px;
+  }
+  
   .add-form {
     flex-direction: column;
     align-items: stretch;
@@ -295,17 +350,12 @@
     align-self: flex-end;
   }
 }
-/* Responsive */
-@media (max-width: 768px) {
-  .adminPanel-sidebar {
-    position: fixed;
-    z-index: 100;
-    height: 100%;
-    left: 0;
-    top: 0;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
 
-  .adminPanel-main {
-    padding: 15px;
-  }
+#root {
+  height: 100%;
 }

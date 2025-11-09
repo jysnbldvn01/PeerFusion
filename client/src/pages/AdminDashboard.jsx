@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel, FaHistory } from 'react-icons/fa';
+import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel, FaHistory, FaHeadset} from 'react-icons/fa';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardOverview from '../components/admin/DashboardOverview';
 import Settings from '../components/admin/Settings';
@@ -8,6 +8,7 @@ import ReportManagement from '../components/admin/ReportManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
 import ActivityLogs from '../components/admin/ActivityLogs';
 import AppealManagement from '../components/admin/AppealManagement';
+import SupportManagement from '../components/admin/SupportManagement';
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,7 +31,7 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview setActiveTab={setActiveTab} />;
       case 'users':
         return <UserManagement />;
       case 'subjects':
@@ -39,6 +40,8 @@ export default function AdminDashboard() {
         return <ReportManagement />;
       case 'feedback':
         return <FeedbackManagement />;
+      case 'support':
+        return <SupportManagement />;
       case 'settings':
         return <Settings />;
       case 'appeals':
@@ -46,7 +49,7 @@ export default function AdminDashboard() {
       case 'activity':
         return <ActivityLogs />;
       default:
-        return <DashboardOverview />;
+        return <DashboardOverview setActiveTab={setActiveTab} />;
     }
   };
 
@@ -113,6 +116,13 @@ export default function AdminDashboard() {
           >
             <FaGavel className="icon" />
             {isSidebarOpen && <span>Appeal Management</span>}
+          </li>
+          <li
+            className={activeTab === 'support' ? 'active' : ''}
+            onClick={() => setActiveTab('support')}
+          >
+            <FaHeadset className="icon" />
+            {isSidebarOpen && <span>Support Management</span>}
           </li>
           {/* Add Activity Logs menu item */}
           <li

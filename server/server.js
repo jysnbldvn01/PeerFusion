@@ -124,12 +124,14 @@ const configureRoutes = (app) => {
     '/api/meeting',
     '/api/reports',
     '/api/appeals',
+    '/api/support',
   ];
 
   routes.forEach(route => {
     const routePath = route.split('/api')[1];
     try {
-      app.use(route, require(`./routes${routePath}`));
+      const routeModule = require(`./routes${routePath}`);
+      app.use(route, routeModule);
       console.log(`Route configured: ${route}`);
     } catch (error) {
       console.error(`Failed to load route ${route}:`, error.message);
