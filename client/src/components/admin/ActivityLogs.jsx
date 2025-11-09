@@ -27,7 +27,10 @@ import {
   FaClipboardCheck,
   FaTimesCircle,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaTicketAlt,
+  FaComment,
+  FaBalanceScale
 } from 'react-icons/fa';
 import '../../css/activitylogs.css';
 
@@ -58,7 +61,6 @@ export default function ActivityLogs() {
   }, [currentPage]);
 
   useEffect(() => {
-    // Client-side filtering happens after data is loaded
     filterLogs();
   }, [logs, filters, searchTerm]);
 
@@ -88,7 +90,6 @@ export default function ActivityLogs() {
   const filterLogs = () => {
     let filtered = [...logs];
 
-    // Apply client-side filters (same as before)
     if (filters.action !== 'all') {
       filtered = filtered.filter(log => log.action === filters.action);
     }
@@ -137,34 +138,15 @@ export default function ActivityLogs() {
       action: 'all',
       timeframe: 'all'
     });
-    setCurrentPage(1); // Reset to first page when clearing filters
+    setCurrentPage(1);
   };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      // This will trigger the useEffect and fetch new data
     }
   };
 
-  const handleSearchAndFilter = () => {
-    // When search or filters change, reset to page 1 and fetch new data
-    setCurrentPage(1);
-    fetchLogs();
-  };
-
-  // Update your search and filter handlers to use handleSearchAndFilter
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-    // Don't fetch here - let the useEffect handle it after debounce
-  };
-
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({ ...prev, [filterType]: value }));
-    // Don't fetch here - let the useEffect handle it
-  };
-
-  // Skeleton Loading Components (keep your existing ones)
   const HeaderSkeleton = () => (
     <div className="al-header skeleton">
       <div className="al-header-content">
@@ -246,7 +228,7 @@ export default function ActivityLogs() {
     </tr>
   );
 
-  // Keep all your existing helper functions (getActionIcon, getActionColor, etc.)
+  // Updated getActionIcon with new action types
   const getActionIcon = (action) => {
     const iconConfig = {
       'USER_DEACTIVATED': <FaUserSlash className="al-icon deactivated" />,
@@ -268,12 +250,21 @@ export default function ActivityLogs() {
       'APPEAL_REVIEWED': <FaGavel className="al-icon appeal-reviewed" />,
       'USER_WARNED': <FaExclamationTriangle className="al-icon user-warned" />,
       'USER_SUSPENDED': <FaUserSlash className="al-icon user-suspended" />,
-      'USER_BANNED': <FaTimesCircle className="al-icon user-banned" />
+      'USER_BANNED': <FaTimesCircle className="al-icon user-banned" />,
+      // New action types
+      'SUPPORT_RESPONSE_ADDED': <FaComment className="al-icon support-response" />,
+      'SUPPORT_TICKET_STATUS_CHANGED': <FaTicketAlt className="al-icon ticket-status" />,
+      'STRIKES_ADJUSTED': <FaBalanceScale className="al-icon strikes-adjusted" />,
+      'SUPPORT_TICKET_CREATED': <FaTicketAlt className="al-icon ticket-created" />,
+      'SUPPORT_TICKET_ASSIGNED': <FaUser className="al-icon ticket-assigned" />,
+      'SUPPORT_TICKET_DELETED': <FaTrash className="al-icon ticket-deleted" />,
+      'SUPPORT_TICKETS_BULK_DELETED': <FaTrash className="al-icon bulk-deleted" />
     };
 
     return iconConfig[action] || <FaHistory className="al-icon default" />;
   };
 
+  // Updated getActionColor with new action types
   const getActionColor = (action) => {
     const colorConfig = {
       'USER_DEACTIVATED': 'pending',
@@ -295,12 +286,21 @@ export default function ActivityLogs() {
       'APPEAL_REVIEWED': 'reviewed',
       'USER_WARNED': 'pending',
       'USER_SUSPENDED': 'dismissed',
-      'USER_BANNED': 'dismissed'
+      'USER_BANNED': 'dismissed',
+      // New action types
+      'SUPPORT_RESPONSE_ADDED': 'resolved',
+      'SUPPORT_TICKET_STATUS_CHANGED': 'reviewed',
+      'STRIKES_ADJUSTED': 'pending',
+      'SUPPORT_TICKET_CREATED': 'pending',
+      'SUPPORT_TICKET_ASSIGNED': 'reviewed',
+      'SUPPORT_TICKET_DELETED': 'dismissed',
+      'SUPPORT_TICKETS_BULK_DELETED': 'dismissed'
     };
 
     return colorConfig[action] || 'pending';
   };
 
+  // Updated getActionLabel with new action types
   const getActionLabel = (action) => {
     const labelConfig = {
       'USER_DEACTIVATED': 'User Deactivated',
@@ -322,7 +322,15 @@ export default function ActivityLogs() {
       'APPEAL_REVIEWED': 'Appeal Reviewed',
       'USER_WARNED': 'User Warned',
       'USER_SUSPENDED': 'User Suspended',
-      'USER_BANNED': 'User Banned'
+      'USER_BANNED': 'User Banned',
+      // New action types
+      'SUPPORT_RESPONSE_ADDED': 'Support Response Added',
+      'SUPPORT_TICKET_STATUS_CHANGED': 'Ticket Status Changed',
+      'STRIKES_ADJUSTED': 'Strikes Adjusted',
+      'SUPPORT_TICKET_CREATED': 'Support Ticket Created',
+      'SUPPORT_TICKET_ASSIGNED': 'Ticket Assigned',
+      'SUPPORT_TICKET_DELETED': 'Ticket Deleted',
+      'SUPPORT_TICKETS_BULK_DELETED': 'Tickets Bulk Deleted'
     };
 
     return labelConfig[action] || action;
@@ -686,11 +694,251 @@ export default function ActivityLogs() {
         )}
       </div>
 
-      {/* Keep your existing modal and error components */}
+      {/* Modal */}
       {selectedLog && (
         <div className="al-modal-overlay" onClick={() => setSelectedLog(null)}>
           <div className="al-modal-content" onClick={(e) => e.stopPropagation()}>
-            {/* Modal content remains exactly the same */}
+            {/* Modal Header */}
+            <div className="al-modal-header">
+              <div className="al-modal-title-section">
+                {getActionIcon(selectedLog.action)}
+                <div>
+                  <h2 className="al-modal-title">
+                    {getActionLabel(selectedLog.action)}
+                  </h2>
+                  <p className="al-modal-subtitle">
+                    Action #{selectedLog.id} • {formatDetailedTimestamp(selectedLog.timestamp)}
+                  </p>
+                </div>
+              </div>
+              <button 
+                className="al-modal-close"
+                onClick={() => setSelectedLog(null)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="al-modal-body">
+              <div className="al-log-details-grid">
+                {/* Action Information */}
+                <div className="al-detail-section">
+                  <h3 className="al-detail-section-title">Action Information</h3>
+                  <div className="al-detail-row">
+                    <span className="al-detail-label">Action Type</span>
+                    <span className="al-detail-value">
+                      {getActionIcon(selectedLog.action)}
+                      {getActionLabel(selectedLog.action)}
+                    </span>
+                  </div>
+                  <div className="al-detail-row">
+                    <span className="al-detail-label">Action ID</span>
+                    <span className="al-detail-value">#{selectedLog.id}</span>
+                  </div>
+                  <div className="al-detail-row">
+                    <span className="al-detail-label">Timestamp</span>
+                    <span className="al-detail-value">
+                      <FaCalendar className="al-detail-icon" />
+                      {formatDetailedTimestamp(selectedLog.timestamp)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Admin Information */}
+                <div className="al-detail-section">
+                  <h3 className="al-detail-section-title">Admin Information</h3>
+                  <div className="al-detail-row">
+                    <span className="al-detail-label">Admin Email</span>
+                    <span className="al-detail-value">
+                      <FaUser className="al-detail-icon" />
+                      {selectedLog.admin_email}
+                    </span>
+                  </div>
+                  <div className="al-detail-row">
+                    <span className="al-detail-label">Admin ID</span>
+                    <span className="al-detail-value">
+                      <FaIdCard className="al-detail-icon" />
+                      {selectedLog.admin_id}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Target User Information */}
+                <div className="al-detail-section">
+                  <h3 className="al-detail-section-title">Target User</h3>
+                  {selectedLog.target_username ? (
+                    <>
+                      <div className="al-detail-row">
+                        <span className="al-detail-label">Username</span>
+                        <span className="al-detail-value">
+                          <FaUser className="al-detail-icon" />
+                          {selectedLog.target_username}
+                        </span>
+                      </div>
+                      <div className="al-detail-row">
+                        <span className="al-detail-label">Email</span>
+                        <span className="al-detail-value">
+                          <FaEnvelope className="al-detail-icon" />
+                          {selectedLog.target_user_email || 'No email'}
+                        </span>
+                      </div>
+                      <div className="al-detail-row">
+                        <span className="al-detail-label">User ID</span>
+                        <span className="al-detail-value">
+                          <FaIdCard className="al-detail-icon" />
+                          {selectedLog.target_user_id || 'N/A'}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="al-detail-row">
+                      <span className="al-detail-label">Target</span>
+                      <span className="al-detail-value">
+                        <FaUserSlash className="al-detail-icon" />
+                        No specific target user
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Details */}
+                <div className="al-detail-section al-detail-section-full">
+                  <h3 className="al-detail-section-title">Action Details</h3>
+                  <div className="al-action-details">
+                    {(() => {
+                      const details = parseDetails(selectedLog.details);
+                      
+                      if (Object.keys(details).length === 0) {
+                        return (
+                          <div className="al-detail-item">
+                            <FaInfoCircle className="al-detail-item-icon" />
+                            <div className="al-detail-item-content">
+                              <span className="al-detail-item-label">No Additional Details</span>
+                              <span className="al-detail-item-value">
+                                This action was performed without additional details.
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return Object.entries(details).map(([key, value]) => {
+                        let icon = FaInfoCircle;
+                        let displayValue = value;
+                        let isWarning = false;
+                        let isSuccess = false;
+
+                        // Handle object values
+                        if (typeof displayValue === 'object' && displayValue !== null) {
+                          displayValue = JSON.stringify(displayValue, null, 2);
+                        }
+
+                        // Handle boolean values
+                        if (typeof displayValue === 'boolean') {
+                          displayValue = displayValue ? 'Yes' : 'No';
+                        }
+
+                        // Custom formatting for specific detail types
+                        if (key === 'previous_status' || key === 'new_status') {
+                          icon = FaUser;
+                        } else if (key === 'previous_strikes' || key === 'new_strikes' || key === 'strike_count') {
+                          icon = FaExclamationTriangle;
+                          isWarning = true;
+                        } else if (key === 'password_changed' && value === true) {
+                          icon = FaCheckCircle;
+                          isSuccess = true;
+                          displayValue = 'Password was changed';
+                        } else if (key === 'temporaryPassword') {
+                          icon = FaKey;
+                          displayValue = (
+                            <code className="al-temporary-password">
+                              {value}
+                            </code>
+                          );
+                        } else if (key === 'newRole') {
+                          icon = FaUserCheck;
+                          displayValue = (
+                            <span className="al-role-badge">
+                              {value}
+                            </span>
+                          );
+                        } else if (key === 'suspended_until' && value) {
+                          icon = FaCalendar;
+                          displayValue = formatDetailedTimestamp(value);
+                        } else if (key === 'penalty_details' || key === 'user_action_details') {
+                          icon = FaGavel;
+                          if (typeof value === 'object' && value !== null) {
+                            displayValue = (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {Object.entries(value).map(([subKey, subValue]) => (
+                                  <div key={subKey} style={{ fontSize: '12px' }}>
+                                    <strong>{subKey}:</strong> {String(subValue)}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          }
+                        } else if (key === 'ticket_id') {
+                          icon = FaTicketAlt;
+                        } else if (key === 'response_id') {
+                          icon = FaComment;
+                        } else if (key === 'new_status') {
+                          icon = FaTicketAlt;
+                        }
+
+                        return (
+                          <div key={key} className="al-detail-item">
+                            {React.createElement(icon, { 
+                              className: `al-detail-item-icon ${isWarning ? 'warning' : ''} ${isSuccess ? 'success' : ''}` 
+                            })}
+                            <div className="al-detail-item-content">
+                              <span className="al-detail-item-label">
+                                {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                              </span>
+                              <span className="al-detail-item-value">
+                                {displayValue}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Raw JSON fallback */}
+                  {(() => {
+                    const details = parseDetails(selectedLog.details);
+                    if (Object.keys(details).length > 0 && typeof details === 'object') {
+                      return (
+                        <div style={{ marginTop: '16px' }}>
+                          <details>
+                            <summary style={{ cursor: 'pointer', fontWeight: '600', color: '#374151' }}>
+                              Raw Details (JSON)
+                            </summary>
+                            <pre className="al-details-json-fallback">
+                              {JSON.stringify(details, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="al-modal-footer">
+              <button 
+                className="al-btn al-btn-primary"
+                onClick={() => setSelectedLog(null)}
+              >
+                <FaCheckCircle />
+                Close Details
+              </button>
+            </div>
           </div>
         </div>
       )}

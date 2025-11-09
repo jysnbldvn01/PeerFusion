@@ -1402,6 +1402,7 @@
   font-weight: 500;
 }
 
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .sm-pagination {
@@ -1427,36 +1428,5 @@
     padding: 6px 10px;
     min-width: 36px;
     font-size: 13px;
-  }
-}
-
-/* Dark Mode Support (optional) */
-@media (prefers-color-scheme: dark) {
-  .sm-pagination {
-    background: #1f2937;
-    border-top-color: #374151;
-  }
-  
-  .sm-pagination-info {
-    color: #d1d5db;
-  }
-  
-  .sm-pagination-total {
-    color: #9ca3af;
-  }
-  
-  .sm-page-number {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e5e7eb;
-  }
-  
-  .sm-page-number:hover:not(.active) {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
-  
-  .sm-page-ellipsis {
-    color: #9ca3af;
   }
 }

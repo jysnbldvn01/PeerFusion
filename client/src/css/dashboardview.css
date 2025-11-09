@@ -1097,85 +1097,6 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .dashboard-container {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  }
-  
-  .dashboard-stat-card,
-  .dashboard-chart-card,
-  .dashboard-activity-card,
-  .dashboard-performance-metric,
-  .dashboard-actions-panel,
-  .dashboard-overview-card,
-  .dashboard-secondary-stat,
-  .dashboard-analytics-sidebar {
-    background: #1e293b;
-    border-color: #334155;
-    color: #f1f5f9;
-  }
-  
-  .dashboard-stat-value,
-  .dashboard-metric-value,
-  .dashboard-user-name,
-  .dashboard-secondary-value,
-  .dashboard-overview-value {
-    color: #f8fafc;
-  }
-  
-  .dashboard-stat-label,
-  .dashboard-metric-title,
-  .dashboard-user-role,
-  .dashboard-secondary-label,
-  .dashboard-overview-label {
-    color: #94a3b8;
-  }
-  
-  .dashboard-action-btn {
-    background: #334155;
-    border-color: #475569;
-    color: #e2e8f0;
-  }
-  
-  .dashboard-action-btn:hover {
-    background: #3b82f6;
-    color: white;
-  }
-  
-  .dashboard-overview-stat {
-    background: #334155;
-    border-color: #475569;
-  }
-  
-  .dashboard-tooltip {
-    background: #1e293b;
-    border-color: #334155;
-    color: #f1f5f9;
-  }
-  
-  .dashboard-tooltip-label {
-    color: #f8fafc;
-  }
-  
-  .dashboard-time-select,
-  .dashboard-chart-action-btn {
-    background: #334155;
-    border-color: #475569;
-    color: #e2e8f0;
-  }
-  
-  .dashboard-time-select:focus,
-  .dashboard-chart-action-btn:hover {
-    border-color: #3b82f6;
-    background: #475569;
-  }
-  
-  .dashboard-insight-item {
-    background: #334155;
-    border-color: #475569;
-  }
-}
 /* Skeleton Loading Styles */
 .dashboard-skeleton {
   display: flex;
@@ -1272,17 +1193,5 @@
   }
   100% {
     background-position: -200% 0;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .skeleton-title,
-  .skeleton-actions,
-  .skeleton-metric,
-  .skeleton-stat,
-  .skeleton-chart-large,
-  .skeleton-chart-small {
-    background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
-    background-size: 200% 100%;
   }
 }

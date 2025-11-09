@@ -121,7 +121,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
         {!isMobile && (
           <div className="peerfusion-nav-header">
             {!isCollapsed && (
-              <img src="/logo.png" alt="PeerFusion" className="peerfusion-nav-logo" />
+              <img src="/logo.png" alt="PeerFusion" className="peerfusion-nav-logoss" />
             )}
             <button 
               className="peerfusion-nav-toggle-btn"

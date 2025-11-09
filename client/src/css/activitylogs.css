@@ -412,6 +412,13 @@
 .al-icon.subject-created { color: #10b981; }
 .al-icon.subject-deleted { color: #ef4444; }
 .al-icon.default { color: #64748b; }
+.al-icon.support-response { color: #3b82f6; }
+.al-icon.ticket-status { color: #8b5cf6; }
+.al-icon.strikes-adjusted { color: #f59e0b; }
+.al-icon.ticket-created { color: #10b981; }
+.al-icon.ticket-assigned { color: #6366f1; }
+.al-icon.ticket-deleted { color: #ef4444; }
+.al-icon.bulk-deleted { color: #dc2626; }
 
 /* No Data State */
 .al-no-data {

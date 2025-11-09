@@ -109,13 +109,13 @@
   flex-shrink: 0;
 }
 
-.peerfusion-nav-logo {
+.peerfusion-nav-logoss {
   height: 42px;
   filter: brightness(0) invert(1);
   transition: all 0.3s ease;
 }
 
-.peerfusion-nav-sidebar.collapsed .peerfusion-nav-logo {
+.peerfusion-nav-sidebar.collapsed .peerfusion-nav-logoss {
   opacity: 0;
   width: 0;
   overflow: hidden;
@@ -420,7 +420,7 @@
     height: 34px;
   }
 
-  .peerfusion-nav-logo {
+  .peerfusion-nav-logoss {
     height: 38px;
   }
 }
