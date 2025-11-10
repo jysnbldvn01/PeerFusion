@@ -613,7 +613,7 @@
 
 .peerfusion-feedback-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.8rem;
   margin-bottom: 0.8rem;
 }
@@ -632,6 +632,13 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  gap: 0.5rem;
+}
+
+.peerfusion-feedback-user-main {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .peerfusion-feedback-user-name {
@@ -642,14 +649,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
 }
 
 .peerfusion-feedback-rating-container {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-top: 0.3rem;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .peerfusion-feedback-rating {
@@ -658,6 +666,7 @@
   align-items: center;
   gap: 0.2rem;
   font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .peerfusion-recommended-indicator {
@@ -670,6 +679,7 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .peerfusion-feedback-message {
@@ -691,6 +701,31 @@
   color: #a0b39c;
   padding: 2rem;
   font-style: italic;
+}
+
+/* Compact rating for additional reviews */
+.peerfusion-compact-rating {
+  margin-bottom: 0.5rem;
+}
+
+.peerfusion-compact-stars {
+  display: flex;
+  gap: 0.1rem;
+  font-size: 0.8rem;
+}
+
+.peerfusion-compact-star {
+  color: #ddd;
+}
+
+.peerfusion-compact-star.filled {
+  color: #f39c12;
+}
+
+.additional-review {
+  background: #f0f7ed;
+  border-left-color: #a0b39c;
+  margin-top: 0.5rem;
 }
 
 /* Rating Display */
@@ -790,7 +825,6 @@
   border-radius: 12px;
   margin: 0.5rem auto;
 }
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .peerfusion-header-section {
@@ -832,7 +866,7 @@
 
   .peerfusion-feedback-header {
     gap: 0.6rem;
-    flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .peerfusion-feedback-avatar {
@@ -842,10 +876,12 @@
 
   .peerfusion-feedback-user-info {
     min-width: 150px;
+    gap: 0.3rem;
   }
 
   .peerfusion-feedback-rating-container {
     gap: 0.5rem;
+    justify-content: flex-start;
   }
 
   .peerfusion-feedback-item {
@@ -854,6 +890,19 @@
 
   .peerfusion-feedback-message {
     font-size: 0.85rem;
+  }
+
+  .peerfusion-feedback-user-name {
+    font-size: 0.9rem;
+  }
+
+  .peerfusion-feedback-rating {
+    font-size: 0.8rem;
+  }
+
+  .peerfusion-recommended-indicator {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
   }
 }
 
@@ -884,13 +933,20 @@
     gap: 0.8rem;
   }
 
+  .peerfusion-feedback-avatar {
+    width: 35px;
+    height: 35px;
+  }
+
   .peerfusion-feedback-user-info {
     width: 100%;
+    gap: 0.4rem;
   }
 
   .peerfusion-feedback-rating-container {
     width: 100%;
     justify-content: space-between;
+    align-items: center;
   }
 
   .peerfusion-feedback-item {
@@ -900,6 +956,50 @@
   .peerfusion-view-more-btn, .peerfusion-see-more-btn {
     padding: 0.5rem 1.2rem;
     font-size: 0.8rem;
+  }
+
+  .peerfusion-feedback-user-name {
+    font-size: 0.85rem;
+  }
+
+  .peerfusion-feedback-rating {
+    font-size: 0.75rem;
+  }
+
+  .peerfusion-recommended-indicator {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .peerfusion-feedback-message {
+    font-size: 0.8rem;
+    margin: 0.6rem 0;
+  }
+
+  .peerfusion-feedback-date {
+    font-size: 0.75rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .peerfusion-feedback-rating-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .peerfusion-feedback-header {
+    gap: 0.5rem;
+  }
+
+  .peerfusion-feedback-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .peerfusion-feedback-item {
+    padding: 0.6rem;
   }
 }
 

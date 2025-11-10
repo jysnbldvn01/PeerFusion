@@ -510,140 +510,142 @@ const Home = () => {
                 </div>
               )}
 
-              <div className="peerfusion-modal-section">
-                <h4 className="peerfusion-modal-section-title">Feedback & Ratings</h4>
-                <div className="peerfusion-feedback-list">
-                  {feedbackList.length === 0 ? (
-                    <p className="peerfusion-no-feedback">No feedback yet. Be the first to review!</p>
-                  ) : (
-                    <>
-                      {selectedUser?.rating > 0 && (
-                        <div className="peerfusion-average-rating">
-                          <RatingDisplay rating={selectedUser?.rating} />
-                        </div>
-                      )}
-                      {displayedFeedbackData.map(({ user, reviews, hasMultiple, isExpanded, totalReviews }) => (
-                        <div key={user.sender_id}>
-                          {reviews.length > 0 && (
-                            <div className="peerfusion-feedback-item">
-                              <div className="peerfusion-feedback-header">
-                                <img 
-                                  src={reviews[0].sender_avatar ? `http://localhost:5000/uploads/${reviews[0].sender_avatar}` : '/default-avatar.png'} 
-                                  alt={reviews[0].sender_name} 
-                                  className="peerfusion-feedback-avatar" 
-                                />
-                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', width:'100%' }}>
-                                  <strong style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'70%' }}>
+            <div className="peerfusion-modal-section">
+              <h4 className="peerfusion-modal-section-title">Feedback & Ratings</h4>
+              <div className="peerfusion-feedback-list">
+                {feedbackList.length === 0 ? (
+                  <p className="peerfusion-no-feedback">No feedback yet. Be the first to review!</p>
+                ) : (
+                  <>
+                    {selectedUser?.rating > 0 && (
+                      <div className="peerfusion-average-rating">
+                        <RatingDisplay rating={selectedUser?.rating} />
+                      </div>
+                    )}
+                    {displayedFeedbackData.map(({ user, reviews, hasMultiple, isExpanded, totalReviews }) => (
+                      <div key={user.sender_id}>
+                        {reviews.length > 0 && (
+                          <div className="peerfusion-feedback-item">
+                            <div className="peerfusion-feedback-header">
+                              <img 
+                                src={reviews[0].sender_avatar ? `http://localhost:5000/uploads/${reviews[0].sender_avatar}` : '/default-avatar.png'} 
+                                alt={reviews[0].sender_name} 
+                                className="peerfusion-feedback-avatar" 
+                              />
+                              <div className="peerfusion-feedback-user-info">
+                                <div className="peerfusion-feedback-user-main">
+                                  <strong className="peerfusion-feedback-user-name">
                                     {reviews[0].sender_name}
                                   </strong>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    {reviews[0].rating > 0 && (
-                                      <div className="peerfusion-feedback-rating" style={{ flexShrink: 0 }}>
-                                        {Array.from({ length: 5 }).map((_, i) => (
-                                          <span key={i} className={i < reviews[0].rating ? 'filled' : ''}>
-                                            {i < reviews[0].rating ? '★' : '☆'}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                    {!!reviews[0].is_recommended && (
-                                      <span className="peerfusion-recommended-indicator">
-                                        Recommended
-                                      </span>
-                                    )}
-                                  </div>
                                 </div>
-                              </div>
-                              <p className="peerfusion-feedback-message">
-                                {reviews[0].message && reviews[0].message !== '0' ? reviews[0].message : ''}
-                              </p>
-                              <small className="peerfusion-feedback-date">
-                                {reviews[0].created_at && !isNaN(new Date(reviews[0].created_at)) 
-                                  ? new Date(reviews[0].created_at).toLocaleDateString('en-US', {
-                                      year: 'numeric', 
-                                      month: 'long', 
-                                      day: 'numeric'
-                                    })
-                                  : ''}
-                              </small>
-                            </div>
-                          )}
-                          
-                          {reviews.slice(1).map((fb, index) => (
-                            <div key={fb.id} className="peerfusion-feedback-item additional-review">
-                              <div className="peerfusion-compact-rating">
-                                <div className="peerfusion-compact-stars">
-                                  {Array.from({ length:5 }).map((_, i) => (
-                                    <span key={i} className={`peerfusion-compact-star ${i < fb.rating ? 'filled' : ''}`}>
-                                      {i < fb.rating ? '★' : '☆'}
+                                <div className="peerfusion-feedback-rating-container">
+                                  {reviews[0].rating > 0 && (
+                                    <div className="peerfusion-feedback-rating">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <span key={i} className={i < reviews[0].rating ? 'filled' : ''}>
+                                          {i < reviews[0].rating ? '★' : '☆'}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {!!reviews[0].is_recommended && (
+                                    <span className="peerfusion-recommended-indicator">
+                                      Recommended
                                     </span>
-                                  ))}
+                                  )}
                                 </div>
                               </div>
-                              <p className="peerfusion-feedback-message">
-                                {fb.message && fb.message !== '0' ? fb.message : ''}
-                              </p>
-                              <small className="peerfusion-feedback-date">
-                                {fb.created_at && !isNaN(new Date(fb.created_at)) 
-                                  ? new Date(fb.created_at).toLocaleDateString('en-US', {
-                                      year: 'numeric', 
-                                      month: 'long', 
-                                      day: 'numeric'
-                                    })
-                                  : ''}
-                              </small>
                             </div>
-                          ))}
-                          
-                          {hasMultiple && !isExpanded && (
-                            <div className="peerfusion-view-more-container">
-                              <button 
-                                className="peerfusion-view-more-btn"
-                                onClick={() => toggleUserExpansion(user.sender_id)}
-                              >
-                                View {totalReviews - 1} more review{totalReviews - 1 > 1 ? 's' : ''} from {user.sender_name}
-                              </button>
+                            <p className="peerfusion-feedback-message">
+                              {reviews[0].message && reviews[0].message !== '0' ? reviews[0].message : ''}
+                            </p>
+                            <small className="peerfusion-feedback-date">
+                              {reviews[0].created_at && !isNaN(new Date(reviews[0].created_at)) 
+                                ? new Date(reviews[0].created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric'
+                                  })
+                                : ''}
+                            </small>
+                          </div>
+                        )}
+                        
+                        {reviews.slice(1).map((fb, index) => (
+                          <div key={fb.id} className="peerfusion-feedback-item additional-review">
+                            <div className="peerfusion-compact-rating">
+                              <div className="peerfusion-compact-stars">
+                                {Array.from({ length:5 }).map((_, i) => (
+                                  <span key={i} className={`peerfusion-compact-star ${i < fb.rating ? 'filled' : ''}`}>
+                                    {i < fb.rating ? '★' : '☆'}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                          )}
-                          
-                          {hasMultiple && isExpanded && (
-                            <div className="peerfusion-view-more-container">
-                              <button 
-                                className="peerfusion-view-more-btn"
-                                onClick={() => toggleUserExpansion(user.sender_id)}
-                              >
-                                Show less from {user.sender_name}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      
-                      {hasMoreFeedback && !showAllFeedback && (
-                        <div className="peerfusion-see-more-container">
-                          <button 
-                            className="peerfusion-see-more-btn"
-                            onClick={() => setShowAllFeedback(true)}
-                          >
-                            See More Reviews
-                          </button>
-                        </div>
-                      )}
+                            <p className="peerfusion-feedback-message">
+                              {fb.message && fb.message !== '0' ? fb.message : ''}
+                            </p>
+                            <small className="peerfusion-feedback-date">
+                              {fb.created_at && !isNaN(new Date(fb.created_at)) 
+                                ? new Date(fb.created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric'
+                                  })
+                                : ''}
+                            </small>
+                          </div>
+                        ))}
+                        
+                        {hasMultiple && !isExpanded && (
+                          <div className="peerfusion-view-more-container">
+                            <button 
+                              className="peerfusion-view-more-btn"
+                              onClick={() => toggleUserExpansion(user.sender_id)}
+                            >
+                              View {totalReviews - 1} more review{totalReviews - 1 > 1 ? 's' : ''} from {user.sender_name}
+                            </button>
+                          </div>
+                        )}
+                        
+                        {hasMultiple && isExpanded && (
+                          <div className="peerfusion-view-more-container">
+                            <button 
+                              className="peerfusion-view-more-btn"
+                              onClick={() => toggleUserExpansion(user.sender_id)}
+                            >
+                              Show less from {user.sender_name}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {hasMoreFeedback && !showAllFeedback && (
+                      <div className="peerfusion-see-more-container">
+                        <button 
+                          className="peerfusion-see-more-btn"
+                          onClick={() => setShowAllFeedback(true)}
+                        >
+                          See More Reviews
+                        </button>
+                      </div>
+                    )}
 
-                      {showAllFeedback && hasMoreFeedback && (
-                        <div className="peerfusion-see-more-container">
-                          <button 
-                            className="peerfusion-see-more-btn"
-                            onClick={() => setShowAllFeedback(false)}
-                          >
-                            Show Less
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                    {showAllFeedback && hasMoreFeedback && (
+                      <div className="peerfusion-see-more-container">
+                        <button 
+                          className="peerfusion-see-more-btn"
+                          onClick={() => setShowAllFeedback(false)}
+                        >
+                          Show Less
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
+            </div>
 
               <div className="peerfusion-modal-actions">
                 <button className="peerfusion-schedule-btn" onClick={handleRequestSession}>

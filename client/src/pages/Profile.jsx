@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import '../css/profile.css';
 
 const CloseIcon = () => (
@@ -44,7 +45,512 @@ const SkeletonMainContent = () => (
   </div>
 );
 
-// Add Email Change Modal Component
+// Account Deactivation Modal Component
+const AccountDeactivationModal = ({ isOpen, onClose, onDeactivate }) => {
+  const [reason, setReason] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (confirmation !== 'DEACTIVATE MY ACCOUNT') {
+      alert('Please type "DEACTIVATE MY ACCOUNT" to confirm');
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await onDeactivate(reason);
+    setIsLoading(false);
+    
+    if (success) {
+      setReason('');
+      setConfirmation('');
+    }
+  };
+
+  const handleClose = () => {
+    setReason('');
+    setConfirmation('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="account-action-overlay" onClick={handleClose}>
+      <div className="account-action-modal account-deactivation-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="account-action-header deactivation-header">
+          <div className="account-action-icon deactivation-icon">
+            <div className="main-icon"></div>
+          </div>
+          <h3 className="account-action-title deactivation-title">Pause Your Account</h3>
+          <p className="account-action-subtitle deactivation-subtitle">
+            Take a temporary break. Your data stays safe and you can return anytime.
+          </p>
+        </div>
+
+        <div className="account-action-content">
+          <form onSubmit={handleSubmit} className="deactivation-form">
+            <div className="account-action-field">
+              <label className="account-action-label">Why are you taking a break? (Optional)</label>
+              <textarea 
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="account-action-textarea deactivation-textarea"
+                placeholder="We'd love to know how we can improve..."
+                rows="3"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="account-action-field">
+              <label className="account-action-label">
+                Confirm by typing: <strong>DEACTIVATE MY ACCOUNT</strong>
+              </label>
+              <input 
+                type="text" 
+                value={confirmation}
+                onChange={(e) => setConfirmation(e.target.value)}
+                className="account-action-input deactivation-input"
+                placeholder="DEACTIVATE MY ACCOUNT"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="account-action-features deactivation-features">
+              <div className="feature-item">
+                <span className="feature-icon user-icon"></span>
+                <span className="feature-text">Profile hidden from others</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon data-icon"></span>
+                <span className="feature-text">All data preserved</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon lock-icon"></span>
+                <span className="feature-text">Login to reactivate anytime</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon logout-icon"></span>
+                <span className="feature-text">Immediate logout</span>
+              </div>
+            </div>
+
+            <div className="account-action-buttons deactivation-buttons">
+              <button 
+                type="button" 
+                className="account-action-secondary deactivation-cancel"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Keep Account Active
+              </button>
+              <button 
+                type="submit" 
+                className="account-action-primary deactivation-confirm"
+                disabled={isLoading || confirmation !== 'DEACTIVATE MY ACCOUNT'}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="action-loading"></span>
+                    Pausing Account...
+                  </>
+                ) : (
+                  'Pause My Account'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <button className="account-action-close" onClick={handleClose}>
+          <CloseIcon />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+// Account Deletion Modal Component
+const AccountDeletionModal = ({ isOpen, onClose, onDelete }) => {
+  const [reason, setReason] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (confirmation !== 'DELETE MY ACCOUNT') {
+      alert('Please type "DELETE MY ACCOUNT" to confirm');
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await onDelete(reason);
+    setIsLoading(false);
+    
+    if (success) {
+      setReason('');
+      setConfirmation('');
+    }
+  };
+
+  const handleClose = () => {
+    setReason('');
+    setConfirmation('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="account-action-overlay" onClick={handleClose}>
+      <div className="account-action-modal account-deletion-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="account-action-header deletion-header">
+          <div className="account-action-icon deletion-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="#DC2626">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+          </div>
+          <h3 className="account-action-title deletion-title">Remove Account</h3>
+          <p className="account-action-subtitle deletion-subtitle">
+            This action cannot be undone after 30 days
+          </p>
+        </div>
+
+        <div className="account-action-content">
+          <form onSubmit={handleSubmit} className="deletion-form">
+            <div className="account-action-field">
+              <label className="account-action-label">Help us improve (optional)</label>
+              <textarea 
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="account-action-textarea deletion-textarea"
+                placeholder="What led to this decision?"
+                rows="3"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="account-action-field">
+              <label className="account-action-label">
+                Type to confirm: <strong>DELETE MY ACCOUNT</strong>
+              </label>
+              <input 
+                type="text" 
+                value={confirmation}
+                onChange={(e) => setConfirmation(e.target.value)}
+                className="account-action-input deletion-input"
+                placeholder="DELETE MY ACCOUNT"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="deletion-timeline">
+              <div className="timeline-item">
+                <div className="timeline-marker immediate">Now</div>
+                <div className="timeline-content">
+                  <strong>Immediate Changes</strong>
+                  <p>Account scheduled for removal, profile hidden</p>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-marker grace-period">30 Days</div>
+                <div className="timeline-content">
+                  <strong>Grace Period</strong>
+                  <p>You can cancel removal anytime during this period</p>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-marker permanent">After 30 Days</div>
+                <div className="timeline-content">
+                  <strong>Permanent Removal</strong>
+                  <p>All data permanently deleted, cannot be recovered</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="deletion-warning-alert">
+              <div className="warning-icon">⚠️</div>
+              <div className="warning-content">
+                <strong>This is a permanent action</strong>
+                <p>After 30 days, all your data including profile, sessions, and history will be permanently erased.</p>
+              </div>
+            </div>
+
+            <div className="account-action-buttons deletion-buttons">
+              <button 
+                type="button" 
+                className="account-action-secondary deletion-cancel"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Keep My Account
+              </button>
+              <button 
+                type="submit" 
+                className="account-action-primary deletion-confirm"
+                disabled={isLoading || confirmation !== 'DELETE MY ACCOUNT'}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="action-loading"></span>
+                    Scheduling Removal...
+                  </>
+                ) : (
+                  'Schedule Account Removal'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <button className="account-action-close" onClick={handleClose}>
+          <CloseIcon />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Updated AccountStatusModal Component
+const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCancelDeletion }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleReactivate = async () => {
+    setIsLoading(true);
+    await onReactivate();
+    setIsLoading(false);
+  };
+
+  const handleCancelDeletion = async () => {
+    setIsLoading(true);
+    await onCancelDeletion();
+    setIsLoading(false);
+  };
+
+  const handleAppealRedirect = () => {
+    navigate('/appeal');
+    onClose();
+  };
+
+  if (!isOpen || !accountStatus) return null;
+
+  const getStatusConfig = () => {
+    const status = accountStatus.status;
+    switch(status) {
+      case 'active':
+        return {
+          badgeClass: 'account-active',
+          badgeText: 'Active & Visible',
+          statusColor: '#10b981',
+          messageType: 'success',
+          message: 'Your account is in good standing. You can pause or schedule removal from settings.',
+          showAction: false
+        };
+      case 'deactivated':
+        return {
+          badgeClass: 'account-deactivated',
+          badgeText: 'Account Paused',
+          statusColor: '#f59e0b',
+          messageType: 'warning',
+          message: 'Your account is currently paused. Reactivate to make your profile visible again.',
+          showAction: true,
+          actionType: 'reactivate',
+          actionText: 'Reactivate Account',
+          actionHandler: handleReactivate
+        };
+      case 'deletion_pending':
+        return {
+          badgeClass: 'account-deletion_pending',
+          badgeText: 'Scheduled for Removal',
+          statusColor: '#f97316',
+          messageType: 'warning',
+          message: `Account removal scheduled for ${new Date(accountStatus.scheduled_for_deletion_at).toLocaleDateString()}. Cancel to keep your account active.`,
+          showAction: true,
+          actionType: 'cancelDeletion',
+          actionText: 'Cancel Removal',
+          actionHandler: handleCancelDeletion
+        };
+      case 'suspended':
+        return {
+          badgeClass: 'account-suspended',
+          badgeText: 'Temporarily Restricted',
+          statusColor: '#ef4444',
+          messageType: 'error',
+          message: `Your account is currently suspended. Full access will be restored on ${new Date(accountStatus.suspended_until).toLocaleDateString()}.`,
+          showAction: true,
+          actionType: 'appeal',
+          actionText: 'Submit Appeal',
+          actionHandler: handleAppealRedirect
+        };
+      case 'banned':
+        return {
+          badgeClass: 'account-banned',
+          badgeText: 'Permanently Restricted',
+          statusColor: '#6b7280',
+          messageType: 'error',
+          message: 'This account has been permanently restricted. Contact support for assistance.',
+          showAction: true,
+          actionType: 'appeal',
+          actionText: 'Submit Appeal',
+          actionHandler: handleAppealRedirect
+        };
+      case 'warning':
+        return {
+          badgeClass: 'account-warning',
+          badgeText: 'Under Review',
+          statusColor: '#eab308',
+          messageType: 'warning',
+          message: 'Your account is under review. You may submit an appeal if you believe this is a mistake.',
+          showAction: true,
+          actionType: 'appeal',
+          actionText: 'Submit Appeal',
+          actionHandler: handleAppealRedirect
+        };
+      default:
+        return {
+          badgeClass: 'account-active',
+          badgeText: 'Active & Visible',
+          statusColor: '#10b981',
+          messageType: 'success',
+          message: 'Your account is in good standing. You can pause or schedule removal from settings.',
+          showAction: false
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig();
+  const statusValueClass = `peerfusion-status-value-${accountStatus.status}`;
+
+  const getActionButtonClass = () => {
+    switch(statusConfig.actionType) {
+      case 'reactivate':
+        return 'reactivate-btn';
+      case 'cancelDeletion':
+        return 'cancel-deletion-btn';
+      case 'appeal':
+        return 'peerfusion-appeal-btn';
+      default:
+        return 'peerfusion-status-action-btn';
+    }
+  };
+
+  return (
+    <div className="account-action-overlay" onClick={onClose}>
+      <div className="account-action-modal account-status-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="account-action-header status-header">
+          <div className="account-action-icon status-icon">
+            <div className="main-icon"></div>
+          </div>
+          <h3 className="account-action-title status-title">Account Status</h3>
+          <p className="account-action-subtitle status-subtitle">
+            Current account information and available actions
+          </p>
+        </div>
+
+        <div className="account-action-content">
+          <div className="peerfusion-status-dashboard">
+            <div className="peerfusion-status-card">
+              
+              <div className="peerfusion-status-details">
+                <div className="peerfusion-status-item">
+                  <span className="peerfusion-status-label">
+                    Account State:
+                  </span>
+                  <span className={statusValueClass} style={{ color: statusConfig.statusColor }}>
+                    {accountStatus.status.charAt(0).toUpperCase() + accountStatus.status.slice(1).replace('_', ' ')}
+                  </span>
+                </div>
+
+                {accountStatus.strike_count > 0 && (
+                  <div className="peerfusion-status-item">
+                    <span className="peerfusion-status-label">
+                      Community Strikes:
+                    </span>
+                    <span className="peerfusion-status-value-warning">{accountStatus.strike_count}</span>
+                  </div>
+                )}
+
+                {accountStatus.suspended_until && (
+                  <div className="peerfusion-status-item">
+                    <span className="peerfusion-status-label">
+                      Restriction Ends:
+                    </span>
+                    <span className="peerfusion-status-value">
+                      {new Date(accountStatus.suspended_until).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+
+                {accountStatus.is_pending_deletion && (
+                  <>
+                    <div className="peerfusion-status-item">
+                      <span className="peerfusion-status-label">
+                        Removal Date:
+                      </span>
+                      <span className="peerfusion-status-value-deletion-date">
+                        {new Date(accountStatus.scheduled_for_deletion_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="peerfusion-status-item">
+                      <span className="peerfusion-status-label">
+                        Time Remaining:
+                      </span>
+                      <span className="peerfusion-status-value-deletion-countdown">
+                        {accountStatus.days_until_deletion} days
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Status Message - Contains all the descriptive text */}
+            <div className={`peerfusion-status-message peerfusion-status-message-${statusConfig.messageType}`}>
+              <div className="peerfusion-message-icon"></div>
+              <div className="peerfusion-message-content">
+                <h4>{statusConfig.badgeText}</h4>
+                <p>{statusConfig.message}</p>
+              </div>
+            </div>
+
+            {/* Action Button - Only the button, no duplicate text */}
+            {statusConfig.showAction && (
+              <div className="peerfusion-status-actions">
+                <button 
+                  className={`peerfusion-status-action-btn ${getActionButtonClass()}`}
+                  onClick={statusConfig.actionHandler}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="action-loading"></span>
+                      {statusConfig.actionType === 'reactivate' && 'Activating...'}
+                      {statusConfig.actionType === 'cancelDeletion' && 'Cancelling...'}
+                      {statusConfig.actionType === 'appeal' && 'Redirecting...'}
+                    </>
+                  ) : (
+                    statusConfig.actionText
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <button className="account-action-close" onClick={onClose}>
+          <CloseIcon />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Change Email Modal Component
 const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   const [emailForm, setEmailForm] = useState({
     currentPassword: '',
@@ -221,6 +727,7 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   );
 };
 
+// Change Password Modal Component
 const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -291,8 +798,8 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
   const handleClose = () => {
     setPasswordForm({
       currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+      newPassword: '',
+      confirmPassword: ''
     });
     setPasswordErrors({});
     onClose();
@@ -410,17 +917,20 @@ const SettingsDropdown = ({
   setViewAs, 
   setShowChangePassword, 
   setShowChangeEmail, 
+  setShowDeactivation,
+  setShowDeletion,
+  setShowAccountStatus,
   profile, 
   form, 
   selectedSubjects, 
   setSelectedSubjects, 
   availability, 
   handleSave, 
-  resetForm 
+  resetForm,
+  accountStatus
 }) => {
   const [showSettings, setShowSettings] = useState(false);
 
-  // Close settings dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       setShowSettings(false);
@@ -455,6 +965,18 @@ const SettingsDropdown = ({
             <span className="peerfusion-edit-icon"></span>
             Edit Profile
           </button>
+          
+          <button 
+            className="peerfusion-settings-item"
+            onClick={() => {
+              setShowAccountStatus(true);
+              setShowSettings(false);
+            }}
+          >
+            <span className="peerfusion-status-icon"></span>
+            Account Status
+          </button>
+          
           <button 
             className="peerfusion-settings-item"
             onClick={() => {
@@ -465,6 +987,7 @@ const SettingsDropdown = ({
             <span className="peerfusion-email-icon"></span>
             Change Email
           </button>
+          
           <button 
             className="peerfusion-settings-item"
             onClick={() => {
@@ -475,6 +998,7 @@ const SettingsDropdown = ({
             <span className="peerfusion-password-lock-icon"></span>
             Change Password
           </button>
+          
           <button 
             className="peerfusion-settings-item"
             onClick={() => {
@@ -485,8 +1009,39 @@ const SettingsDropdown = ({
             <span className="peerfusion-eye-icon"></span>
             View As Public
           </button>
+
+          {/* Account Control Section */}
+          <div className="peerfusion-settings-divider"></div>
+          
+          {!accountStatus?.is_deactivated && !accountStatus?.is_pending_deletion && (
+            <button 
+              className="peerfusion-settings-item peerfusion-settings-warning"
+              onClick={() => {
+                setShowDeactivation(true);
+                setShowSettings(false);
+              }}
+            >
+              <span className="peerfusion-deactivate-icon"></span>
+              Deactivate Account
+            </button>
+          )}
+          
+          {!accountStatus?.is_pending_deletion && (
+            <button 
+              className="peerfusion-settings-item peerfusion-settings-danger"
+              onClick={() => {
+                setShowDeletion(true);
+                setShowSettings(false);
+              }}
+            >
+              <span className="peerfusion-delete-icon"></span>
+              Delete Account
+            </button>
+          )}
+
           {editMode && (
             <>
+              <div className="peerfusion-settings-divider"></div>
               <button 
                 className="peerfusion-settings-item"
                 onClick={() => {
@@ -526,14 +1081,6 @@ const RatingDisplay = ({ rating }) => {
     </div>
   );
 };
-
-// Recommended Badge Component
-const RecommendedBadge = () => (
-  <span className="peerfusion-recommended-badge">
-    <span className="peerfusion-recommended-icon"></span>
-    Recommended
-  </span>
-);
 
 // Availability Display Component
 const AvailabilityDisplay = ({ availability }) => {
@@ -710,6 +1257,10 @@ const Profile = () => {
   const [availability, setAvailability] = useState([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showDeactivation, setShowDeactivation] = useState(false);
+  const [showDeletion, setShowDeletion] = useState(false);
+  const [showAccountStatus, setShowAccountStatus] = useState(false);
+  const [accountStatus, setAccountStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState({
     username: '',
@@ -733,8 +1284,7 @@ const Profile = () => {
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  // Function to reset form to original profile data
-  const resetForm = () => {
+    const resetForm = () => {
     if (profile) {
       setForm({
         username: profile.username || '',
@@ -778,7 +1328,7 @@ const Profile = () => {
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
@@ -851,8 +1401,21 @@ const Profile = () => {
       }
     };
 
+    const fetchAccountStatus = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await axios.get('http://localhost:5000/api/profile/account-status', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAccountStatus(response.data);
+      } catch (err) {
+        console.error('Error fetching account status:', err);
+      }
+    };
+
     fetchProfile();
     fetchSubjects();
+    fetchAccountStatus();
   }, []);
 
   const handleChange = (e) => {
@@ -972,6 +1535,7 @@ const Profile = () => {
     }
   };
 
+  // API Calls for Account Management
   const handlePasswordChange = async (currentPassword, newPassword) => {
     const token = localStorage.getItem('token');
     try {
@@ -1047,7 +1611,132 @@ const Profile = () => {
     }
   };
 
-  return (
+  const handleDeactivate = async (reason) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/profile/deactivate',
+        { reason },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert(response.data.message);
+        // Log user out after deactivation
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return true;
+      }
+    } catch (err) {
+      console.error('Deactivation error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to deactivate account';
+      alert(`Error: ${errorMessage}`);
+      return false;
+    }
+  };
+
+  const handleDelete = async (reason) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/profile/request-deletion',
+        { reason },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert(response.data.message);
+        setShowDeletion(false);
+        // Refresh account status
+        const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAccountStatus(statusResponse.data);
+        return true;
+      }
+    } catch (err) {
+      console.error('Deletion error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to schedule deletion';
+      alert(`Error: ${errorMessage}`);
+      return false;
+    }
+  };
+
+  const handleReactivate = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/profile/reactivate',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert(response.data.message);
+        setShowAccountStatus(false);
+        // Refresh account status
+        const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAccountStatus(statusResponse.data);
+        return true;
+      }
+    } catch (err) {
+      console.error('Reactivation error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to reactivate account';
+      alert(`Error: ${errorMessage}`);
+      return false;
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/profile/cancel-deletion',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert(response.data.message);
+        setShowAccountStatus(false);
+        // Refresh account status
+        const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAccountStatus(statusResponse.data);
+        return true;
+      }
+    } catch (err) {
+      console.error('Cancel deletion error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to cancel deletion';
+      alert(`Error: ${errorMessage}`);
+      return false;
+    }
+  };
+
+ return (
     <div className="peerfusion-profile-container">
       {/* Header */}
       <div className="peerfusion-profile-header">
@@ -1059,6 +1748,9 @@ const Profile = () => {
             setViewAs={setViewAs}
             setShowChangePassword={setShowChangePassword}
             setShowChangeEmail={setShowChangeEmail}
+            setShowDeactivation={setShowDeactivation}
+            setShowDeletion={setShowDeletion}
+            setShowAccountStatus={setShowAccountStatus}
             profile={profile}
             form={form}
             selectedSubjects={selectedSubjects}
@@ -1066,6 +1758,7 @@ const Profile = () => {
             availability={availability}
             handleSave={handleSave}
             resetForm={resetForm}
+            accountStatus={accountStatus}
           />
         </div>
       </div>
@@ -1386,7 +2079,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* View As Public Modal */}
+        {/* View As Public Modal */}
       {viewAs && profile && (
         <div className="peerfusion-modal-overlay" onClick={() => setViewAs(false)}>
           <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -1494,6 +2187,29 @@ const Profile = () => {
         isOpen={showChangeEmail}
         onClose={() => setShowChangeEmail(false)}
         onEmailChange={handleEmailChange}
+      />
+
+      {/* Deactivation Modal */}
+      <AccountDeactivationModal 
+        isOpen={showDeactivation}
+        onClose={() => setShowDeactivation(false)}
+        onDeactivate={handleDeactivate}
+      />
+
+      {/* Deletion Modal */}
+      <AccountDeletionModal 
+        isOpen={showDeletion}
+        onClose={() => setShowDeletion(false)}
+        onDelete={handleDelete}
+      />
+
+      {/* Account Status Modal */}
+      <AccountStatusModal 
+        isOpen={showAccountStatus}
+        onClose={() => setShowAccountStatus(false)}
+        accountStatus={accountStatus}
+        onReactivate={handleReactivate}
+        onCancelDeletion={handleCancelDeletion}
       />
     </div>
   );

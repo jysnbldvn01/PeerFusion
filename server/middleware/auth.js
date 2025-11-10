@@ -28,7 +28,7 @@ async function authenticateToken(req, res, next) {
     console.log('Token decoded successfully for user:', decoded.id);
     
     const [users] = await db.query(
-      'SELECT id, status, suspended_until, strike_count FROM users WHERE id = ?', 
+      'SELECT id, status, suspended_until, strike_count, deactivation_requested_at, deletion_scheduled_at, scheduled_for_deletion_at FROM users WHERE id = ?', 
       [decoded.id]
     );
     
@@ -41,9 +41,17 @@ async function authenticateToken(req, res, next) {
     console.log('User status:', user.status);
     console.log('User suspended until:', user.suspended_until);
     console.log('User strike count:', user.strike_count);
+    console.log('User deactivation requested at:', user.deactivation_requested_at);
+    console.log('User deletion scheduled at:', user.deletion_scheduled_at);
     
-    // Check the status enum
-    if (user.status === 'suspended') {
+    // Handle different statuses with priority for admin actions
+    if (user.status === 'banned') {
+      console.log('User is banned:', decoded.id);
+      return res.status(403).json({ 
+        error: 'Your account has been permanently banned. Please contact support.',
+        status: 'banned'
+      });
+    } else if (user.status === 'suspended') {
       // Check if suspension period has ended
       if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
         const timeLeft = Math.ceil((new Date(user.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
@@ -54,30 +62,69 @@ async function authenticateToken(req, res, next) {
         });
       } else {
         // Auto-reactivate if suspension period has passed
-        console.log('Auto-reactivating user:', decoded.id);
+        console.log('Auto-reactivating user from suspension:', decoded.id);
         await db.query(
           'UPDATE users SET status = "active", suspended_until = NULL WHERE id = ?',
           [decoded.id]
         );
+        // Update user object for subsequent checks
+        user.status = 'active';
       }
-    } else if (user.status === 'banned') {
-      console.log('User is banned:', decoded.id);
-      return res.status(403).json({ 
-        error: 'Your account has been permanently banned. Please contact support.',
-        status: 'banned'
-      });
+    } else if (user.status === 'deletion_pending') {
+      // Check if deletion period has passed
+      if (user.scheduled_for_deletion_at && new Date(user.scheduled_for_deletion_at) <= new Date()) {
+        console.log('User deletion period has passed, account should be deleted:', decoded.id);
+        return res.status(403).json({ 
+          error: 'Your account has been permanently deleted. Please contact support if you believe this is an error.',
+          status: 'deleted'
+        });
+      } else {
+        // Allow users pending deletion to login so they can cancel deletion
+        console.log('User is pending deletion but can login to cancel:', decoded.id);
+        req.userAccountStatus = {
+          status: 'deletion_pending',
+          scheduled_for_deletion_at: user.scheduled_for_deletion_at,
+          days_until_deletion: user.scheduled_for_deletion_at 
+            ? Math.ceil((new Date(user.scheduled_for_deletion_at) - new Date()) / (1000 * 60 * 60 * 24))
+            : null
+        };
+      }
+    } else if (user.status === 'deactivated') {
+      // Allow deactivated users to login so they can reactivate
+      console.log('User is deactivated but can login to reactivate:', decoded.id);
+      req.userAccountStatus = {
+        status: 'deactivated',
+        deactivation_requested_at: user.deactivation_requested_at
+      };
     } else if (user.status === 'warning') {
       // User can still login but has warnings
       console.log('User has warnings with strike count:', user.strike_count);
-      // Add warning info to request for potential use
       req.userWarning = {
         strike_count: user.strike_count,
         status: 'warning'
       };
+    } else if (user.status === 'active') {
+      console.log('User is active and can proceed:', decoded.id);
+      // Normal active user, no special handling needed
     }
 
+    // Add account status info to request for all users
+    req.userAccountStatus = req.userAccountStatus || {
+      status: user.status,
+      is_deactivated: user.status === 'deactivated',
+      is_pending_deletion: user.status === 'deletion_pending',
+      is_banned: user.status === 'banned',
+      is_suspended: user.status === 'suspended',
+      is_active: user.status === 'active' || user.status === 'warning',
+      strike_count: user.strike_count,
+      suspended_until: user.suspended_until,
+      deactivation_requested_at: user.deactivation_requested_at,
+      deletion_scheduled_at: user.deletion_scheduled_at,
+      scheduled_for_deletion_at: user.scheduled_for_deletion_at
+    };
+
     req.user = decoded;
-    console.log('Authentication successful for user:', decoded.id);
+    console.log('Authentication successful for user:', decoded.id, 'with status:', user.status);
     next();
     
   } catch (err) {

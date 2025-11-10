@@ -284,13 +284,25 @@ router.get('/others', authenticateToken, async (req, res) => {
         u.availability,
         u.rating,
         u.total_reviews,
+        usr.status as user_status,
+        usr.deactivation_requested_at,
+        usr.scheduled_for_deletion_at,
         EXISTS(
           SELECT 1 FROM feedback f 
           WHERE f.receiver_id = u.user_id AND f.is_recommended = true
         ) AS is_recommended
       FROM user_profiles u
+      JOIN users usr ON usr.id = u.user_id
       WHERE u.user_id != ?
         AND (u.role = 'Skill Sharer' OR u.role = 'Skill Learner & Sharer')
+        AND (
+          usr.status = 'active' 
+          OR usr.status = 'warning'
+          OR (usr.status = 'deletion_pending' AND usr.scheduled_for_deletion_at > NOW())
+        )
+        AND usr.status != 'deactivated'
+        AND usr.status != 'banned'
+        AND (usr.suspended_until IS NULL OR usr.suspended_until <= NOW())
       ORDER BY u.rating DESC
     `;
 
@@ -343,12 +355,24 @@ router.get('/recommended', authenticateToken, async (req, res) => {
         u.availability,
         u.rating,
         u.total_reviews,
+        usr.status as user_status,
+        usr.deactivation_requested_at,
+        usr.scheduled_for_deletion_at,
         TRUE AS is_recommended
       FROM user_profiles u
+      JOIN users usr ON usr.id = u.user_id
       JOIN feedback f ON f.receiver_id = u.user_id
       WHERE u.user_id != ?
         AND (u.role = 'Skill Sharer' OR u.role = 'Skill Learner & Sharer')
         AND f.is_recommended = TRUE
+        AND (
+          usr.status = 'active' 
+          OR usr.status = 'warning'
+          OR (usr.status = 'deletion_pending' AND usr.scheduled_for_deletion_at > NOW())
+        )
+        AND usr.status != 'deactivated'
+        AND usr.status != 'banned'
+        AND (usr.suspended_until IS NULL OR usr.suspended_until <= NOW())
       ORDER BY u.rating DESC
       LIMIT 20
     `;
@@ -379,7 +403,6 @@ router.get('/recommended', authenticateToken, async (req, res) => {
     });
   }
 });
-
   
 // Get all users except self
 router.get("/users", authenticateToken, async (req, res) => {
@@ -1247,6 +1270,329 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
   } catch (err) {
     console.error('Resend verification code error:', err);
     res.status(500).json({ error: 'Failed to resend verification code' });
+  }
+});
+
+// ------------------- Account Deactivation & Activation --------------------------- //
+
+// Request account deactivation (voluntary break)
+router.post('/deactivate', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { reason } = req.body;
+
+    // First check current user status - respect admin actions
+    const checkSql = 'SELECT status, suspended_until FROM users WHERE id = ?';
+    const [users] = await db.query(checkSql, [userId]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Prevent deactivation if user is banned
+    if (user.status === 'banned') {
+      return res.status(403).json({ 
+        error: 'Cannot deactivate a banned account. Please contact support.' 
+      });
+    }
+
+    // If user is admin suspended, allow deactivation but preserve suspension
+    const isAdminSuspended = user.status === 'suspended' && user.suspended_until && new Date(user.suspended_until) > new Date();
+
+    // Set deactivation timestamp and status
+    const deactivationDate = new Date();
+
+    const sql = `
+      UPDATE users 
+      SET 
+        deactivation_requested_at = ?,
+        status = ?
+      WHERE id = ?
+    `;
+
+    // If admin suspended, keep as suspended, otherwise set to deactivated
+    const newStatus = isAdminSuspended ? 'suspended' : 'deactivated';
+
+    await db.query(sql, [deactivationDate, newStatus, userId]);
+
+    // Create notification for the user
+    const notificationSql = `
+      INSERT INTO notifications (sender_id, receiver_id, message, type)
+      VALUES (?, ?, ?, 'account_status')
+    `;
+    
+    const notificationMessage = isAdminSuspended 
+      ? 'Your account deactivation has been requested. It remains suspended during this period. You can reactivate anytime by logging in.'
+      : 'Your account has been deactivated. You can reactivate anytime by logging in.';
+
+    await db.query(notificationSql, [
+      0, // System sender
+      userId, 
+      notificationMessage,
+      'account_status'
+    ]);
+
+    res.json({
+      success: true,
+      message: isAdminSuspended 
+        ? 'Account deactivated successfully. Your account remains suspended. You can reactivate anytime by logging in.'
+        : 'Account deactivated successfully. You can reactivate anytime by logging in.',
+      is_admin_suspended: isAdminSuspended
+    });
+  } catch (err) {
+    console.error('Deactivation error:', err);
+    res.status(500).json({ error: 'Failed to deactivate account' });
+  }
+});
+
+// Update the reactivation endpoint to clear deactivation properly
+router.post('/reactivate', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is deactivated or deletion_pending
+    const checkSql = 'SELECT status, deactivation_requested_at FROM users WHERE id = ?';
+    const [users] = await db.query(checkSql, [userId]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Allow reactivation if user is deactivated OR has deactivation_requested_at set
+    if (user.status !== 'deactivated' && user.deactivation_requested_at === null) {
+      return res.status(400).json({ error: 'Account is not deactivated' });
+    }
+
+    // Reactivate account by clearing timestamps and setting status to active
+    const sql = `
+      UPDATE users 
+      SET 
+        deactivation_requested_at = NULL,
+        status = 'active'
+      WHERE id = ?
+    `;
+
+    await db.query(sql, [userId]);
+
+    // Create notification
+    const notificationSql = `
+      INSERT INTO notifications (sender_id, receiver_id, message, type)
+      VALUES (?, ?, ?, 'account_status')
+    `;
+    
+    await db.query(notificationSql, [
+      0, // System sender
+      userId, 
+      'Your account has been reactivated successfully.',
+      'account_status'
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Account reactivated successfully'
+    });
+  } catch (err) {
+    console.error('Reactivation error:', err);
+    res.status(500).json({ error: 'Failed to reactivate account' });
+  }
+});
+
+// Request account deletion (permanent with 30-day grace period)
+router.post('/request-deletion', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { reason } = req.body;
+
+    // First check current user status
+    const checkSql = 'SELECT status FROM users WHERE id = ?';
+    const [users] = await db.query(checkSql, [userId]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Prevent deletion if user is banned
+    if (user.status === 'banned') {
+      return res.status(403).json({ 
+        error: 'Cannot delete a banned account. Please contact support.' 
+      });
+    }
+
+    // Set deletion schedule (30 days from now) and status
+    const deletionDate = new Date();
+    deletionDate.setDate(deletionDate.getDate() + 30);
+
+    const sql = `
+      UPDATE users 
+      SET 
+        deletion_scheduled_at = NOW(),
+        scheduled_for_deletion_at = ?,
+        status = 'deletion_pending'
+      WHERE id = ?
+    `;
+
+    await db.query(sql, [deletionDate, userId]);
+
+    // Create notification for the user
+    const notificationSql = `
+      INSERT INTO notifications (sender_id, receiver_id, message, type)
+      VALUES (?, ?, ?, 'account_status')
+    `;
+    
+    await db.query(notificationSql, [
+      0, // System sender
+      userId, 
+      'Your account deletion has been scheduled. It will be permanently deleted after 30 days unless you cancel.',
+      'account_status'
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Account deletion scheduled. You have 30 days to cancel before permanent deletion.',
+      deletion_date: deletionDate
+    });
+  } catch (err) {
+    console.error('Deletion request error:', err);
+    res.status(500).json({ error: 'Failed to schedule account deletion' });
+  }
+});
+
+// Reactivate account (from deactivated state)
+router.post('/reactivate', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is deactivated or deletion_pending
+    const checkSql = 'SELECT status FROM users WHERE id = ?';
+    const [users] = await db.query(checkSql, [userId]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    if (user.status !== 'deactivated' && user.status !== 'deletion_pending') {
+      return res.status(400).json({ error: 'Account is not deactivated or pending deletion' });
+    }
+
+    // Reactivate account by clearing timestamps and setting status to active
+    const sql = `
+      UPDATE users 
+      SET 
+        deactivation_requested_at = NULL,
+        deletion_scheduled_at = NULL,
+        scheduled_for_deletion_at = NULL,
+        status = 'active'
+      WHERE id = ?
+    `;
+
+    await db.query(sql, [userId]);
+
+    // Create notification
+    const notificationSql = `
+      INSERT INTO notifications (sender_id, receiver_id, message, type)
+      VALUES (?, ?, ?, 'account_status')
+    `;
+    
+    await db.query(notificationSql, [
+      0, // System sender
+      userId, 
+      'Your account has been reactivated successfully.',
+      'account_status'
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Account reactivated successfully'
+    });
+  } catch (err) {
+    console.error('Reactivation error:', err);
+    res.status(500).json({ error: 'Failed to reactivate account' });
+  }
+});
+
+// Cancel scheduled deletion
+router.post('/cancel-deletion', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const sql = `
+      UPDATE users 
+      SET 
+        deletion_scheduled_at = NULL,
+        scheduled_for_deletion_at = NULL,
+        status = 'active'
+      WHERE id = ?
+    `;
+
+    await db.query(sql, [userId]);
+
+    res.json({
+      success: true,
+      message: 'Account deletion cancelled successfully'
+    });
+  } catch (err) {
+    console.error('Cancel deletion error:', err);
+    res.status(500).json({ error: 'Failed to cancel deletion' });
+  }
+});
+
+// Get account status
+router.get('/account-status', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const sql = `
+      SELECT 
+        status,
+        deactivation_requested_at,
+        deletion_scheduled_at,
+        scheduled_for_deletion_at,
+        strike_count,
+        suspended_until
+      FROM users 
+      WHERE id = ?
+    `;
+
+    const [results] = await db.query(sql, [userId]);
+
+    if (results.length > 0) {
+      const user = results[0];
+      
+      let days_until_deletion = null;
+      if (user.scheduled_for_deletion_at) {
+        const deletionDate = new Date(user.scheduled_for_deletion_at);
+        const now = new Date();
+        days_until_deletion = Math.ceil((deletionDate - now) / (1000 * 60 * 60 * 24));
+      }
+
+      res.json({
+        status: user.status,
+        deactivation_requested_at: user.deactivation_requested_at,
+        deletion_scheduled_at: user.deletion_scheduled_at,
+        scheduled_for_deletion_at: user.scheduled_for_deletion_at,
+        days_until_deletion: days_until_deletion > 0 ? days_until_deletion : 0,
+        strike_count: user.strike_count,
+        suspended_until: user.suspended_until,
+        is_deactivated: user.status === 'deactivated',
+        is_pending_deletion: user.status === 'deletion_pending',
+        is_banned: user.status === 'banned',
+        is_suspended: user.status === 'suspended',
+        is_active: user.status === 'active' || user.status === 'warning'
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (err) {
+    console.error('Account status error:', err);
+    res.status(500).json({ error: 'Failed to get account status' });
   }
 });
 
