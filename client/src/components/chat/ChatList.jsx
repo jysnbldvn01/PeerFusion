@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
-import { useLocation } from "react-router-dom";
+// removed useLocation to avoid unused var and unnecessary re-subscribes
 
 // Icon components
 const SearchIcon = () => (
@@ -26,12 +26,42 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
   const [conversations, setConversations] = useState([]);
   const [filteredConversations, setFilteredConversations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
+  const [profilesById, setProfilesById] = useState({});
+  const [rawConversations, setRawConversations] = useState([]);
 
+  const ensureAvatarUrl = (avatar) => {
+    if (!avatar || typeof avatar !== 'string') return null;
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+    const file = avatar.replace(/^\/+/, '');
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    return `${UPLOADS_BASE}${file}`;
+  };
+
+  // Load other user profiles to get latest avatar filenames, same as ChatWindow
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((list) => {
+        const map = {};
+        (list || []).forEach((u) => {
+          const id = u?.id || u?.user_id;
+          if (id) map[String(id)] = u;
+        });
+        setProfilesById(map);
+      })
+      .catch(() => {});
+  }, [currentUser?.user_id]);
+
+  // Subscribe once to conversations for the user
   useEffect(() => {
     const userId = currentUser?.user_id || currentUser?.id;
 
     if (!userId) {
+      setRawConversations([]);
       setConversations([]);
       setFilteredConversations([]);
       setLoading(false);
@@ -48,29 +78,8 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
 
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
-        const convos = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          const otherId = data.participants.find(
-            (p) => Number(p) !== Number(userId)
-          );
-          const otherUser = data.userInfo?.[String(otherId)] || {};
-
-          return {
-            id: doc.id,
-            ...data,
-            otherUser: {
-              id: otherId,
-              username: otherUser.username || `User ${otherId}`,
-              avatar: otherUser.avatar || "/default-avatar.png",
-            },
-            lastMessageTime: data.lastMessageTime?.toDate?.() || new Date(),
-            hasUnread: unreadCounts[doc.id] > 0,
-            unreadCount: unreadCounts[doc.id] || 0
-          };
-        });
-        
-        setConversations(convos);
-        setFilteredConversations(convos);
+        const rows = snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+        setRawConversations(rows);
         setLoading(false);
       },
       (error) => {
@@ -80,7 +89,45 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
     );
 
     return () => unsubscribe();
-  }, [currentUser, location.pathname, unreadCounts]);
+  }, [currentUser]);
+
+  // Enhance conversations with latest profiles and unread counts
+  useEffect(() => {
+    const userId = currentUser?.user_id || currentUser?.id;
+    if (!userId) return;
+
+    const enhanced = rawConversations.map(({ id, data }) => {
+      const otherId = data.participants.find((p) => Number(p) !== Number(userId));
+      const otherUser = data.userInfo?.[String(otherId)] || {};
+      const profile = profilesById[String(otherId)] || {};
+      const avatarFilename = profile.avatar || otherUser.avatar || '';
+
+      return {
+        id,
+        ...data,
+        otherUser: {
+          id: otherId,
+          username: otherUser.username || `User ${otherId}`,
+          avatar: avatarFilename || null,
+        },
+        lastMessageTime: data.lastMessageTime?.toDate?.() || new Date(),
+        hasUnread: unreadCounts[id] > 0,
+        unreadCount: unreadCounts[id] || 0,
+      };
+    });
+
+    setConversations(enhanced);
+    // Apply current search filter if any
+    if (!searchQuery?.trim()) {
+      setFilteredConversations(enhanced);
+    } else {
+      const filtered = enhanced.filter(convo =>
+        convo.otherUser.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (convo.lastMessage && convo.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredConversations(filtered);
+    }
+  }, [rawConversations, profilesById, unreadCounts, currentUser, searchQuery]);
 
   // Filter conversations based on search query
   useEffect(() => {
@@ -195,15 +242,29 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
               className={`peerfusion-chat-peer-item ${activeConversationId === c.id ? "active" : ""} ${c.hasUnread ? "unread" : ""}`}
               onClick={() => handleConversationSelect(c)}
             >
-              <div className="peerfusion-chat-avatar-container">
-                <img
-                  src={c.otherUser.avatar}
-                  alt={c.otherUser.username}
-                  className="peerfusion-chat-peer-avatar"
-                  onError={(e) => {
-                    e.target.src = "/default-avatar.png";
-                  }}
-                />
+              <div className="peerfusion-chat-avatar-container" style={{ position: 'relative' }}>
+                <div className="peerfusion-chat-peer-avatar" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#dfe3e8',
+                  color: '#4a5568',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  textTransform: 'uppercase'
+                }}>
+                  {c.otherUser.username?.charAt(0) || 'U'}
+                </div>
+                {c.otherUser.avatar && (
+                  <img
+                    key={c.otherUser.avatar}
+                    src={ensureAvatarUrl(c.otherUser.avatar)}
+                    alt={c.otherUser.username}
+                    className="peerfusion-chat-peer-avatar"
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: '50%' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                )}
                 {c.hasUnread && (
                   <div className="peerfusion-chat-unread-indicator">
                     {c.unreadCount > 0 && c.unreadCount < 10 ? c.unreadCount : ""}

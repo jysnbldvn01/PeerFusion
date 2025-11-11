@@ -67,11 +67,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     navigate('/login');
   };
 
-  const handleChatNavigation = (e) => {
-    e.preventDefault();
-    window.location.href = '/chat';
-  };
-
   const handleMobileToggle = () => {
     onToggle();
   };
@@ -146,14 +141,14 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
               <span className="peerfusion-nav-label">Home</span>
             </Link>
             
-            <a 
-              href="/chat" 
+            <Link 
+              to="/chat" 
               className={`peerfusion-nav-item ${isActive('/chat') ? 'active' : ''}`}
-              onClick={handleChatNavigation}
+              onClick={handleNavClick}
             >
               <FiMessageSquare className="peerfusion-nav-icon" />
               <span className="peerfusion-nav-label">Chat</span>
-            </a>
+            </Link>
             
             <Link 
               to="/notifications" 

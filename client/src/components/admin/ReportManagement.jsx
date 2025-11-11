@@ -248,7 +248,7 @@ const ReportManagement = () => {
       setTotalPages(Math.ceil(totalCount / ITEMS_PER_PAGE));
     } catch (error) {
       console.error('Error fetching reports:', error);
-      alert('Failed to load reports: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to load reports: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
       setSkeletonLoading({
@@ -333,10 +333,10 @@ const filterAndSortReports = () => {
         message += ' and penalty applied';
       }
       
-      alert(message);
+      window.pfToast?.success?.(message);
     } catch (error) {
       console.error('Error updating report:', error);
-      alert('Failed to update report: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to update report: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -532,7 +532,7 @@ const filterAndSortReports = () => {
       }
     } catch (error) {
       console.error('Error downloading evidence:', error);
-      alert('Failed to download evidence');
+      window.pfToast?.error?.('Failed to download evidence');
     }
   };
 

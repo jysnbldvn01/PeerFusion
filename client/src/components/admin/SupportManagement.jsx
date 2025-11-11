@@ -106,7 +106,7 @@ const SupportManagement = () => {
       }
     } catch (error) {
       console.error('Error fetching support tickets:', error);
-      alert('Failed to load support tickets: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to load support tickets: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -276,13 +276,13 @@ const SupportManagement = () => {
           total: prev.total - 1
         }));
         
-        alert('Ticket deleted successfully');
+        window.pfToast?.deleted?.('Ticket deleted successfully');
       } else {
         throw new Error(response.data.error);
       }
     } catch (error) {
       console.error('Error deleting ticket:', error);
-      alert('Failed to delete ticket: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to delete ticket: ' + (error.response?.data?.error || error.message));
     } finally {
       setShowDeleteConfirm(false);
       setTicketToDelete(null);
@@ -291,7 +291,7 @@ const SupportManagement = () => {
 
   const deleteMultipleTickets = async () => {
     if (selectedTickets.size === 0) {
-      alert('Please select tickets to delete');
+      window.pfToast?.warning?.('Please select tickets to delete');
       return;
     }
 
@@ -328,13 +328,13 @@ const SupportManagement = () => {
         
         setSelectedTickets(new Set());
         
-        alert(`Successfully deleted ${response.data.deletedCount} ticket(s)`);
+        window.pfToast?.deleted?.(`Successfully deleted ${response.data.deletedCount} ticket(s)`);
       } else {
         throw new Error(response.data.error);
       }
     } catch (error) {
       console.error('Error deleting tickets:', error);
-      alert('Failed to delete tickets: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to delete tickets: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -397,19 +397,19 @@ const SupportManagement = () => {
           return newCounts;
         });
 
-        alert(`Ticket marked as ${status} successfully`);
+        window.pfToast?.updated?.(`Ticket marked as ${status} successfully`);
       } else {
         throw new Error(response.data.error);
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
-      alert('Failed to update ticket: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to update ticket: ' + (error.response?.data?.error || error.message));
     }
   };
 
   const addResponse = async (ticketId) => {
     if (!responseMessage.trim()) {
-      alert('Please enter a response message');
+      window.pfToast?.warning?.('Please enter a response message');
       return;
     }
 
@@ -439,13 +439,13 @@ const SupportManagement = () => {
           )
         );
 
-        alert('Response added successfully');
+        window.pfToast?.added?.('Response added successfully');
       } else {
         throw new Error(response.data.error);
       }
     } catch (error) {
       console.error('Error adding response:', error);
-      alert('Failed to add response: ' + (error.response?.data?.error || error.message));
+      window.pfToast?.error?.('Failed to add response: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -456,7 +456,7 @@ const SupportManagement = () => {
       setSelectedTicket(ticketDetails);
     } catch (error) {
       console.error('Error loading ticket details:', error);
-      alert('Failed to load ticket details');
+      window.pfToast?.error?.('Failed to load ticket details');
     } finally {
       setLoading(false);
     }
@@ -530,7 +530,7 @@ const SupportManagement = () => {
       }
     } catch (error) {
       console.error('Error downloading evidence:', error);
-      alert('Failed to download file');
+      window.pfToast?.error?.('Failed to download file');
     }
   };
 

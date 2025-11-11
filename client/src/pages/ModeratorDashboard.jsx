@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaUsers, FaTachometerAlt, FaCog, FaBars, FaSignOutAlt, FaBook, FaFlag, FaComments, FaGavel, FaHeadset} from 'react-icons/fa';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardOverview from '../components/admin/DashboardOverview';
@@ -11,12 +11,40 @@ import SupportManagement from '../components/admin/SupportManagement';
 
 import '../css/adminpanel.css';
 import { useNavigate } from 'react-router-dom';
+import ToastBanner from '../components/common/ToastBanner';
 
 export default function ModeratorDashboard() {
   const decoded = JSON.parse(localStorage.getItem('user'));
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
+
+  // Setup global toast helpers for moderator area
+  useEffect(() => {
+    const dispatchToast = (message, type = 'info', duration = 3000) => {
+      window.dispatchEvent(new CustomEvent('peerfusion-toast', { detail: { message, type, duration } }));
+    };
+    const originalAlert = window.alert;
+    const originalConsoleError = console.error;
+    window.pfToast = {
+      success: (m, d) => dispatchToast(m, 'success', d),
+      error: (m, d) => dispatchToast(m, 'error', d),
+      warning: (m, d) => dispatchToast(m, 'warning', d),
+      info: (m, d) => dispatchToast(m, 'info', d),
+      added: (m, d) => dispatchToast(m, 'added', d),
+      updated: (m, d) => dispatchToast(m, 'updated', d),
+      deleted: (m, d) => dispatchToast(m, 'deleted', d),
+    };
+    window.alert = (msg) => dispatchToast(String(msg), 'info');
+    console.error = (...args) => {
+      try { if (args && args[0]) dispatchToast(String(args[0]), 'error', 4000); } catch(_) {}
+      originalConsoleError.apply(console, args);
+    };
+    return () => {
+      window.alert = originalAlert;
+      console.error = originalConsoleError;
+    };
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -63,6 +91,7 @@ export default function ModeratorDashboard() {
 
   return (
     <div className="adminPanel-layout">
+      <ToastBanner />
       {/* SIDEBAR */}
       <aside className={`adminPanel-sidebar ${isSidebarOpen ? 'open' : 'collapsed'}`}>
         <div className="adminPanel-sidebar-header">

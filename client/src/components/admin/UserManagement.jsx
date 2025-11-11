@@ -390,7 +390,7 @@ export default function UserManagement() {
         // Refresh the current page
         fetchUsers(currentPage, searchTerm, activeFilter);
         setSelectedUsers(new Set());
-        alert(`${userIds.length} users deleted successfully`);
+        window.pfToast?.deleted?.(`${userIds.length} users deleted successfully`);
         
       } else if (bulkAction === 'reactivate') {
         for (const userId of userIds) {
@@ -403,14 +403,15 @@ export default function UserManagement() {
         // Refresh users to get updated statuses
         fetchUsers(currentPage, searchTerm, activeFilter);
         setSelectedUsers(new Set());
-        alert(`${userIds.length} users reactivated successfully`);
+        window.pfToast?.updated?.(`${userIds.length} users reactivated successfully`);
+      
       }
       
       setBulkAction('');
     } catch (err) {
       console.error('Bulk action error:', err);
       const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to perform bulk action.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
@@ -424,11 +425,11 @@ export default function UserManagement() {
       // Refresh the current page instead of client-side filtering
       fetchUsers(currentPage, searchTerm, activeFilter);
       setDeleteConfirm(null);
-      alert('User permanently deleted successfully');
+      window.pfToast?.deleted?.('User permanently deleted successfully');
     } catch (err) {
       console.error('Error deleting user:', err);
       const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to delete user.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
@@ -454,11 +455,11 @@ export default function UserManagement() {
       setActionConfirm(null);
       
       // Show success message
-      alert('User permanently banned and notification sent');
+      window.pfToast?.updated?.('User permanently banned and notification sent');
     } catch (err) {
       console.error('Error banning user:', err);
       const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to ban user.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
@@ -477,11 +478,11 @@ export default function UserManagement() {
       setActionConfirm(null);
       
       // Show success message
-      alert('User reactivated successfully and notification sent');
+      window.pfToast?.updated?.('User reactivated successfully and notification sent');
     } catch (err) {
       console.error('Error reactivating user:', err);
       const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to reactivate user.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
@@ -492,13 +493,12 @@ export default function UserManagement() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(`Password reset successfully. Temporary password: ${res.data.temporaryPassword}`);
+      window.pfToast?.updated?.(`Password reset successfully. Temporary password: ${res.data.temporaryPassword}`);
       console.log(`Password reset for ${user.email}. Temporary password: ${res.data.temporaryPassword}`);
-      
     } catch (err) {
       console.error('Error resetting password:', err);
       const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to reset password.';
-      alert(msg);
+      window.pfToast?.error?.(msg);
     }
   };
 
