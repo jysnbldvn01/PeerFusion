@@ -135,7 +135,7 @@ const configureRoutes = (app) => {
     '/api/session',
     '/api/messages',
     '/api/conversations',
-    '/api/firebaseToken',
+    '/api/firebasetoken',
     '/api/meeting',
     '/api/reports',
     '/api/appeals',
