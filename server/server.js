@@ -4,25 +4,37 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: './.env' });
 
 const db = require('./config/db');
 
 const initializeFirebase = () => {
   const admin = require('firebase-admin');
-  const serviceAccount = require('./keys/serviceAccountKey.json');
 
   if (!admin.apps.length) {
+    const serviceAccountPath = '/etc/secrets/serviceAccountKey.json';
+    if (!fs.existsSync(serviceAccountPath)) {
+      console.error(`Firebase service account file not found at ${serviceAccountPath}`);
+      process.exit(1);
+    }
+
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
   }
-  return admin.firestore();
+
+  return require('firebase-admin').firestore();
 };
 
 const configureSocketIO = (server, firestore) => {
+  // Adjust CORS origin here as needed
+  const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+
   const io = new Server(server, {
-    cors: { origin: 'http://localhost:3000', methods: ['GET', 'POST'] },
+    cors: { origin: allowedOrigin, methods: ['GET', 'POST'] },
   });
 
   const userSockets = new Map();
@@ -60,16 +72,19 @@ const configureSocketIO = (server, firestore) => {
   return { io, emitToUser };
 };
 
-const handleSendMessage = (socket, firestore, io) => async ({ 
-  conversationId, 
-  senderId, 
-  content, 
-  senderName, 
-  senderAvatar 
+const handleSendMessage = (socket, firestore, io) => async ({
+  conversationId,
+  senderId,
+  content,
+  senderName,
+  senderAvatar,
 }) => {
   if (!conversationId || !senderId || !content?.trim()) return;
 
   try {
+    // Need admin instance here for FieldValue
+    const admin = require('firebase-admin');
+
     const messageRef = await firestore.collection('messages').add({
       conversationId,
       senderId,
@@ -113,7 +128,7 @@ const handleSocketDisconnect = (socket, userSockets) => {
 const configureRoutes = (app) => {
   const routes = [
     '/api/admin',
-    '/api/auth', 
+    '/api/auth',
     '/api/profile',
     '/api/jitsi',
     '/api/notifications',
@@ -127,7 +142,7 @@ const configureRoutes = (app) => {
     '/api/support',
   ];
 
-  routes.forEach(route => {
+  routes.forEach((route) => {
     const routePath = route.split('/api')[1];
     try {
       const routeModule = require(`./routes${routePath}`);
@@ -145,7 +160,12 @@ const startServer = () => {
   const app = express();
 
   // Middleware
-  app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+  app.use(
+    cors({
+      origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
+      credentials: true,
+    })
+  );
   app.use(express.json());
   app.use('/uploads', express.static('uploads'));
 
@@ -169,13 +189,14 @@ const startServer = () => {
   });
 };
 
-db.getConnection()
-  .then(conn => {
+db
+  .getConnection()
+  .then((conn) => {
     console.log('Database connected successfully');
     conn.release();
     startServer();
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('Database connection failed:', err.message);
     process.exit(1);
   });

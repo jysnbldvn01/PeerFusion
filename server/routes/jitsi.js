@@ -1,16 +1,12 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
-const path = require("path");
 
 const router = express.Router();
 
-const privateKey = fs.readFileSync(
-  path.join(__dirname, "../keys/jaasauth.key"),
-  "utf8"
-);
+const privateKeyPath = "/etc/secrets/jaasauth.key";
+const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 
-// From JaaS account
 const appId = "vpaas-magic-cookie-e7456b2aca5e40f1874f1b2aecd1b3b0";
 const kid = "vpaas-magic-cookie-e7456b2aca5e40f1874f1b2aecd1b3b0/110f8f";
 
@@ -47,7 +43,7 @@ router.post("/token", (req, res) => {
     res.json({
       success: true,
       token,
-      room: `${appId}/${roomName}`, 
+      room: `${appId}/${roomName}`,
     });
   } catch (err) {
     console.error("JWT generation failed:", err);
