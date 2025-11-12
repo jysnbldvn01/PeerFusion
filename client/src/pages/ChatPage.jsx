@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import ChatList from "../components/chat/ChatList";
 import ChatWindow from "../components/chat/ChatWindow";
 import { AuthContext } from "../context/AuthContext";
 import "../css/chat.css";
-import { useLocation } from "react-router-dom";
+// removed useLocation to avoid unused var
 
 import {
   collection,
@@ -68,7 +68,7 @@ const UploadIcon = () => (
 export default function ChatPage() {
   const { user, loading } = useContext(AuthContext);
   const [activeConversation, setActiveConversation] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [profilesById, setProfilesById] = useState({});
 
   // Ensure avatar is an absolute URL
   const ensureAvatarUrl = (avatar) => {
@@ -92,7 +92,7 @@ export default function ChatPage() {
   const [reportUserSubmitting, setReportUserSubmitting] = useState(false);
   const [reportUserOffense, setReportUserOffense] = useState('Harassment');
   const [evidenceFiles, setEvidenceFiles] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState({});
+  // removed uploadProgress to avoid unused state warning
 
   // Media/files list
   const [mediaItems, setMediaItems] = useState([]);
@@ -101,8 +101,7 @@ export default function ChatPage() {
   // Unread messages tracking
   const [unreadCounts, setUnreadCounts] = useState({});
 
-  const location = useLocation();
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // no location usage needed here
 
   // Mobile state
   const [isMobile, setIsMobile] = useState(false);
@@ -147,19 +146,7 @@ export default function ChatPage() {
     }
   }, [activeConversation, isMobile]);
 
-  useEffect(() => {
-    if (location.pathname === "/chat") {
-      setRefreshTrigger((prev) => prev + 1);
-    }
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (activeConversation?.otherUser) {
-      setSelectedUser(activeConversation.otherUser);
-    } else {
-      setSelectedUser(null);
-    }
-  }, [activeConversation]);
+  // removed selectedUser effect - not used
 
   // Subscribe to messages for media/files
   useEffect(() => {
@@ -354,11 +341,6 @@ export default function ChatPage() {
 
   const removeFile = (index) => {
     setEvidenceFiles(prev => prev.filter((_, i) => i !== index));
-    setUploadProgress(prev => {
-      const newProgress = { ...prev };
-      delete newProgress[index];
-      return newProgress;
-    });
   };
 
   const formatFileSize = (bytes) => {
@@ -404,6 +386,67 @@ export default function ChatPage() {
     setMobileView('chat');
   };
 
+  // When ChatWindow resolves the other user's avatar/username, mirror it into activeConversation
+  const handleOtherUserResolved = useCallback((resolved) => {
+    setActiveConversation((prev) => {
+      if (!prev) return prev;
+      if (!resolved || String(prev.otherUser?.id) !== String(resolved.id)) return prev;
+      return {
+        ...prev,
+        otherUser: {
+          ...prev.otherUser,
+          username: resolved.username || prev.otherUser?.username,
+          avatar: resolved.avatar ? (resolved.avatar.split('/').pop() || resolved.avatar) : prev.otherUser?.avatar
+        }
+      };
+    });
+  }, []);
+
+  // Preload other user profiles for instant avatar resolution
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((list) => {
+        const map = {};
+        (list || []).forEach((u) => {
+          const id = u?.id || u?.user_id;
+          if (id) map[String(id)] = u;
+        });
+        setProfilesById(map);
+      })
+      .catch(() => {});
+  }, [user?.user_id]);
+
+  // Enhance a conversation with latest profile avatar immediately
+  const enhanceConversation = useCallback((c) => {
+    if (!c) return c;
+    const otherId = c.otherUser?.id;
+    const profile = profilesById[String(otherId)] || {};
+    const avatar = profile.avatar || c.otherUser?.avatar || null;
+    return {
+      ...c,
+      otherUser: {
+        ...c.otherUser,
+        username: profile.username || c.otherUser?.username,
+        avatar
+      }
+    };
+  }, [profilesById]);
+
+  // When selecting from list, enhance immediately to avoid placeholder-only state
+  const handleSelectConversation = useCallback((c) => {
+    setActiveConversation(enhanceConversation(c));
+  }, [enhanceConversation]);
+
+  // If profiles load after a conversation is active, re-enhance once to update avatar instantly
+  useEffect(() => {
+    if (!activeConversation?.otherUser?.id) return;
+    setActiveConversation(prev => enhanceConversation(prev));
+  }, [profilesById, enhanceConversation]);
+
   // Modal handlers
   const openMediaModal = () => setShowMediaModal(true);
   const openFilesModal = () => setShowFilesModal(true);
@@ -418,12 +461,6 @@ export default function ChatPage() {
       setReportUserSubmitting(true);
       const token = localStorage.getItem('token');
       const formData = new FormData();
-      const payload = {
-      reported_user_id: activeConversation.otherUser.id,
-      report_type: reportUserOffense,
-      description: reportUserReason,
-      source: 'chat_page'
-    };
       // Add report data
       formData.append('reported_user_id', activeConversation.otherUser.id);
       formData.append('report_type', reportUserOffense);
@@ -451,7 +488,6 @@ export default function ChatPage() {
         setReportUserReason("");
         setReportUserOffense('Harassment');
         setEvidenceFiles([]);
-        setUploadProgress({});
       } else {
         alert(data?.error || 'Failed to submit report');
       }
@@ -460,7 +496,6 @@ export default function ChatPage() {
       alert('Error submitting report.');
     } finally {
       setReportUserSubmitting(false);
-      setUploadProgress({});
     }
   };
 
@@ -478,10 +513,9 @@ export default function ChatPage() {
       {/* LEFT: Chat list */}
       <div className="peerfusion-chat-left">
         <ChatList
-          key={`${user?.id || "guest"}-${refreshTrigger}`}
           currentUser={user}
           activeConversationId={activeConversation?.id}
-          onSelect={(c) => setActiveConversation(c)}
+          onSelect={handleSelectConversation}
           searchQuery={conversationSearch}
           onSearchChange={setConversationSearch}
           isMobile={isMobile}
@@ -500,6 +534,8 @@ export default function ChatPage() {
             onBackToList={handleBackToList}
             onShowInfo={handleShowInfo}
             isMobile={isMobile}
+            onOtherUserResolved={handleOtherUserResolved}
+            externalProfilesById={profilesById}
           />
         ) : (
           !isMobile && (
@@ -534,18 +570,19 @@ export default function ChatPage() {
 
           <div className="peerfusion-chat-right-content">
             {/* User Info */}
-            <div className="peerfusion-chat-user-info-section">
-              {activeConversation.otherUser?.avatar ? (
-                <img
-                  src={ensureAvatarUrl(activeConversation.otherUser.avatar)}
-                  alt={activeConversation.otherUser.username}
-                  className="peerfusion-chat-right-avatar"
-                />
-              ) : (
-                <div className="peerfusion-chat-avatar-placeholder">
-                  {activeConversation.otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
-                </div>
-              )}
+            <div className="peerfusion-chat-user-info-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <div className="peerfusion-chat-right-avatar" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e8efe5', color: '#666', fontWeight: 700 }}>
+                {activeConversation.otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
+                {activeConversation.otherUser?.avatar && (
+                  <img
+                    src={ensureAvatarUrl(activeConversation.otherUser.avatar)}
+                    alt={activeConversation.otherUser.username}
+                    className="peerfusion-chat-right-avatar"
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: '50%' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                )}
+              </div>
               <h3 className="peerfusion-chat-right-name">
                 {activeConversation.otherUser?.username}
               </h3>
@@ -808,7 +845,7 @@ export default function ChatPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div> 
 
               <div className="peerfusion-chat-modal-actions">
                 <button

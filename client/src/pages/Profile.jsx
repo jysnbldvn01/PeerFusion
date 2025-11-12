@@ -344,12 +344,17 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
     switch(status) {
       case 'active':
         return {
-          badgeClass: 'account-active',
-          badgeText: 'Active & Visible',
-          statusColor: '#10b981',
-          messageType: 'success',
-          message: 'Your account is in good standing. You can pause or schedule removal from settings.',
-          showAction: false
+          badgeClass: accountStatus.has_strikes ? 'account-warning' : 'account-active',
+          badgeText: accountStatus.has_strikes ? 'Under Review' : 'Active & Visible',
+          statusColor: accountStatus.has_strikes ? '#eab308' : '#10b981',
+          messageType: accountStatus.has_strikes ? 'warning' : 'success',
+          message: accountStatus.has_strikes 
+            ? `Your account is active but under review with ${accountStatus.strike_count} strike(s). Please ensure future interactions comply with our community guidelines.`
+            : 'Your account is in good standing. You can pause or schedule removal from settings.',
+          showAction: accountStatus.has_strikes,
+          actionType: 'appeal',
+          actionText: 'Submit Appeal',
+          actionHandler: handleAppealRedirect
         };
       case 'deactivated':
         return {
@@ -357,7 +362,9 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
           badgeText: 'Account Paused',
           statusColor: '#f59e0b',
           messageType: 'warning',
-          message: 'Your account is currently paused. Reactivate to make your profile visible again.',
+          message: accountStatus.has_strikes 
+            ? `Your account is currently paused. You have ${accountStatus.strike_count} strike(s). When you reactivate, your warning status will remain.`
+            : 'Your account is currently paused. Reactivate to make your profile visible again.',
           showAction: true,
           actionType: 'reactivate',
           actionText: 'Reactivate Account',
@@ -1015,14 +1022,26 @@ const SettingsDropdown = ({
           
           {!accountStatus?.is_deactivated && !accountStatus?.is_pending_deletion && (
             <button 
-              className="peerfusion-settings-item peerfusion-settings-warning"
+              className={`peerfusion-settings-item peerfusion-settings-warning ${
+                accountStatus?.is_banned || accountStatus?.is_suspended ? 'peerfusion-settings-disabled' : ''
+              }`}
               onClick={() => {
+                if (accountStatus?.is_banned || accountStatus?.is_suspended) {
+                  alert(accountStatus.is_banned 
+                    ? 'Cannot deactivate a banned account. Please contact support.' 
+                    : 'Cannot deactivate while account is suspended.');
+                  return;
+                }
                 setShowDeactivation(true);
                 setShowSettings(false);
               }}
+              disabled={accountStatus?.is_banned || accountStatus?.is_suspended}
             >
               <span className="peerfusion-deactivate-icon"></span>
               Deactivate Account
+              {accountStatus?.has_strikes && (
+                <span className="peerfusion-strike-badge">⚠️ {accountStatus.strike_count} strike(s)</span>
+              )}
             </button>
           )}
           
@@ -1687,9 +1706,16 @@ const Profile = () => {
       );
 
       if (response.data.success) {
-        alert(response.data.message);
+        if (response.data.status === 'warning') {
+          alert(`Account reactivated successfully. Your account is under warning status with ${response.data.strike_count} strike(s).`);
+        } else if (response.data.status === 'suspended') {
+          alert('Account reactivated successfully. Your account remains suspended.');
+        } else {
+          alert('Account reactivated successfully!');
+        }
+        
         setShowAccountStatus(false);
-        // Refresh account status
+        
         const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1703,7 +1729,6 @@ const Profile = () => {
       return false;
     }
   };
-
   const handleCancelDeletion = async () => {
     const token = localStorage.getItem('token');
     try {

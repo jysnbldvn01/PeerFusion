@@ -45,9 +45,10 @@ const SubjectManagement = () => {
       );
       setNewCategory('');
       fetchSubjects();
+      window.pfToast?.added?.('Category added successfully');
     } catch (err) {
       console.error('Error adding category:', err);
-      alert(err.response?.data?.error || 'Failed to add category');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to add category');
     }
   };
 
@@ -62,9 +63,10 @@ const SubjectManagement = () => {
       );
       setNewSubject({ name: '', category_id: '' });
       fetchSubjects();
+      window.pfToast?.added?.('Subject added successfully');
     } catch (err) {
       console.error('Error adding subject:', err);
-      alert(err.response?.data?.error || 'Failed to add subject');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to add subject');
     }
   };
 
@@ -83,9 +85,10 @@ const SubjectManagement = () => {
       setEditingCategory(null);
       setEditCategoryName('');
       fetchSubjects();
+      window.pfToast?.updated?.('Category updated successfully');
     } catch (err) {
       console.error('Error updating category:', err);
-      alert(err.response?.data?.error || 'Failed to update category');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to update category');
     }
   };
 
@@ -104,9 +107,10 @@ const SubjectManagement = () => {
       setEditingSubject(null);
       setEditSubjectName('');
       fetchSubjects();
+      window.pfToast?.updated?.('Subject updated successfully');
     } catch (err) {
       console.error('Error updating subject:', err);
-      alert(err.response?.data?.error || 'Failed to update subject');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to update subject');
     }
   };
 
@@ -119,9 +123,10 @@ const SubjectManagement = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchSubjects();
+      window.pfToast?.deleted?.('Category deleted successfully');
     } catch (err) {
       console.error('Error deleting category:', err);
-      alert(err.response?.data?.error || 'Failed to delete category');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to delete category');
     }
   };
 
@@ -134,9 +139,10 @@ const SubjectManagement = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchSubjects();
+      window.pfToast?.deleted?.('Subject deleted successfully');
     } catch (err) {
       console.error('Error deleting subject:', err);
-      alert(err.response?.data?.error || 'Failed to delete subject');
+      window.pfToast?.error?.(err.response?.data?.error || 'Failed to delete subject');
     }
   };
 

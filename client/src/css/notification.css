@@ -136,29 +136,51 @@
   box-shadow: 0 8px 30px rgba(45, 90, 39, 0.15);
 }
 
+/* UPDATED: Read notifications - remove all colors */
+.peerfusion-notification-item.read {
+  border-left: 4px solid #e5e7eb !important;
+  background: #fafafa !important;
+  border: 1px solid #f0f0f0;
+}
+
+/* UPDATED: Unread notifications - keep colors */
 .peerfusion-notification-item.unread {
   border-left: 4px solid #4a7c3a;
   background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%);
 }
 
-.peerfusion-notification-item.read {
-  opacity: 0.8;
-}
-
-/* Important notification styles - RED INDICATOR */
-.peerfusion-notification-important {
-  border-left: 4px solid #ef4444 !important;
-  background: linear-gradient(90deg, #fff5f5 0%, #ffffff 10%) !important;
-}
-
+/* UPDATED: Important unread notifications - keep colors */
 .peerfusion-notification-important.unread {
-  border-left: 4px solid #ef4444 !important;
-  background: linear-gradient(90deg, #fee2e2 0%, #ffffff 10%) !important;
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
 }
 
-.peerfusion-notification-important.read {
-  border-left: 4px solid #ef4444 !important;
-  background: linear-gradient(90deg, #fff5f5 0%, #ffffff 10%) !important;
+/* UPDATED: Approved unread notifications - keep colors */
+.peerfusion-notification-approved.unread {
+  border-left: 4px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #e8efe5 0%, #ffffff 10%) !important;
+}
+
+/* UPDATED: Rejected unread notifications - keep colors */
+.peerfusion-notification-rejected.unread {
+  border-left: 4px solid #d97706 !important;
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
+}
+
+/* UPDATED: Strike notification unread - keep colors */
+.peerfusion-notification-item.peerfusion-notification-strike-1.unread {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-2.unread {
+  border-left: 4px solid #ea580c !important;
+  background: linear-gradient(90deg, #ffedd5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.peerfusion-notification-strike-3.unread {
+  border-left: 4px solid #dc2626 !important;
+  background: linear-gradient(90deg, #fee2e2 0%, #ffffff 10%) !important;
 }
 
 /* Notification Content */
@@ -194,7 +216,7 @@
 }
 
 .peerfusion-team-avatar {
-  background: linear-gradient(135deg, #55df6c 0%, #1e500b 100%);
+  background: linear-gradient(135deg, #4a7c3a 0%, #2d5a27 100%);
   color: white;
   font-weight: bold;
 }
@@ -225,6 +247,13 @@
   margin: 0;
 }
 
+/* UPDATED: Read notification text colors */
+.peerfusion-notification-item.read .peerfusion-notification-username,
+.peerfusion-notification-item.read .peerfusion-notification-time,
+.peerfusion-notification-item.read .peerfusion-notification-message {
+  color: #6b7280 !important;
+}
+
 /* Notification message - hide overflow in list view */
 .peerfusion-notification-message {
   color: #5a7c55;
@@ -251,8 +280,20 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
+/* UPDATED: Read notification badges - desaturate */
+.peerfusion-notification-item.read .peerfusion-notification-badge {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  box-shadow: none !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Unread badge styles */
 .peerfusion-badge-rating {
   background: linear-gradient(135deg, #4a7c3a, #6ba84f);
   color: white;
@@ -260,21 +301,81 @@
 }
 
 .peerfusion-badge-warning {
-  background: #fef3c7;
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
   color: #92400e;
-  border: 1px solid #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 .peerfusion-badge-suspension {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #ef4444;
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: white;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
 }
 
 .peerfusion-badge-ban {
-  background: #1f2937;
-  color: #ffffff;
-  border: 1px solid #111827;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.peerfusion-badge-penalty {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: white;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+}
+
+.peerfusion-badge-approved {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-badge-rejected {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: white;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+}
+
+.peerfusion-badge-pending {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #92400e;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.peerfusion-badge-accepted {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-badge-strike-1 {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #92400e;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.peerfusion-badge-strike-2 {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: white;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+}
+
+.peerfusion-badge-strike-3 {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.peerfusion-badge-system {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-badge-info {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Menu System */
@@ -349,12 +450,12 @@
 }
 
 .peerfusion-notification-menu-item.delete {
-  color: #ef4444;
+  color: #d97706;
 }
 
 .peerfusion-notification-menu-item.delete:hover {
-  background: #fef2f2;
-  color: #dc2626;
+  background: #fef7ed;
+  color: #b45309;
 }
 
 /* Empty State */
@@ -524,6 +625,53 @@
   box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
 }
 
+/* Button styles for accept/reject actions */
+.peerfusion-notification-btn-accept {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-notification-btn-accept:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
+  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
+}
+
+.peerfusion-notification-btn-reject {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+}
+
+.peerfusion-notification-btn-reject:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(217, 119, 6, 0.4);
+  background: linear-gradient(135deg, #b45309, #d97706);
+}
+
 /* Feedback Details */
 .peerfusion-notification-feedback-details {
   margin-top: 1.5rem;
@@ -552,13 +700,13 @@
 }
 
 .peerfusion-notification-rating-stars .filled {
-  color: #f39c12;
+  color: #f59e0b;
 }
 
 .peerfusion-notification-rating-value {
   margin-left: 0.5rem;
   font-weight: 600;
-  color: #f39c12;
+  color: #f59e0b;
 }
 
 .peerfusion-notification-feedback-message {
@@ -580,145 +728,28 @@
   padding: 0 2rem 2rem;
 }
 
-/* Important notice in modal */
+/* Important notice in modal - AMBER THEME */
 .peerfusion-notification-important-notice {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
   padding: 1.5rem;
-  background: #fef2f2;
+  background: #fefce8;
   border-radius: 12px;
-  border-left: 4px solid #ef4444;
+  border-left: 4px solid #f59e0b;
   margin: 1.5rem 0;
 }
 
 .peerfusion-notification-important-icon {
   font-size: 1.5rem;
   flex-shrink: 0;
+  color: #d97706;
 }
 
 .peerfusion-notification-important-notice p {
   margin: 0;
-  color: #991b1b;
+  color: #92400e;
   line-height: 1.5;
-}
-
-/* Notification link styling */
-.notification-link {
-  color: #3b82f6;
-  text-decoration: underline;
-  font-weight: 500;
-}
-
-.notification-link:hover {
-  color: #2563eb;
-  text-decoration: none;
-}
-
-/* Approved notification styles - GREEN INDICATOR */
-.peerfusion-notification-approved {
-  border-left: 4px solid #4a7c3a !important;
-  background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-approved.unread {
-  border-left: 4px solid #4a7c3a !important;
-  background: linear-gradient(90deg, #e8efe5 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-approved.read {
-  border-left: 4px solid #4a7c3a !important;
-  background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%) !important;
-}
-
-/* Rejected notification styles - RED-BROWN INDICATOR */
-.peerfusion-notification-rejected {
-  border-left: 4px solid #8b4513 !important;
-  background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-rejected.unread {
-  border-left: 4px solid #8b4513 !important;
-  background: linear-gradient(90deg, #fae8e5 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-rejected.read {
-  border-left: 4px solid #8b4513 !important;
-  background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
-}
-
-/* Badge styles for approved/rejected */
-.peerfusion-badge-approved {
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
-  border: none;
-}
-
-.peerfusion-badge-rejected {
-  background: linear-gradient(135deg, #8b4513, #a0522d);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
-  border: none;
-}
-
-/* Button styles for accept/reject actions */
-.peerfusion-notification-btn-accept {
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  color: white;
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
-}
-
-.peerfusion-notification-btn-accept:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
-  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
-}
-
-.peerfusion-notification-btn-reject {
-  background: linear-gradient(135deg, #8b4513, #a0522d);
-  color: white;
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
-}
-
-.peerfusion-notification-btn-reject:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
-  background: linear-gradient(135deg, #654321, #8b4513);
 }
 
 /* Modal notice styles for approved/rejected */
@@ -734,8 +765,8 @@
 }
 
 .peerfusion-notice-rejected {
-  background: #fef8f7;
-  border-left: 4px solid #8b4513;
+  background: #fefce8;
+  border-left: 4px solid #f59e0b;
   display: flex;
   align-items: flex-start;
   gap: 1rem;
@@ -751,7 +782,7 @@
 }
 
 .peerfusion-notice-rejected p {
-  color: #654321;
+  color: #92400e;
   margin: 0;
   line-height: 1.5;
 }
@@ -761,6 +792,18 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
+}
+
+/* Notification link styling */
+.notification-link {
+  color: #4a7c3a;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.notification-link:hover {
+  color: #2d5a27;
+  text-decoration: none;
 }
 
 /* Mark All Button - Responsive */
@@ -872,6 +915,110 @@
   border-radius: 15px;
 }
 
+/* Strike Display in Notification Badges */
+.peerfusion-strike-display {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.peerfusion-strike-count {
+  background: #f59e0b;
+  color: #92400e;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+/* UPDATED: Read notification strike count */
+.peerfusion-notification-item.read .peerfusion-strike-count {
+  background: #9ca3af !important;
+  color: #6b7280 !important;
+}
+
+/* Notification Message Styling for Strike Information */
+.peerfusion-strike-message {
+  background: #fefce8;
+  border: 1px solid #fef3c7;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.peerfusion-strike-message strong {
+  color: #78350f;
+}
+
+/* UPDATED: Read notification strike message */
+.peerfusion-notification-item.read .peerfusion-strike-message {
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+}
+
+.peerfusion-notification-item.read .peerfusion-strike-message strong {
+  color: #6b7280 !important;
+}
+
+/* Warning Level Indicators */
+.peerfusion-warning-level-low {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.peerfusion-warning-level-medium {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.peerfusion-warning-level-high {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Session Request Specific Styles */
+.peerfusion-session-request-info {
+  background: #f8faf7;
+  border: 1px solid #e8efe5;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.peerfusion-session-request-info p {
+  margin: 0.3rem 0;
+  color: #5a7c55;
+  font-size: 0.9rem;
+}
+
+.peerfusion-session-request-info strong {
+  color: #2d5a27;
+}
+
+/* Time-sensitive Notifications */
+.peerfusion-notification-urgent.unread {
+  border-left: 4px solid #ea580c !important;
+  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 10%) !important;
+  animation: peerfusion-pulse 2s infinite;
+}
+
+@keyframes peerfusion-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(234, 88, 12, 0.15);
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .peerfusion-notification-container {
@@ -961,301 +1108,6 @@
   .peerfusion-notification-tab {
     padding: 0.5rem 0.7rem;
     font-size: 0.75rem;
-  }
-}
-/* Session Request Status Badges */
-.peerfusion-badge-pending {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #f59e0b;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
-}
-
-.peerfusion-badge-accepted {
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
-  border: none;
-}
-
-.peerfusion-badge-rejected {
-  background: linear-gradient(135deg, #8b4513, #a0522d);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
-  border: none;
-}
-
-/* Penalty and Strike Badges */
-.peerfusion-badge-penalty {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-  border: none;
-}
-
-/* Strike Count Badge Variations */
-.peerfusion-badge-strike-1 {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  color: #92400e;
-  border: 1px solid #f59e0b;
-}
-
-.peerfusion-badge-strike-2 {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  color: white;
-  border: 1px solid #ea580c;
-}
-
-.peerfusion-badge-strike-3 {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  color: white;
-  border: 1px solid #dc2626;
-}
-
-/* System Notification Badges */
-.peerfusion-badge-system {
-  background: linear-gradient(135deg, #6b7280, #9ca3af);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
-  border: none;
-}
-
-.peerfusion-badge-info {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-  border: none;
-}
-
-/* Notification Item Status Indicators */
-.peerfusion-notification-item.peerfusion-notification-pending {
-  border-left: 4px solid #f59e0b !important;
-  background: linear-gradient(90deg, #fefce8 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-pending.unread {
-  border-left: 4px solid #f59e0b !important;
-  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-accepted {
-  border-left: 4px solid #4a7c3a !important;
-  background: linear-gradient(90deg, #f0f9f0 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-accepted.unread {
-  border-left: 4px solid #4a7c3a !important;
-  background: linear-gradient(90deg, #e8efe5 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-rejected {
-  border-left: 4px solid #8b4513 !important;
-  background: linear-gradient(90deg, #fef8f7 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-rejected.unread {
-  border-left: 4px solid #8b4513 !important;
-  background: linear-gradient(90deg, #fae8e5 0%, #ffffff 10%) !important;
-}
-
-/* Strike Count Notification Styles */
-.peerfusion-notification-item.peerfusion-notification-strike-1 {
-  border-left: 4px solid #f59e0b !important;
-  background: linear-gradient(90deg, #fefce8 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-strike-1.unread {
-  border-left: 4px solid #f59e0b !important;
-  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-strike-2 {
-  border-left: 4px solid #ea580c !important;
-  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-strike-2.unread {
-  border-left: 4px solid #ea580c !important;
-  background: linear-gradient(90deg, #ffedd5 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-strike-3 {
-  border-left: 4px solid #dc2626 !important;
-  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 10%) !important;
-}
-
-.peerfusion-notification-item.peerfusion-notification-strike-3.unread {
-  border-left: 4px solid #dc2626 !important;
-  background: linear-gradient(90deg, #fee2e2 0%, #ffffff 10%) !important;
-}
-
-/* Modal Action Buttons for Session Requests */
-.peerfusion-notification-btn-accept {
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  color: white;
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
-}
-
-.peerfusion-notification-btn-accept:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
-  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
-}
-
-.peerfusion-notification-btn-reject {
-  background: linear-gradient(135deg, #8b4513, #a0522d);
-  color: white;
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
-}
-
-.peerfusion-notification-btn-reject:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
-  background: linear-gradient(135deg, #654321, #8b4513);
-}
-
-/* Strike Display in Notification Badges */
-.peerfusion-strike-display {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-weight: 600;
-}
-
-.peerfusion-strike-count {
-  background: #dc2626;
-  color: white;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: bold;
-}
-
-/* Notification Message Styling for Strike Information */
-.peerfusion-strike-message {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 0.75rem;
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-  color: #dc2626;
-}
-
-.peerfusion-strike-message strong {
-  color: #991b1b;
-}
-
-/* Warning Level Indicators */
-.peerfusion-warning-level-low {
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-.peerfusion-warning-level-medium {
-  color: #ea580c;
-  font-weight: 600;
-}
-
-.peerfusion-warning-level-high {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-/* Session Request Specific Styles */
-.peerfusion-session-request-info {
-  background: #f8faf7;
-  border: 1px solid #e8efe5;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-}
-
-.peerfusion-session-request-info p {
-  margin: 0.3rem 0;
-  color: #5a7c55;
-  font-size: 0.9rem;
-}
-
-.peerfusion-session-request-info strong {
-  color: #2d5a27;
-}
-
-/* Time-sensitive Notifications */
-.peerfusion-notification-urgent {
-  border-left: 4px solid #dc2626 !important;
-  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 10%) !important;
-  animation: peerfusion-pulse 2s infinite;
-}
-
-@keyframes peerfusion-pulse {
-  0%, 100% {
-    box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
-  }
-  50% {
-    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.15);
   }
 }
 

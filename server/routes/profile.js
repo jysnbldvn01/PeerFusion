@@ -15,6 +15,25 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+const createAccountStatusNotification = async (userId, message, type = 'account_status') => {
+  try {
+    const notificationSql = `
+      INSERT INTO notifications (sender_id, receiver_id, message, type, created_at)
+      VALUES (?, ?, ?, ?, NOW())
+    `;
+    const [result] = await db.query(notificationSql, [0, userId, message, type]);
+    console.log(`Account status notification created for user ${userId}:`, {
+      notificationId: result.insertId,
+      message: message,
+      type: type
+    });
+    return result.insertId;
+  } catch (err) {
+    console.error('Failed to create account status notification:', err);
+    throw err;
+  }
+};
+
 function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
@@ -268,8 +287,6 @@ router.post('/avatar', authenticateToken, upload.single('avatar'), async (req, r
 
 router.get('/others', authenticateToken, async (req, res) => {
   try {
-    console.log('Fetching other users for user ID:', req.user.id);
-
     const sql = `
       SELECT 
         u.user_id AS id,
@@ -339,7 +356,6 @@ router.get('/others', authenticateToken, async (req, res) => {
 router.get('/recommended', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log('Fetching recommended users for user:', userId);
 
     const sql = `
       SELECT 
@@ -378,7 +394,6 @@ router.get('/recommended', authenticateToken, async (req, res) => {
     `;
 
     const [results] = await db.query(sql, [userId]);
-    console.log('✅ Recommended users found:', results.length);
 
     const recommendedUsers = results.map(user => {
       try {
@@ -421,18 +436,29 @@ router.get('/notifications', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const sql = `
-      SELECT n.*, 
-             CASE 
-               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN 'PeerFusion Team'
-               ELSE u.name 
-             END AS sender_name,
-             CASE 
-               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN NULL
-               ELSE up.avatar 
-             END AS sender_avatar,
-             u.role as sender_role
+      SELECT 
+        n.id,
+        n.sender_id,
+        n.receiver_id,
+        n.request_id,
+        n.message,
+        n.type,
+        n.is_read,
+        n.is_archived,
+        n.created_at,
+        n.session_request_id,
+        n.status,
+        CASE 
+          WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN 'PeerFusion Team'
+          ELSE u.name 
+        END AS sender_name,
+        CASE 
+          WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN NULL
+          ELSE up.avatar 
+        END AS sender_avatar,
+        COALESCE(u.role, 'system') as sender_role
       FROM notifications n
-      JOIN users u ON u.id = n.sender_id
+      LEFT JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = FALSE
       ORDER BY n.created_at DESC
@@ -441,6 +467,7 @@ router.get('/notifications', authenticateToken, async (req, res) => {
     const [results] = await db.query(sql, [userId]);
     res.json(results);
   } catch (err) {
+    console.error('Notifications error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -450,18 +477,29 @@ router.get('/notifications/archived', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const sql = `
-      SELECT n.*, 
-             CASE 
-               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN 'PeerFusion Team'
-               ELSE u.name 
-             END AS sender_name,
-             CASE 
-               WHEN n.type IN ('warning', 'suspension', 'ban', 'penalty') THEN NULL
-               ELSE up.avatar 
-             END AS sender_avatar,
-             u.role as sender_role
+      SELECT 
+        n.id,
+        n.sender_id,
+        n.receiver_id,
+        n.request_id,
+        n.message,
+        n.type,
+        n.is_read,
+        n.is_archived,
+        n.created_at,
+        n.session_request_id,
+        n.status,
+        CASE 
+          WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN 'PeerFusion Team'
+          ELSE u.name 
+        END AS sender_name,
+        CASE 
+          WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN NULL
+          ELSE up.avatar 
+        END AS sender_avatar,
+        COALESCE(u.role, 'system') as sender_role
       FROM notifications n
-      JOIN users u ON u.id = n.sender_id
+      LEFT JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = TRUE
       ORDER BY n.created_at DESC
@@ -470,6 +508,7 @@ router.get('/notifications/archived', authenticateToken, async (req, res) => {
     const [results] = await db.query(sql, [userId]);
     res.json(results);
   } catch (err) {
+    console.error('Archived notifications error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -477,17 +516,27 @@ router.get('/notifications/archived', authenticateToken, async (req, res) => {
 router.get('/notifications/unread-count', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    const emitToUser = req.app.get("emitToUser");
 
     const sql = `
-      SELECT COUNT(*) as unread_count
+      SELECT COUNT(*) as count
       FROM notifications 
       WHERE receiver_id = ? AND is_read = FALSE AND is_archived = FALSE
     `;
     
     const [results] = await db.query(sql, [userId]);
-    res.json({ count: results[0].unread_count });
+    const count = results[0].count || 0;
+
+    if (emitToUser) {
+      emitToUser(userId, 'counts_updated', {
+        notifications: count,
+      });
+    }
+
+    res.json({ count });
   } catch (err) {
-    res.status(500).json({ error: 'DB error' });
+    console.error('Unread count error:', err);
+    res.status(500).json({ error: 'Failed to get notification count' });
   }
 });
 
@@ -505,6 +554,7 @@ router.put('/notifications/:id/archive', authenticateToken, async (req, res) => 
     
     res.json({ message: 'Notification archived' });
   } catch (err) {
+    console.error('Archive notification error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -523,6 +573,7 @@ router.put('/notifications/:id/unarchive', authenticateToken, async (req, res) =
     
     res.json({ message: 'Notification unarchived' });
   } catch (err) {
+    console.error('Unarchive notification error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -541,6 +592,7 @@ router.put('/notifications/:id/read', authenticateToken, async (req, res) => {
     
     res.json({ message: 'Notification marked as read' });
   } catch (err) {
+    console.error('Mark as read error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -559,6 +611,7 @@ router.put('/notifications/:id/unread', authenticateToken, async (req, res) => {
     
     res.json({ message: 'Notification marked as unread' });
   } catch (err) {
+    console.error('Mark as unread error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -571,12 +624,15 @@ router.delete('/notifications/:id', authenticateToken, async (req, res) => {
     const sql = `DELETE FROM notifications WHERE id = ? AND receiver_id = ?`;
     const [result] = await db.query(sql, [notificationId, userId]);
     
+    console.log(`🗑️ Deleted notification ${notificationId} for user ${userId}:`, result.affectedRows, 'rows affected');
+    
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Notification not found' });
     }
     
     res.json({ message: 'Notification deleted' });
   } catch (err) {
+    console.error('Delete notification error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -613,26 +669,31 @@ router.delete('/notifications/archived/all', authenticateToken, async (req, res)
   }
 });
 
-router.post('/notifications', authenticateToken, async (req, res) => {
+router.get('/notifications', authenticateToken, async (req, res) => {
   try {
-    const { sender_id, receiver_id, message, type = 'message' } = req.body;
-
-    if (!sender_id || !receiver_id || !message) {
-      return res.status(400).json({ error: 'Sender ID, receiver ID, and message are required' });
-    }
+    const userId = req.user.id;
 
     const sql = `
-      INSERT INTO notifications (sender_id, receiver_id, message, type)
-      VALUES (?, ?, ?, ?)
+      SELECT n.*, 
+             CASE 
+               WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN 'PeerFusion Team'
+               ELSE u.name 
+             END AS sender_name,
+             CASE 
+               WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN NULL
+               ELSE up.avatar 
+             END AS sender_avatar,
+             COALESCE(u.role, 'system') as sender_role
+      FROM notifications n
+      LEFT JOIN users u ON u.id = n.sender_id
+      LEFT JOIN user_profiles up ON up.user_id = n.sender_id
+      WHERE n.receiver_id = ? AND n.is_archived = FALSE
+      ORDER BY n.created_at DESC
     `;
-    
-    const [result] = await db.query(sql, [sender_id, receiver_id, message, type]);
-    
-    res.json({ 
-      message: 'Notification created',
-      notificationId: result.insertId
-    });
+    const [results] = await db.query(sql, [userId]);
+    res.json(results);
   } catch (err) {
+    console.error('Notifications error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -1281,8 +1342,7 @@ router.post('/deactivate', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { reason } = req.body;
 
-    // First check current user status - respect admin actions
-    const checkSql = 'SELECT status, suspended_until FROM users WHERE id = ?';
+    const checkSql = 'SELECT status, suspended_until, strike_count FROM users WHERE id = ?';
     const [users] = await db.query(checkSql, [userId]);
 
     if (users.length === 0) {
@@ -1291,55 +1351,34 @@ router.post('/deactivate', authenticateToken, async (req, res) => {
 
     const user = users[0];
 
-    // Prevent deactivation if user is banned
     if (user.status === 'banned') {
       return res.status(403).json({ 
         error: 'Cannot deactivate a banned account. Please contact support.' 
       });
     }
 
-    // If user is admin suspended, allow deactivation but preserve suspension
-    const isAdminSuspended = user.status === 'suspended' && user.suspended_until && new Date(user.suspended_until) > new Date();
-
-    // Set deactivation timestamp and status
+    // Set deactivation timestamp
     const deactivationDate = new Date();
 
     const sql = `
       UPDATE users 
       SET 
         deactivation_requested_at = ?,
-        status = ?
+        status = 'deactivated'
       WHERE id = ?
     `;
 
-    // If admin suspended, keep as suspended, otherwise set to deactivated
-    const newStatus = isAdminSuspended ? 'suspended' : 'deactivated';
+    await db.query(sql, [deactivationDate, userId]);
 
-    await db.query(sql, [deactivationDate, newStatus, userId]);
-
-    // Create notification for the user
-    const notificationSql = `
-      INSERT INTO notifications (sender_id, receiver_id, message, type)
-      VALUES (?, ?, ?, 'account_status')
-    `;
-    
-    const notificationMessage = isAdminSuspended 
-      ? 'Your account deactivation has been requested. It remains suspended during this period. You can reactivate anytime by logging in.'
-      : 'Your account has been deactivated. You can reactivate anytime by logging in.';
-
-    await db.query(notificationSql, [
-      0, // System sender
+    await createAccountStatusNotification(
       userId, 
-      notificationMessage,
+      'Your account has been deactivated. You can reactivate anytime by logging in. Your warning status and strikes will remain when you return.',
       'account_status'
-    ]);
+    );
 
     res.json({
       success: true,
-      message: isAdminSuspended 
-        ? 'Account deactivated successfully. Your account remains suspended. You can reactivate anytime by logging in.'
-        : 'Account deactivated successfully. You can reactivate anytime by logging in.',
-      is_admin_suspended: isAdminSuspended
+      message: 'Account deactivated successfully. You can reactivate anytime by logging in.'
     });
   } catch (err) {
     console.error('Deactivation error:', err);
@@ -1347,13 +1386,12 @@ router.post('/deactivate', authenticateToken, async (req, res) => {
   }
 });
 
-// Update the reactivation endpoint to clear deactivation properly
 router.post('/reactivate', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
     // Check if user is deactivated or deletion_pending
-    const checkSql = 'SELECT status, deactivation_requested_at FROM users WHERE id = ?';
+    const checkSql = 'SELECT status, strike_count, suspended_until FROM users WHERE id = ?';
     const [users] = await db.query(checkSql, [userId]);
 
     if (users.length === 0) {
@@ -1362,38 +1400,50 @@ router.post('/reactivate', authenticateToken, async (req, res) => {
 
     const user = users[0];
 
-    // Allow reactivation if user is deactivated OR has deactivation_requested_at set
-    if (user.status !== 'deactivated' && user.deactivation_requested_at === null) {
-      return res.status(400).json({ error: 'Account is not deactivated' });
+    if (user.status !== 'deactivated' && user.status !== 'deletion_pending') {
+      return res.status(400).json({ error: 'Account is not deactivated or pending deletion' });
     }
 
-    // Reactivate account by clearing timestamps and setting status to active
+    let originalStatus = 'active';
+    if (user.strike_count > 0) {
+      originalStatus = 'warning';
+    }
+    if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+      originalStatus = 'suspended';
+    }
+
     const sql = `
       UPDATE users 
       SET 
         deactivation_requested_at = NULL,
-        status = 'active'
+        deletion_scheduled_at = NULL,
+        scheduled_for_deletion_at = NULL,
+        status = ?
       WHERE id = ?
     `;
 
-    await db.query(sql, [userId]);
+    await db.query(sql, [originalStatus, userId]);
 
-    // Create notification
-    const notificationSql = `
-      INSERT INTO notifications (sender_id, receiver_id, message, type)
-      VALUES (?, ?, ?, 'account_status')
-    `;
+    let notificationMessage = 'Your account has been reactivated successfully. ';
     
-    await db.query(notificationSql, [
-      0, // System sender
-      userId, 
-      'Your account has been reactivated successfully.',
-      'account_status'
-    ]);
+    if (originalStatus === 'warning') {
+      notificationMessage += `Your account is under warning status with ${user.strike_count} strike(s). Please ensure future interactions comply with our community guidelines.`;
+    } else if (originalStatus === 'suspended') {
+      notificationMessage += `Your account remains suspended until ${new Date(user.suspended_until).toLocaleDateString()}.`;
+    } else {
+      notificationMessage += 'Welcome back to PeerFusion!';
+    }
 
+    await createAccountStatusNotification(
+      userId, 
+      notificationMessage,
+      'account_status'
+    );
     res.json({
       success: true,
-      message: 'Account reactivated successfully'
+      message: `Account reactivated successfully. ${originalStatus !== 'active' ? `Account status: ${originalStatus}` : ''}`,
+      status: originalStatus,
+      strike_count: user.strike_count
     });
   } catch (err) {
     console.error('Reactivation error:', err);
@@ -1408,7 +1458,7 @@ router.post('/request-deletion', authenticateToken, async (req, res) => {
     const { reason } = req.body;
 
     // First check current user status
-    const checkSql = 'SELECT status FROM users WHERE id = ?';
+    const checkSql = 'SELECT status, suspended_until, strike_count FROM users WHERE id = ?';
     const [users] = await db.query(checkSql, [userId]);
 
     if (users.length === 0) {
@@ -1417,14 +1467,7 @@ router.post('/request-deletion', authenticateToken, async (req, res) => {
 
     const user = users[0];
 
-    // Prevent deletion if user is banned
-    if (user.status === 'banned') {
-      return res.status(403).json({ 
-        error: 'Cannot delete a banned account. Please contact support.' 
-      });
-    }
-
-    // Set deletion schedule (30 days from now) and status
+    // Set deletion schedule (30 days from now)
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
 
@@ -1439,18 +1482,11 @@ router.post('/request-deletion', authenticateToken, async (req, res) => {
 
     await db.query(sql, [deletionDate, userId]);
 
-    // Create notification for the user
-    const notificationSql = `
-      INSERT INTO notifications (sender_id, receiver_id, message, type)
-      VALUES (?, ?, ?, 'account_status')
-    `;
-    
-    await db.query(notificationSql, [
-      0, // System sender
+    await createAccountStatusNotification(
       userId, 
-      'Your account deletion has been scheduled. It will be permanently deleted after 30 days unless you cancel.',
+      `Your account deletion has been scheduled. It will be permanently deleted on ${deletionDate.toLocaleDateString()} unless you cancel. You can cancel this deletion anytime within the next 30 days.`,
       'account_status'
-    ]);
+    );
 
     res.json({
       success: true,
@@ -1523,20 +1559,49 @@ router.post('/cancel-deletion', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // Get user's original status before deletion request
+    const [userCheck] = await db.query(
+      'SELECT strike_count, suspended_until FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (userCheck.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userCheck[0];
+    
+    // Determine original status based on strikes and suspension
+    let originalStatus = 'active';
+    
+    if (user.strike_count > 0) {
+      originalStatus = 'warning';
+    }
+    
+    if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+      originalStatus = 'suspended';
+    }
+
     const sql = `
       UPDATE users 
       SET 
         deletion_scheduled_at = NULL,
         scheduled_for_deletion_at = NULL,
-        status = 'active'
+        status = ?
       WHERE id = ?
     `;
 
-    await db.query(sql, [userId]);
+    await db.query(sql, [originalStatus, userId]);
+
+    await createAccountStatusNotification(
+      userId, 
+      `Your account deletion has been cancelled successfully. Your account is now ${originalStatus}.`
+    );
 
     res.json({
       success: true,
-      message: 'Account deletion cancelled successfully'
+      message: `Account deletion cancelled successfully. Account status: ${originalStatus}`,
+      status: originalStatus
     });
   } catch (err) {
     console.error('Cancel deletion error:', err);
@@ -1572,9 +1637,14 @@ router.get('/account-status', authenticateToken, async (req, res) => {
         const now = new Date();
         days_until_deletion = Math.ceil((deletionDate - now) / (1000 * 60 * 60 * 24));
       }
+      const underlyingStatus = user.strike_count > 0 ? 'warning' : 'active';
+      if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+        underlyingStatus = 'suspended';
+      }
 
       res.json({
         status: user.status,
+        underlying_status: underlyingStatus,
         deactivation_requested_at: user.deactivation_requested_at,
         deletion_scheduled_at: user.deletion_scheduled_at,
         scheduled_for_deletion_at: user.scheduled_for_deletion_at,
@@ -1585,7 +1655,8 @@ router.get('/account-status', authenticateToken, async (req, res) => {
         is_pending_deletion: user.status === 'deletion_pending',
         is_banned: user.status === 'banned',
         is_suspended: user.status === 'suspended',
-        is_active: user.status === 'active' || user.status === 'warning'
+        is_active: user.status === 'active' || user.status === 'warning',
+        has_strikes: user.strike_count > 0
       });
     } else {
       res.status(404).json({ error: 'User not found' });

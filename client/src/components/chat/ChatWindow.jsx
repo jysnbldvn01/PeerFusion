@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+
 import {
   collection,
   addDoc,
@@ -14,6 +15,7 @@ import {
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../firebase";
 import "../../css/chat.css";
+
 
 import { socket, identifySocket } from "../../utils/socket";
 
@@ -70,7 +72,7 @@ const CloseIcon = () => (
   </svg>
 );
 
-const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onShowInfo, isMobile }) => {
+const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onShowInfo, isMobile, onOtherUserResolved, externalProfilesById, initialOtherUser }) => {
   const [messages, setMessages] = useState([]);
   const [filteredMessages, setFilteredMessages] = useState([]);
   const [text, setText] = useState("");
@@ -95,12 +97,40 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [showScheduleTooltip, setShowScheduleTooltip] = useState(false);
   const menuBtnRefs = useRef({});
   const scrollRef = useRef();
-  const firstLoad = useRef(true);
   const enableTimerRef = useRef(null);
   const clearMeetingTimerRef = useRef(null);
   const fileInputRef = useRef(null);
   const scheduleButtonRef = useRef(null);
   const isAuthenticated = !!localStorage.getItem('token');
+
+  // Seed otherUser immediately from parent to avoid placeholder-only flash
+  useEffect(() => {
+    if (initialOtherUser && initialOtherUser.id) {
+      const seeded = {
+        id: initialOtherUser.id,
+        username: initialOtherUser.username,
+        avatar: initialOtherUser.avatar ? ensureAvatarUrl(initialOtherUser.avatar) : null,
+      };
+      setOtherUser(seeded);
+      if (typeof onOtherUserResolved === 'function') onOtherUserResolved(seeded);
+    }
+  }, [initialOtherUser, onOtherUserResolved]);
+
+  useEffect(() => {
+  if (!conversationId || !currentUser?.user_id) return;
+  const handleNewMessage = (message) => {
+    if (message.conversationId === conversationId && 
+        String(message.senderId) !== String(currentUser.user_id)) {
+      window.dispatchEvent(new Event('chatsUpdated'));
+    }
+  };
+
+  socket.on('receiveMessage', handleNewMessage);
+
+  return () => {
+    socket.off('receiveMessage', handleNewMessage);
+  };
+}, [conversationId, currentUser?.user_id]);
 
   // Normalize avatar -> absolute URL
   const ensureAvatarUrl = (avatar) => {
@@ -175,11 +205,12 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       .catch(() => {});
   }, []);
 
-  // Fetch other user info
+  // Fetch other user info (prefer externally provided profiles for instant resolution)
   useEffect(() => {
     const fetchOtherUser = async () => {
       if (!conversationId || !currentUser?.user_id) {
         setOtherUser(null);
+        if (typeof onOtherUserResolved === 'function') onOtherUserResolved(null);
         return;
       }
       try {
@@ -192,21 +223,24 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         const data = convSnap.data();
         const otherId = data.participants?.find((p) => String(p) !== String(currentUser.user_id));
         const info = data.userInfo?.[String(otherId)] || {};
-        const profile = profilesById[String(otherId)] || {};
+        const profile = (externalProfilesById && externalProfilesById[String(otherId)]) || profilesById[String(otherId)] || {};
         const avatarFilename = profile.avatar || info.avatar || "";
-        setOtherUser({
+        const resolved = {
           id: otherId,
           username: info.username || profile.username || `User ${otherId}`,
           avatar: ensureAvatarUrl(avatarFilename || ""),
-        });
+        };
+        setOtherUser(resolved);
+        if (typeof onOtherUserResolved === 'function') onOtherUserResolved(resolved);
       } catch (err) {
         console.error("Failed to fetch conversation metadata:", err);
         setOtherUser(null);
+        if (typeof onOtherUserResolved === 'function') onOtherUserResolved(null);
       }
     };
 
     fetchOtherUser();
-  }, [conversationId, currentUser?.user_id, profilesById]);
+  }, [conversationId, currentUser?.user_id, profilesById, externalProfilesById, onOtherUserResolved]);
 
   // Fetch scheduled meeting
   useEffect(() => {
@@ -258,6 +292,12 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
             await updateDoc(msgRef, {
               seenBy: arrayUnion(currentUser.user_id),
             });
+          }
+          
+          window.dispatchEvent(new Event('chatsUpdated'));
+          const user = JSON.parse(localStorage.getItem('user'));
+          if (user && user.id) {
+            socket.emit('getCounts', { userId: user.id });
           }
         }
       } catch (e) {
@@ -381,7 +421,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     }
   };
 
-  const scheduleEnableJoin = (meetingObj) => {
+  const scheduleEnableJoin = useCallback((meetingObj) => {
     clearEnableTimer();
     if (!meetingObj?.scheduled_at) return;
 
@@ -400,9 +440,9 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     } else {
       setJoinEnabled(false);
     }
-  };
+  }, []);
 
-  const scheduleMeetingClear = (meetingObj) => {
+  const scheduleMeetingClear = useCallback((meetingObj) => {
     clearMeetingTimer();
     if (!meetingObj?.scheduled_at) return;
 
@@ -421,7 +461,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       setJoinEnabled(false);
       setReminderReceived(false);
     }
-  };
+  }, []);
 
   // Watch for meeting updates
   useEffect(() => {
@@ -439,7 +479,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       clearEnableTimer();
       clearMeetingTimer();
     };
-  }, [currentMeeting]);
+  }, [currentMeeting, scheduleEnableJoin, scheduleMeetingClear]);
 
   // Helper: determine fileType by mime or extension
   const determineFileType = (file) => {
@@ -508,7 +548,6 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
           return;
         }
 
-        const ftype = determineFileType(file);
         if (file.type.startsWith("video/")) {
           window.pfToast?.error?.("Video files are not allowed.");
           setSending(false);
@@ -531,19 +570,17 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
 
       await addDoc(collection(db, "conversations", conversationId, "messages"), payload);
 
-      // update conversation last message
-      const convRef = doc(db, "conversations", conversationId);
-      await updateDoc(convRef, {
-        lastMessage:
-          fileResult && fileResult.fileType === "image"
-            ? "📷 Image"
-            : fileResult && (fileResult.fileType === "pdf" || fileResult.fileType === "doc")
-            ? "📄 File"
-            : payload.content,
-        lastMessageTime: serverTimestamp(),
-      });
+    const convRef = doc(db, "conversations", conversationId);
+    await updateDoc(convRef, {
+      lastMessage: fileResult && fileResult.fileType === "image"
+        ? "📷 Image"
+        : fileResult && (fileResult.fileType === "pdf" || fileResult.fileType === "doc")
+        ? "📄 File"
+        : payload.content,
+      lastMessageTime: serverTimestamp(),
+    });
 
-      // reset input
+    window.dispatchEvent(new Event('chatsUpdated'));
       setText("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
@@ -742,28 +779,18 @@ const handleJoin = () => {
             </button>
           )}
 
-          {otherUser?.avatar ? (
-            <img
-              src={otherUser.avatar}
-              alt={otherUser.username}
-              className="peerfusion-chat-partner-avatar"
-            />
-          ) : (
-            <div
-              className="peerfusion-chat-partner-avatar"
-              style={{
-                background: "#e8efe5",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#666",
-                fontSize: "16px",
-                fontWeight: "bold",
-              }}
-            >
-              {otherUser?.username?.charAt(0) || "U"}
-            </div>
-          )}
+          <div className="peerfusion-chat-partner-avatar" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e8efe5', color: '#666', fontSize: '16px', fontWeight: 'bold' }}>
+            {otherUser?.username?.charAt(0) || 'U'}
+            {otherUser?.avatar && (
+              <img
+                src={ensureAvatarUrl(otherUser.avatar)}
+                alt={otherUser.username}
+                className="peerfusion-chat-partner-avatar"
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: '50%' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )}
+          </div>
           <span className="peerfusion-chat-partner-name">
             {otherUser?.username}
             {userRole && (
@@ -868,7 +895,8 @@ const handleJoin = () => {
               const isMeGroup = String(g.senderId) === String(currentUser?.user_id);
               return g.msgs.map((m, idx) => {
                 const isLastInGroup = idx === g.msgs.length - 1;
-                const showAvatar = !isMeGroup && isLastInGroup && otherUser?.avatar;
+                const showTailAvatar = !isMeGroup && isLastInGroup;
+
                 const timestamp = m.createdAt?.toDate
                   ? new Date(m.createdAt.toDate()).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -894,8 +922,31 @@ const handleJoin = () => {
                     onMouseLeave={() => setHoveredMessageId((prev) => (prev === m.id ? null : prev))}
                   >
                     {!isMeGroup ? (
-                      showAvatar ? (
-                        <img src={otherUser.avatar} alt={otherUser.username} className="peerfusion-chat-message-avatar" />
+                      showTailAvatar ? (
+                        otherUser?.avatar ? (
+                          <img 
+                            src={ensureAvatarUrl(otherUser.avatar)} 
+                            alt={otherUser.username} 
+                            className="peerfusion-chat-message-avatar" 
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div 
+                            className="peerfusion-chat-message-avatar"
+                            style={{
+                              background: '#e8efe5',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#666',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              textTransform: 'uppercase'
+                            }}
+                          >
+                            {otherUser?.username?.charAt(0) || 'U'}
+                          </div>
+                        )
                       ) : (
                         <div className="peerfusion-chat-avatar-space" />
                       )

@@ -282,11 +282,6 @@
   }
 }
 
-.peerfusion-nav-sidebar.collapsed .peerfusion-nav-notification-indicator {
-  right: 2px;
-  top: 2px;
-}
-
 .peerfusion-nav-sidebar.collapsed .peerfusion-nav-notification-text {
   display: none;
 }

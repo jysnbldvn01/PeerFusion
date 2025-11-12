@@ -1,25 +1,112 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FiHome, FiUser, FiMessageSquare, FiBell, FiMenu, FiX, FiLogOut, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import '../../css/sidebar.css';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from '../../firebase';
+import { AuthContext } from '../../context/AuthContext';
 
 const socket = io('http://localhost:5000'); 
 
 const NavigationBar = ({ isCollapsed, onToggle }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [chatCount, setChatCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
+
+  const notifiedMessageIds = useRef(new Set());
+
+  const setupRealTimeChatCount = () => {
+    if (!user?.user_id) return () => {};
+
+    // Listen to all conversations where user is a participant
+    const conversationsQuery = query(
+      collection(db, "conversations"),
+      where("participants", "array-contains", Number(user.user_id)),
+      orderBy("lastMessageTime", "desc")
+    );
+
+    const unsubscribeConversations = onSnapshot(conversationsQuery, (snapshot) => {
+      const conversationUnreadCounts = {};
+      const unsubscribeCallbacks = [];
+
+      // For each conversation, listen to messages to calculate unread counts
+      snapshot.docs.forEach((conversationDoc) => {
+        const conversationId = conversationDoc.id;
+        const messagesQuery = query(
+          collection(db, "conversations", conversationId, "messages"),
+          orderBy("createdAt", "desc")
+        );
+
+        const unsubscribeMessages = onSnapshot(messagesQuery, (messagesSnapshot) => {
+          let unread = 0;
+          
+          messagesSnapshot.docs.forEach((messageDoc) => {
+            const message = messageDoc.data();
+            const messageId = messageDoc.id;
+            
+            // Check if message is from other user and not seen by current user
+            if (String(message.senderId) !== String(user.user_id)) {
+              const seenBy = message.seenBy || [];
+              if (!seenBy.map(String).includes(String(user.user_id))) {
+                unread++;
+                
+                // Track new messages for potential notifications (same logic as floating chat)
+                if (!notifiedMessageIds.current.has(messageId)) {
+                  notifiedMessageIds.current.add(messageId);
+                }
+              }
+            }
+          });
+          conversationUnreadCounts[conversationId] = unread;
+          
+          const totalUnread = Object.values(conversationUnreadCounts).reduce((sum, count) => sum + count, 0);
+          setChatCount(totalUnread);
+        });
+
+        unsubscribeCallbacks.push(unsubscribeMessages);
+      });
+
+      return () => {
+        unsubscribeCallbacks.forEach(unsubscribe => unsubscribe());
+      };
+    });
+
+    return () => {
+      unsubscribeConversations();
+    };
+  };
+
+  const fetchCounts = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setNotificationCount(0);
+      setChatCount(0);
+      return;
+    }
+
+    try {
+      const res = await axios.get('http://localhost:5000/api/counts/real-time-counts', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotificationCount(res.data.notifications || 0);
+    } catch (err) {
+      console.error('Failed to fetch counts:', err);
+      fetchNotificationCount();
+    }
+  };
 
   const fetchNotificationCount = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      setNotificationCount(0); 
+      setNotificationCount(0);
       return;
     }
-  
+
     try {
       const res = await axios.get('http://localhost:5000/api/profile/notifications/unread-count', {
         headers: { Authorization: `Bearer ${token}` },
@@ -39,25 +126,55 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     
     handleResize();
     window.addEventListener('resize', handleResize);
-    
     const timer = setTimeout(() => {
-      fetchNotificationCount();
+      fetchCounts();
     }, 100);
     
+    let unsubscribeFirebase;
+    if (user?.user_id) {
+      unsubscribeFirebase = setupRealTimeChatCount();
+    }
+
+    const handleCountsUpdated = (data) => {
+      console.log('Counts updated:', data);
+      setNotificationCount(data.notifications || 0);
+    };
+
     const handleNewNotification = () => {
       fetchNotificationCount();
     };
 
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser && storedUser.id) {
+          socket.emit('identify', { userId: storedUser.id });
+          socket.emit('getCounts', { userId: storedUser.id });
+        }
+      } catch (err) {
+        console.error('Failed to identify user with socket:', err);
+      }
+    }
+
+    socket.on('counts_updated', handleCountsUpdated);
     socket.on('new_notification', handleNewNotification);
-    window.addEventListener('notificationsUpdated', fetchNotificationCount);
+    
+    window.addEventListener('notificationsUpdated', fetchCounts);
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('notificationsUpdated', fetchNotificationCount);
+      window.removeEventListener('notificationsUpdated', fetchCounts);
+      socket.off('counts_updated', handleCountsUpdated);
       socket.off('new_notification', handleNewNotification);
+      if (unsubscribeFirebase) {
+        unsubscribeFirebase();
+      }
+      
+      notifiedMessageIds.current.clear();
     };
-  }, []);
+  }, [user?.user_id]); // Re-run when user changes
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -65,11 +182,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     window.dispatchEvent(new Event("storageClear"));
     socket.disconnect();
     navigate('/login');
-  };
-
-  const handleChatNavigation = (e) => {
-    e.preventDefault();
-    window.location.href = '/chat';
   };
 
   const handleMobileToggle = () => {
@@ -89,6 +201,12 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
   };
 
   const isActive = (path) => location.pathname === path;
+
+  // Format count for display (same as floating chat)
+  const formatCount = (count) => {
+    if (count > 99) return '99+';
+    return count;
+  };
 
   return (
     <>
@@ -146,14 +264,28 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
               <span className="peerfusion-nav-label">Home</span>
             </Link>
             
-            <a 
-              href="/chat" 
+            <Link 
+              to="/chat" 
               className={`peerfusion-nav-item ${isActive('/chat') ? 'active' : ''}`}
-              onClick={handleChatNavigation}
+              onClick={handleNavClick}
             >
-              <FiMessageSquare className="peerfusion-nav-icon" />
+              <div className="peerfusion-nav-notification-container">
+                <FiMessageSquare className="peerfusion-nav-icon" />
+                {chatCount > 0 && (
+                  <span className="peerfusion-nav-notification-indicator peerfusion-chat-indicator">
+                    <span className="peerfusion-nav-notification-count">
+                      {formatCount(chatCount)}
+                    </span>
+                  </span>
+                )}
+              </div>
               <span className="peerfusion-nav-label">Chat</span>
-            </a>
+              {chatCount > 0 && !isCollapsed && (
+                <span className="peerfusion-nav-notification-text">
+                  {formatCount(chatCount)} new
+                </span>
+              )}
+            </Link>
             
             <Link 
               to="/notifications" 
@@ -163,9 +295,9 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
               <div className="peerfusion-nav-notification-container">
                 <FiBell className="peerfusion-nav-icon" />
                 {notificationCount > 0 && (
-                  <span className="peerfusion-nav-notification-indicator">
+                  <span className="peerfusion-nav-notification-indicator peerfusion-notification-indicator">
                     <span className="peerfusion-nav-notification-count">
-                      {notificationCount > 99 ? '99+' : notificationCount}
+                      {formatCount(notificationCount)}
                     </span>
                   </span>
                 )}
@@ -173,7 +305,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
               <span className="peerfusion-nav-label">Notifications</span>
               {notificationCount > 0 && !isCollapsed && (
                 <span className="peerfusion-nav-notification-text">
-                  {notificationCount} new
+                  {formatCount(notificationCount)} new
                 </span>
               )}
             </Link>
@@ -188,7 +320,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
             </Link>
           </div>
 
-          {/* Logout Section - Smaller button */}
+          {/* Logout Section */}
           <div className="peerfusion-nav-footer">
             <button 
               onClick={handleLogout} 

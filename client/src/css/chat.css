@@ -19,6 +19,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  transition: transform 0.3s ease;
 }
 
 .peerfusion-chat-left-header {
@@ -26,6 +27,7 @@
   border-bottom: 1px solid #e8efe5;
   flex-shrink: 0;
 }
+
 .peerfusion-chat-close-modal{
     position: absolute;
     top: 20px;
@@ -45,6 +47,7 @@
     transition: all 0.3s ease;
     z-index: 10;
 }
+
 .peerfusion-chat-close-modal:hover {
   background: #4a7c3a;
   color: white;
@@ -187,7 +190,6 @@
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e8efe5;
   transition: all 0.3s ease;
 }
 
@@ -273,6 +275,7 @@
   position: relative;
   min-width: 0;
   min-height: 0;
+  transition: transform 0.3s ease;
 }
 
 .peerfusion-chat-header {
@@ -300,7 +303,6 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
 }
 
@@ -593,6 +595,7 @@
   flex-direction: column;
   min-height: 0;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
 }
 
 .peerfusion-chat-right-content {
@@ -1587,7 +1590,169 @@
   animation: peerfusion-chat-spin 1s linear infinite;
 }
 
-/* ---------- Mobile Behavior (Messenger Style) ---------- */
+/* ---------- Tablet and Mobile Behavior (Messenger Style) ---------- */
+/* Tablet: 769px - 1024px */
+@media (max-width: 1024px) {
+  .peerfusion-chat-container {
+    flex-direction: row;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    width: 100vw;
+    max-width: 100vw;
+  }
+  
+  .peerfusion-chat-left {
+    width: 350px;
+    height: 100%;
+    position: relative;
+    display: flex;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+    max-width: 100vw;
+  }
+  
+  .peerfusion-chat-middle {
+    flex: 1;
+    position: relative;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+    background: white;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+  
+  .peerfusion-chat-right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 350px;
+    height: 100%;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    background: white;
+    max-width: 100vw;
+    z-index: 20;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+  }
+  
+  /* Show info panel when active */
+  .peerfusion-chat-container.info-active .peerfusion-chat-right {
+    transform: translateX(0);
+  }
+  
+  /* Hide middle panel when info is active on tablet */
+  .peerfusion-chat-container.info-active .peerfusion-chat-middle {
+    transform: translateX(-100%);
+  }
+  
+  .peerfusion-chat-mobile-controls {
+    display: flex;
+  }
+  
+  .peerfusion-chat-mobile-panel-title {
+    font-weight: 600;
+    color: #2d5a27;
+    font-size: 1rem;
+  }
+  
+  .peerfusion-chat-header {
+    padding: 0.8rem 1rem;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .peerfusion-chat-actions {
+    gap: 8px;
+  }
+  
+  .peerfusion-chat-info-btn {
+    display: flex;
+  }
+  
+  .peerfusion-chat-messages-container {
+    height: calc(100vh - 140px);
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .peerfusion-chat-input {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e8efe5;
+    padding: 1rem;
+  }
+  
+  .peerfusion-chat-messages {
+    padding-bottom: 100px;
+  }
+  
+  .peerfusion-chat-action-group {
+    flex-direction: column;
+  }
+  
+  .peerfusion-chat-modal-actions {
+    flex-direction: column;
+  }
+  
+  .peerfusion-chat-modal-content {
+    margin: 0.5rem;
+    max-height: 90vh;
+    width: calc(100% - 1rem);
+  }
+  
+  .peerfusion-chat-input {
+    padding: 0.8rem 1rem;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .peerfusion-chat-input-field {
+    padding: 0.8rem 1rem;
+    font-size: 16px;
+    width: 100%;
+  }
+  
+  .peerfusion-chat-send-btn {
+    padding: 0.8rem 1.2rem;
+  }
+  
+  .peerfusion-chat-messages {
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  
+  .peerfusion-chat-message-bubble {
+    max-width: min(85%, 400px);
+    padding: 0.7rem 0.9rem;
+  }
+  
+  .peerfusion-chat-row.received {
+    padding-right: 15%;
+  }
+  
+  .peerfusion-chat-row.sent {
+    padding-left: 5%;
+  }
+  
+  body, html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  .peerfusion-chat-partner-info {
+    max-width: 70%;
+    min-width: 0;
+  }
+}
+
+/* Mobile: Up to 768px */
 @media (max-width: 768px) {
   .peerfusion-chat-container {
     flex-direction: column;
@@ -1631,6 +1796,7 @@
     transition: transform 0.3s ease;
     background: white;
     max-width: 100vw;
+    z-index: 30;
   }
   
   .peerfusion-chat-container.chat-active .peerfusion-chat-left {
