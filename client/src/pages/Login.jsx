@@ -5,9 +5,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { identifySocket } from '../utils/socket';
 import '../css/auth.css';
 import { io } from 'socket.io-client';
-const SOCKET_BASE_URL = process.env.NODE_ENV === 'production'
-  ? process.env.REACT_APP_API_URL_PROD
-  : process.env.REACT_APP_API_URL;
+const SOCKET_BASE_URL = process.env.REACT_APP_API_URL;
 
 const socket = io(SOCKET_BASE_URL);
 // SVG Icons for features
