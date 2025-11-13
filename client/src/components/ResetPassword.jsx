@@ -32,6 +32,9 @@ const ResetPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL_PROD 
+  : process.env.REACT_APP_API_URL;
   
   const { token } = useParams();
   const navigate = useNavigate();
@@ -47,7 +50,7 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, { password });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/reset-password/${token}`, { password });
       setMessage(res.data.message + ' Redirecting to login...');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {

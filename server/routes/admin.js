@@ -5,7 +5,9 @@ const authenticateToken = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const API_BASE = process.env.API_BASE || 'http://localhost:5000/api';
+const API_BASE = process.env.NODE_ENV === 'production'
+  ? process.env.REACT_APP_API_URL_PROD
+  : process.env.REACT_APP_API_URL;
 
 const adminCheckCache = new Map();
 const moderatorCheckCache = new Map();

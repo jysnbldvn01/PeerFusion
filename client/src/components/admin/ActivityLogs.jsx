@@ -53,6 +53,9 @@ export default function ActivityLogs() {
     logs: false,
     stats: false
   });
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL_PROD 
+  : process.env.REACT_APP_API_URL;
 
   const ITEMS_PER_PAGE = 50;
 
@@ -70,7 +73,7 @@ export default function ActivityLogs() {
       setSkeletonLoading(prev => ({ ...prev, logs: true, header: true }));
       setLoading(true);
       
-      const response = await axios.get(`http://localhost:5000/api/admin/logs?page=${currentPage}&limit=${ITEMS_PER_PAGE}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/logs?page=${currentPage}&limit=${ITEMS_PER_PAGE}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

@@ -72,6 +72,9 @@ export default function Register() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? process.env.REACT_APP_API_URL_PROD
+  : process.env.REACT_APP_API_URL;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -131,7 +134,7 @@ export default function Register() {
     try {
       // Only send name, email, and password to backend
       const { confirmPassword, acceptTerms, ...submitData } = form;
-      const response = await axios.post('http://localhost:5000/api/auth/register', submitData);
+      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, submitData);
       
       if (response.status === 201) {
         setUserEmail(form.email);

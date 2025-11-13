@@ -9,6 +9,9 @@ require('dotenv').config({ path: './.env' });
 
 const db = require('./config/db');
 
+// ===========================
+// Initialize Firebase
+// ===========================
 const initializeFirebase = () => {
   const admin = require('firebase-admin');
 
@@ -29,8 +32,10 @@ const initializeFirebase = () => {
   return require('firebase-admin').firestore();
 };
 
+// ===========================
+// Configure Socket.IO
+// ===========================
 const configureSocketIO = (server, firestore) => {
-  // Adjust CORS origin here as needed
   const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
 
   const io = new Server(server, {
@@ -45,21 +50,12 @@ const configureSocketIO = (server, firestore) => {
   };
 
   const handleSocketConnection = (socket) => {
-    console.log('Socket connected:', socket.id);
-
     socket.on('identify', ({ userId }) => {
-      if (userId) {
-        userSockets.set(String(userId), socket.id);
-        console.log(`Mapped user ${userId} -> socket ${socket.id}`);
-      }
+      if (userId) userSockets.set(String(userId), socket.id);
     });
 
     socket.on('joinConversation', ({ conversationId }) => {
-      if (conversationId) {
-        const room = `conv_${conversationId}`;
-        socket.join(room);
-        console.log(`Socket ${socket.id} joined room ${room}`);
-      }
+      if (conversationId) socket.join(`conv_${conversationId}`);
     });
 
     socket.on('sendMessage', handleSendMessage(socket, firestore, io));
@@ -72,6 +68,9 @@ const configureSocketIO = (server, firestore) => {
   return { io, emitToUser };
 };
 
+// ===========================
+// Handle Message Sending
+// ===========================
 const handleSendMessage = (socket, firestore, io) => async ({
   conversationId,
   senderId,
@@ -82,7 +81,6 @@ const handleSendMessage = (socket, firestore, io) => async ({
   if (!conversationId || !senderId || !content?.trim()) return;
 
   try {
-    // Need admin instance here for FieldValue
     const admin = require('firebase-admin');
 
     const messageRef = await firestore.collection('messages').add({
@@ -115,8 +113,10 @@ const handleSendMessage = (socket, firestore, io) => async ({
   }
 };
 
+// ===========================
+// Handle Socket Disconnect
+// ===========================
 const handleSocketDisconnect = (socket, userSockets) => {
-  console.log('Socket disconnected:', socket.id);
   for (const [userId, socketId] of userSockets.entries()) {
     if (socketId === socket.id) {
       userSockets.delete(userId);
@@ -125,6 +125,9 @@ const handleSocketDisconnect = (socket, userSockets) => {
   }
 };
 
+// ===========================
+// Configure Routes
+// ===========================
 const configureRoutes = (app) => {
   const routes = [
     '/api/admin',
@@ -154,43 +157,42 @@ const configureRoutes = (app) => {
   });
 };
 
-// Server startup
+// ===========================
+// Start Server
+// ===========================
 const startServer = () => {
   const firestore = initializeFirebase();
   const app = express();
 
-  // Middleware
   app.use(
     cors({
       origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
       credentials: true,
     })
   );
+
   app.use(express.json());
   app.use('/uploads', express.static('uploads'));
 
-  // Configure routes
   configureRoutes(app);
 
-  // Create server and configure Socket.IO
   const server = http.createServer(app);
   const { emitToUser } = configureSocketIO(server, firestore);
 
-  // Set global utilities
   app.set('db', db);
   app.set('firestore', firestore);
   app.set('emitToUser', emitToUser);
 
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Database connected directly');
-    console.log('Socket.IO ready for real-time communication');
+    console.log(`Server running on port ${PORT}`);
   });
 };
 
-db
-  .getConnection()
+// ===========================
+// Database Connection
+// ===========================
+db.getConnection()
   .then((conn) => {
     console.log('Database connected successfully');
     conn.release();

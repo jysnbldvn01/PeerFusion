@@ -328,7 +328,7 @@ router.post('/forgot-password', async (req, res) => {
     const updateUserSql = 'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?';
     await db.query(updateUserSql, [hashedToken, tokenExpires, user.id]);
 
-    const resetLink = `http://localhost:3000/reset-password/${token}`;
+    const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password/${token}`;
 
     const mailOptions = {
       from: '"PeerFusion" <onboarding@resend.dev>',

@@ -200,7 +200,9 @@ const AppealManagement = () => {
     pagination: true
   });
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const API_BASE = process.env.NODE_ENV === 'production' 
+    ? process.env.REACT_APP_API_URL_PROD 
+    : process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     fetchAppeals();
@@ -508,11 +510,12 @@ const fetchAppeals = async () => {
 
   const getAvatarUrl = (avatar) => {
     if (!avatar) return null;
+
     if (avatar.startsWith('http')) return avatar;
     if (avatar.startsWith('/')) {
-      return `http://localhost:5000${avatar}`;
+      return `${UPLOADS_BASE_URL}${avatar}`;
     }
-    return `http://localhost:5000/uploads/${avatar}`;
+    return `${UPLOADS_BASE_URL}/uploads/${avatar}`;
   };
 
   const formatDate = (dateString) => {

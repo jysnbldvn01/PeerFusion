@@ -26,6 +26,9 @@ const Videocall = () => {
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? process.env.REACT_APP_API_URL_PROD 
+    : process.env.REACT_APP_API_URL;
 
   const REPORT_TYPES = [
     "Inappropriate Behavior",
@@ -56,7 +59,7 @@ const Videocall = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Authentication token not found.");
         
-        const profileRes = await axios.get("http://localhost:5000/api/profile/me", {
+        const profileRes = await axios.get(`${API_BASE_URL}/api/profile/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -80,7 +83,7 @@ const Videocall = () => {
         const ids = [currentUserId, partnerId].sort((a, b) => a - b);
         const roomName = `peerfusion-${ids[0]}-${ids[1]}`;
 
-        const res = await axios.post("http://localhost:5000/api/jitsi/token", {
+        const res = await axios.post(`${API_BASE_URL}/api/jitsi/token`, {
           roomName,
           user: {
             id: currentUserId,
@@ -218,7 +221,7 @@ const Videocall = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        'http://localhost:5000/api/profile/feedback',
+        `${API_BASE_URL}/api/profile/feedback`,
         { 
           receiver_id: partnerInfo.id, 
           rating: Number(rating), 
@@ -343,7 +346,7 @@ const handleReportSubmit = async () => {
       });
 
       const response = await axios.post(
-        'http://localhost:5000/api/reports',
+        `${API_BASE_URL}/api/reports`,
         formData,
         { 
           headers: { 
@@ -446,7 +449,7 @@ const handleReportSubmit = async () => {
             <div className="feedback-partner-info">
               {partnerInfo?.avatar ? (
                 <img 
-                  src={`http://localhost:5000/uploads/${partnerInfo.avatar}`} 
+                  src={`${API_BASE_URL}/uploads/${partnerInfo.avatar}`} 
                   alt={partnerInfo.username}
                   className="partner-avatar"
                   onError={(e) => {
@@ -564,7 +567,7 @@ const handleReportSubmit = async () => {
             <div className="feedback-partner-info">
               {partnerInfo?.avatar ? (
                 <img 
-                  src={`http://localhost:5000/uploads/${partnerInfo.avatar}`} 
+                  src={`${API_BASE_URL}/uploads/${partnerInfo.avatar}`} 
                   alt={partnerInfo.username}
                   className="partner-avatar"
                 />

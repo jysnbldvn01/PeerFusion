@@ -17,6 +17,9 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState([false, false, false]);
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL_PROD 
+  : process.env.REACT_APP_API_URL;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,9 +64,9 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
 
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/admin-forgot-password', {
-        email: form.email
-      });
+    const res = await axios.post(`${API_BASE_URL}/api/auth/admin-forgot-password`, {
+      email: form.email
+    });
 
       setSuccess(res.data.message);
       setStep(2);
@@ -84,7 +87,7 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
 
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/verify-reset-code', {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/verify-reset-code`, {
         email: form.email,
         code: form.code
       });
@@ -118,7 +121,7 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
 
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/admin-reset-password', {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/admin-reset-password`, {
         email: form.email,
         tempToken: tempToken,
         password: form.password

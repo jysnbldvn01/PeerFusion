@@ -93,7 +93,9 @@ const DashboardOverview = ({ setActiveTab }) => {
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isModerator = currentUser?.role === 'moderator';
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL_PROD 
+  : process.env.REACT_APP_API_URL;
 
   // Utility Functions
   const getTimeAgo = (dateString) => {
@@ -394,44 +396,44 @@ const processDashboardData = useCallback((data) => {
     const requests = [
       { 
         key: 'users', 
-        url: `${API_BASE}/admin/users?limit=1000`,
+        url: `${API_BASE_URL}/admin/users?limit=1000`,
         fallback: { users: [] }
       },
       ...(isModerator ? [] : [
         { 
           key: 'moderators', 
-          url: `${API_BASE}/admin/moderators`,
+          url: `${API_BASE_URL}/admin/moderators`,
           fallback: [] 
         }
       ]),
       { 
         key: 'feedback', 
-        url: `${API_BASE}/admin/feedback/stats`,
+        url: `${API_BASE_URL}/admin/feedback/stats`,
         fallback: { stats: {} } 
       },
       { 
         key: 'reports', 
-        url: `${API_BASE}/admin/reports/stats`,
+        url: `${API_BASE_URL}/admin/reports/stats`,
         fallback: { stats: {} } 
       },
       { 
         key: 'subjects', 
-        url: `${API_BASE}/admin/subjects`,
+        url: `${API_BASE_URL}/admin/subjects`,
         fallback: { categories: [] } 
       },
       { 
         key: 'appeals', 
-        url: `${API_BASE}/admin/appeals/stats`,
+        url: `${API_BASE_URL}/admin/appeals/stats`,
         fallback: { stats: {} } 
       },
       { 
         key: 'supportTickets', 
-        url: `${API_BASE}/support/tickets?limit=3`,
+        url: `${API_BASE_URL}/support/tickets?limit=3`,
         fallback: { tickets: [] } 
       },
       { 
         key: 'recentReports', 
-        url: `${API_BASE}/admin/reports?limit=5`,
+        url: `${API_BASE_URL}/admin/reports?limit=5`,
         fallback: { reports: [] } 
       }
     ];
@@ -488,7 +490,7 @@ const processDashboardData = useCallback((data) => {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, isModerator, processDashboardData]);
+  }, [API_BASE_URL, isModerator, processDashboardData]);
 
   // Navigation
   const handleViewAllSupport = () => setActiveTab('support');

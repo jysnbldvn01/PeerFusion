@@ -34,7 +34,10 @@ const UserAppealPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE = 
+  process.env.NODE_ENV === 'production' 
+    ? process.env.REACT_APP_API_URL_PROD 
+    : process.env.REACT_APP_API_URL;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -30,6 +30,9 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL_PROD 
+  : process.env.REACT_APP_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,7 +41,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email });
       setMessage(res.data.message);
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred. Please try again.');
