@@ -34,6 +34,8 @@ import {
 } from 'react-icons/fa';
 import '../../css/activitylogs.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 export default function ActivityLogs() {
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
@@ -54,8 +56,6 @@ export default function ActivityLogs() {
     stats: false
   });
   
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
-
   const ITEMS_PER_PAGE = 50;
 
   useEffect(() => {

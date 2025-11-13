@@ -8,6 +8,7 @@ import { collection, query, where, orderBy, onSnapshot } from "firebase/firestor
 import { db } from '../../firebase';
 import { AuthContext } from '../../context/AuthContext';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 const SOCKET_URL = API_BASE_URL;
 const socket = io(SOCKET_URL, { autoConnect: false });
 
@@ -18,7 +19,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const notifiedMessageIds = useRef(new Set());
 

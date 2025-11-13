@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import '../css/home.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const Home = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -17,7 +19,7 @@ const Home = () => {
   const [showAllFeedback, setShowAllFeedback] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState({});
   const [recommendedUsers, setRecommendedUsers] = useState([]);
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 
   const slides = [
     { image: "/images/banner1.png", alt: "Share your skills" },

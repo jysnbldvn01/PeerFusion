@@ -29,7 +29,8 @@ import {
   FaChevronRight
 } from 'react-icons/fa';
 import '../../css/reportmanagement.css';
-
+ const API_BASE_URL = process.env.REACT_APP_API_URL;
+ 
 // Skeleton Loading Components
 const HeaderSkeleton = () => (
   <div className="rm-header skeleton">
@@ -167,7 +168,6 @@ const ReportManagement = () => {
     pagination: true
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const getExpectedConsequence = (currentStrikes, reportType, severity) => {
     const zeroToleranceTypes = ['Hate Speech', 'Sexual Content', 'Violence or Threats', 'Self-harm'];

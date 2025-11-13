@@ -22,6 +22,8 @@ import {
 } from 'react-icons/fa';
 import '../../css/supportmanagement.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const SupportManagement = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,6 @@ const SupportManagement = () => {
   const [itemsPerPage] = useState(50);
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   // Status counts state
   const [statusCounts, setStatusCounts] = useState({

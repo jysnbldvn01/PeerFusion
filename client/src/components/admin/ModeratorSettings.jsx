@@ -6,6 +6,8 @@ import {
 } from 'react-icons/fi';
 import '../../css/moderatorsettings.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 export default function ModeratorSettings() {
   const [changePassword, setChangePassword] = useState({
     currentPassword: '',
@@ -21,7 +23,6 @@ export default function ModeratorSettings() {
     confirm: false
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 
   const handleChangePassword = async (e) => {

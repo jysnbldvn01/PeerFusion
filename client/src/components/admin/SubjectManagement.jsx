@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiFolder, FiBook, FiSearch } from 'react-icons/fi';
 import '../../css/subjectmanagement.css';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const SubjectManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -15,8 +16,7 @@ const SubjectManagement = () => {
   const [activeTab, setActiveTab] = useState('categories');
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editSubjectName, setEditSubjectName] = useState('');
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
-
+ 
   useEffect(() => {
     fetchSubjects();
   }, []);

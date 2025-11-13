@@ -6,6 +6,7 @@ import {
   FiSave, FiX, FiEye, FiEyeOff, FiRefreshCw 
 } from 'react-icons/fi';
 import '../../css/settings.css';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('moderators');
@@ -31,8 +32,7 @@ export default function Settings() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+  
 
   useEffect(() => {
     if (activeTab === 'moderators') {

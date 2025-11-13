@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import '../../css/usermanagement.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const UserIcon = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" strokeWidth="2"/>
@@ -244,8 +246,7 @@ export default function UserManagement() {
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isModerator = currentUser?.role === 'moderator';
-  const isAdmin = currentUser?.role === 'admin';
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const isAdmin = currentUser?.role === 'admin';  
 
   // Close dropdown when clicking outside
   useEffect(() => {

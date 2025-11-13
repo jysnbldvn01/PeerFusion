@@ -8,6 +8,8 @@ import {
 } from 'react-icons/fi';
 import '../../css/feedbackmanagement.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 export default function FeedbackManagement() {
   const [uniqueUsers, setUniqueUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -45,7 +47,6 @@ export default function FeedbackManagement() {
     filters: false
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   // Get avatar URL - handle both full URLs and relative paths
   const getAvatarUrl = (avatar) => {

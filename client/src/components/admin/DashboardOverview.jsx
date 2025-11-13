@@ -36,6 +36,7 @@ import {
 } from 'react-icons/fi';
 import '../../css/dashboardview.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 const PROFESSIONAL_COLORS = {
   primary: '#3B82F6',
   success: '#10B981',
@@ -93,8 +94,6 @@ const DashboardOverview = ({ setActiveTab }) => {
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isModerator = currentUser?.role === 'moderator';
-  
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   // Utility Functions
   const getTimeAgo = (dateString) => {
