@@ -1,7 +1,7 @@
 {
   "name": "client",
   "version": "0.1.0",
-  "homepage": "https://peerfusion-1.onrender.com",
+  "homepage": "https://peerfusion-frontend.onrender.com",
   "private": true,
   "dependencies": {
     "@jitsi/react-sdk": "^1.4.4",
