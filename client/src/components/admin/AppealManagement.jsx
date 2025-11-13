@@ -200,7 +200,7 @@ const AppealManagement = () => {
     pagination: true
   });
 
-  const UPLOADS_BASE_URL = process.env.NODE_ENV === 'production' 
+  const API_BASE = process.env.NODE_ENV === 'production' 
     ? process.env.REACT_APP_API_URL_PROD 
     : process.env.REACT_APP_API_URL;
 
@@ -513,9 +513,9 @@ const fetchAppeals = async () => {
 
     if (avatar.startsWith('http')) return avatar;
     if (avatar.startsWith('/')) {
-      return `${UPLOADS_BASE_URL}${avatar}`;
+      return `${API_BASE}${avatar}`;
     }
-    return `${UPLOADS_BASE_URL}/uploads/${avatar}`;
+    return `${API_BASE}/uploads/${avatar}`;
   };
 
   const formatDate = (dateString) => {
