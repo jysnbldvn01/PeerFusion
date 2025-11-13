@@ -245,6 +245,7 @@ export default function UserManagement() {
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isModerator = currentUser?.role === 'moderator';
   const isAdmin = currentUser?.role === 'admin';
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -283,7 +284,7 @@ export default function UserManagement() {
         params.append('status', filter);
       }
 
-      const res = await axios.get(`http://localhost:5000/api/admin/users?${params.toString()}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/admin/users?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -317,7 +318,7 @@ export default function UserManagement() {
   const fetchUserReports = async (userId) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await axios.get(`http://localhost:5000/api/admin/users/${userId}/reports`, {
+      const res = await axios.get(`${API_BASE_URL}/api/admin/users/${userId}/reports`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserReports(prev => ({
@@ -333,9 +334,9 @@ export default function UserManagement() {
     if (!avatar) return null;
     if (avatar.startsWith('http')) return avatar;
     if (avatar.startsWith('/')) {
-      return `http://localhost:5000${avatar}`;
+      return `${API_BASE_URL}${avatar}`;
     }
-    return `http://localhost:5000/uploads/${avatar}`;
+    return `${API_BASE_URL}/uploads/${avatar}`;
   };
 
   // Remove client-side filtering since it's now server-side
@@ -382,7 +383,7 @@ export default function UserManagement() {
         }
         
         for (const userId of userIds) {
-          await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
+          await axios.delete(`${API_BASE_URL}/api/admin/users/${userId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
         }
@@ -394,7 +395,7 @@ export default function UserManagement() {
         
       } else if (bulkAction === 'reactivate') {
         for (const userId of userIds) {
-          await axios.patch(`http://localhost:5000/api/admin/users/${userId}/reactivate`, 
+          await axios.patch(`${API_BASE_URL}/api/admin/users/${userId}/reactivate`, 
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -418,7 +419,7 @@ export default function UserManagement() {
   const handleDeleteUser = async (user) => {
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`http://localhost:5000/api/admin/users/${user.id}`, {
+      await axios.delete(`${API_BASE_URL}/api/admin/users/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -443,7 +444,7 @@ export default function UserManagement() {
     
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/ban`, 
+      const response = await axios.patch(`${API_BASE_URL}/api/admin/users/${user.id}/ban`, 
         { reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -466,7 +467,7 @@ export default function UserManagement() {
   const handleReactivateUser = async (user) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.patch(`http://localhost:5000/api/admin/users/${user.id}/reactivate`, 
+      const response = await axios.patch(`${API_BASE_URL}/api/admin/users/${user.id}/reactivate`, 
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -489,7 +490,7 @@ export default function UserManagement() {
   const handleResetPassword = async (user) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await axios.post(`http://localhost:5000/api/admin/users/${user.id}/reset-password`, 
+      const res = await axios.post(`${API_BASE_URL}/api/admin/users/${user.id}/reset-password`, 
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

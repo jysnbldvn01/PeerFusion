@@ -8,7 +8,8 @@ import { collection, query, where, orderBy, onSnapshot } from "firebase/firestor
 import { db } from '../../firebase';
 import { AuthContext } from '../../context/AuthContext';
 
-const socket = io('http://localhost:5000'); 
+const SOCKET_URL = API_BASE_URL;
+const socket = io(SOCKET_URL, { autoConnect: false });
 
 const NavigationBar = ({ isCollapsed, onToggle }) => {
   const [isMobile, setIsMobile] = useState(false);
@@ -17,6 +18,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const notifiedMessageIds = useRef(new Set());
 
@@ -90,7 +92,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     }
 
     try {
-      const res = await axios.get('http://localhost:5000/api/counts/real-time-counts', {
+      const res = await axios.get(`${API_BASE_URL}/api/counts/real-time-counts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotificationCount(res.data.notifications || 0);
@@ -108,7 +110,7 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
     }
 
     try {
-      const res = await axios.get('http://localhost:5000/api/profile/notifications/unread-count', {
+      const res = await axios.get(`${API_BASE_URL}/api/profile/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotificationCount(res.data.count || 0);

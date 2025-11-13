@@ -16,7 +16,7 @@ const initializeFirebase = () => {
   const admin = require('firebase-admin');
 
   if (!admin.apps.length) {
-    const serviceAccountPath = '/etc/secrets/serviceAccountKey.json';
+    const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (!fs.existsSync(serviceAccountPath)) {
       console.error(`Firebase service account file not found at ${serviceAccountPath}`);
       process.exit(1);
@@ -36,7 +36,7 @@ const initializeFirebase = () => {
 // Configure Socket.IO
 // ===========================
 const configureSocketIO = (server, firestore) => {
-  const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+  const allowedOrigin = process.env.FRONTEND_ORIGIN;
 
   const io = new Server(server, {
     cors: { origin: allowedOrigin, methods: ['GET', 'POST'] },
@@ -166,7 +166,7 @@ const startServer = () => {
 
   app.use(
     cors({
-      origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
+      origin: process.env.FRONTEND_ORIGIN,
       credentials: true,
     })
   );

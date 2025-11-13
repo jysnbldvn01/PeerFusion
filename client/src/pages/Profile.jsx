@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../css/profile.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 const CloseIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -1339,7 +1340,7 @@ const Profile = () => {
       
       // Reset avatar preview
       if (profile.avatar) {
-        setAvatarPreview(`http://localhost:5000/uploads/${profile.avatar}`);
+        setAvatarPreview(`${API_BASE_URL}uploads/${profile.avatar}`);
       } else {
         setAvatarPreview('');
       }
@@ -1351,7 +1352,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await axios.get('http://localhost:5000/api/profile', {
+        const res = await axios.get(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProfile(res.data);
@@ -1402,7 +1403,7 @@ const Profile = () => {
         });
         
         if (res.data.avatar) {
-          setAvatarPreview(`http://localhost:5000/uploads/${res.data.avatar}`);
+          setAvatarPreview(`${API_BASE_URL}/uploads/${res.data.avatar}`);
         }
       } catch (err) {
         console.error('Profile fetch error:', err);
@@ -1413,7 +1414,7 @@ const Profile = () => {
 
     const fetchSubjects = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/profile/subjects');
+        const res = await axios.get(`${API_BASE_URL}/api/profile/subjects`);
         setSubjectCategories(res.data);
       } catch (err) {
         console.error('Error fetching subjects:', err);
@@ -1423,7 +1424,7 @@ const Profile = () => {
     const fetchAccountStatus = async () => {
       const token = localStorage.getItem('token');
       try {
-        const response = await axios.get('http://localhost:5000/api/profile/account-status', {
+        const response = await axios.get(`${API_BASE_URL}/api/profile/account-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAccountStatus(response.data);
@@ -1480,7 +1481,7 @@ const Profile = () => {
     if (avatarFile) formData.append('avatar', avatarFile);
 
     try {
-      await axios.post('http://localhost:5000/api/profile/avatar', formData, {
+      await axios.post(`${API_BASE_URL}/api/profile/avatar`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -1488,7 +1489,7 @@ const Profile = () => {
       });
       setAvatarFile(null);
       setShowAvatarEdit(false);
-      const res = await axios.get('http://localhost:5000/api/profile', {
+      const res = await axios.get(`${API_BASE_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProfile(res.data);
@@ -1520,7 +1521,7 @@ const Profile = () => {
     });
 
     try {
-      const response = await axios.post('http://localhost:5000/api/profile/setup', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/profile/setup`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -1530,7 +1531,7 @@ const Profile = () => {
       console.log('Update successful:', response.data);
       setEditMode(false);
       
-      const res = await axios.get('http://localhost:5000/api/profile', {
+      const res = await axios.get(`${API_BASE_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProfile(res.data);
@@ -1559,7 +1560,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/profile/change-password',
+        `${API_BASE_URL}/api/profile/change-password`,
         {
           currentPassword,
           newPassword
@@ -1592,7 +1593,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/profile/change-email',
+        `${API_BASE_URL}/api/profile/change-email`,
         {
           currentPassword,
           newEmail
@@ -1634,7 +1635,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/profile/deactivate',
+        `${API_BASE_URL}/api/profile/deactivate`,
         { reason },
         {
           headers: {
@@ -1663,7 +1664,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/profile/request-deletion',
+        `${API_BASE_URL}/api/profile/request-deletion`,
         { reason },
         {
           headers: {
@@ -1677,7 +1678,7 @@ const Profile = () => {
         alert(response.data.message);
         setShowDeletion(false);
         // Refresh account status
-        const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
+        const statusResponse = await axios.get(`${API_BASE_URL}/api/profile/account-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAccountStatus(statusResponse.data);
@@ -1695,7 +1696,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/profile/reactivate',
+        `${API_BASE_URL}/api/profile/reactivate`,
         {},
         {
           headers: {
@@ -1716,7 +1717,7 @@ const Profile = () => {
         
         setShowAccountStatus(false);
         
-        const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
+        const statusResponse = await axios.get(`${API_BASE_URL}/api/profile/account-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAccountStatus(statusResponse.data);
@@ -1733,7 +1734,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/profile/cancel-deletion',
+        `${API_BASE_URL}/api/profile/cancel-deletion`,
         {},
         {
           headers: {
@@ -1747,7 +1748,7 @@ const Profile = () => {
         alert(response.data.message);
         setShowAccountStatus(false);
         // Refresh account status
-        const statusResponse = await axios.get('http://localhost:5000/api/profile/account-status', {
+        const statusResponse = await axios.get(`${API_BASE_URL}/api/profile/account-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAccountStatus(statusResponse.data);
@@ -1824,7 +1825,7 @@ const Profile = () => {
                   </button>
                   <button className="peerfusion-avatar-btn peerfusion-avatar-cancel" onClick={() => {
                     setAvatarFile(null);
-                    setAvatarPreview(profile?.avatar ? `http://localhost:5000/uploads/${profile.avatar}` : '');
+                    setAvatarPreview(profile?.avatar ? `${API_BASE_URL}/uploads/${profile.avatar}` : '');
                   }}>
                     <span className="peerfusion-cancel-icon"></span>
                     Cancel
@@ -2115,7 +2116,7 @@ const Profile = () => {
             <div className="peerfusion-modal-avatar-container">
               {profile.avatar && (
                 <img
-                  src={`http://localhost:5000/uploads/${profile.avatar}`}
+                  src={`${API_BASE_URL}/uploads/${profile.avatar}`}
                   alt="Avatar"
                   className="peerfusion-modal-avatar"
                 />

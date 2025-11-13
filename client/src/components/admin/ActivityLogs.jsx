@@ -53,9 +53,8 @@ export default function ActivityLogs() {
     logs: false,
     stats: false
   });
-    const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.REACT_APP_API_URL_PROD 
-  : process.env.REACT_APP_API_URL;
+  
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const ITEMS_PER_PAGE = 50;
 

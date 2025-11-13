@@ -93,9 +93,8 @@ const DashboardOverview = ({ setActiveTab }) => {
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isModerator = currentUser?.role === 'moderator';
-  const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.REACT_APP_API_URL_PROD 
-  : process.env.REACT_APP_API_URL;
+  
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   // Utility Functions
   const getTimeAgo = (dateString) => {

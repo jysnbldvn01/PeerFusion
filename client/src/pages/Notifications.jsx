@@ -3,6 +3,8 @@ import axios from 'axios';
 import '../css/notification.css';
 import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 // Internet icons as React components
 const InternetIcons = {
   Approved: () => (
@@ -164,8 +166,8 @@ const Notification = () => {
     const token = localStorage.getItem('token');
     const url =
       activeTab === 'archived'
-        ? 'http://localhost:5000/api/profile/notifications/archived'
-        : 'http://localhost:5000/api/profile/notifications';
+        ? `${API_BASE_URL}/api/profile/notifications/archived`
+        : `${API_BASE_URL}/api/profile/notifications`;
 
     try {
       const res = await axios.get(url, {
@@ -185,7 +187,7 @@ const Notification = () => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await axios.get('http://localhost:5000/api/profile', {
+        const res = await axios.get(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProfile(res.data);
@@ -282,7 +284,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem('token');
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/profile/notification-feedback/${notificationId}`,
+        `${API_BASE_URL}/api/profile/notification-feedback/${notificationId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -302,7 +304,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem('token');
     try {
       await axios.put(
-        `http://localhost:5000/api/profile/notifications/${id}/read`,
+        `${API_BASE_URL}/api/profile/notifications/${id}/read`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -322,7 +324,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem('token');
     try {
       await axios.put(
-        `http://localhost:5000/api/profile/notifications/${id}/unread`,
+        `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -342,7 +344,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem('token');
     try {
       await axios.put(
-        `http://localhost:5000/api/profile/notifications/${id}/archive`,
+        `${API_BASE_URL}/api/profile/notifications/${id}/archive`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -362,7 +364,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem('token');
     try {
       await axios.put(
-        `http://localhost:5000/api/profile/notifications/${id}/unarchive`,
+        `${API_BASE_URL}/api/profile/notifications/${id}/unarchive`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -389,7 +391,7 @@ const getDisplayAvatar = (notification) => {
       await Promise.all(
         unread.map(n =>
           axios.put(
-            `http://localhost:5000/api/profile/notifications/${n.id}/read`,
+            `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           )
@@ -409,7 +411,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem('token');
     try {
       await axios.delete(
-        `http://localhost:5000/api/profile/notifications/${id}`,
+        `${API_BASE_URL}/api/profile/notifications/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -449,7 +451,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem("token");
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/session/accept`,
+        `${API_BASE_URL}/api/session/accept`,
         {
           requestId: notification.session_request_id || notification.id,
         },
@@ -477,7 +479,7 @@ const getDisplayAvatar = (notification) => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(
-        `http://localhost:5000/api/session/reject`,
+        `${API_BASE_URL}/api/session/reject`,
         {
           requestId: notification.session_request_id || notification.id,
         },
@@ -715,7 +717,7 @@ const getDisplayAvatar = (notification) => {
                 {/* Avatar */}
                 {getDisplayAvatar(notification) ? (
                   <img
-                    src={`http://localhost:5000/uploads/${getDisplayAvatar(notification)}`}
+                    src={`${API_BASE_URL}/uploads/${getDisplayAvatar(notification)}`}
                     alt={getDisplayName(notification)}
                     className="peerfusion-notification-avatar"
                     onError={(e) => {
@@ -840,7 +842,7 @@ const getDisplayAvatar = (notification) => {
             <div className="peerfusion-notification-modal-header">
               {getDisplayAvatar(selectedNotification) ? (
                 <img
-                  src={`http://localhost:5000/uploads/${getDisplayAvatar(selectedNotification)}`}
+                  src={`${API_BASE_URL}/uploads/${getDisplayAvatar(selectedNotification)}`}
                   alt={getDisplayName(selectedNotification)}
                   className="peerfusion-notification-modal-avatar"
                   onError={(e) => {

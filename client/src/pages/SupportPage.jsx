@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../css/support.css';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // SVG Icons - Same as your register page
 const EmailIcon = () => (
@@ -267,7 +268,7 @@ const handleSubmit = async (e) => {
       files: selectedFiles.length
     });
 
-    const response = await fetch('http://localhost:5000/api/support/tickets', {
+    const response = await fetch(`${API_BASE_URL}/api/support/tickets`, {
       method: 'POST',
       body: formDataToSend,
     });

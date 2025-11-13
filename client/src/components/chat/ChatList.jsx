@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
 import { io } from 'socket.io-client';
-const socket = io('http://localhost:5000');
+
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+const SOCKET_URL = API_BASE_URL;
+const socket = io(SOCKET_URL, { autoConnect: false });
+
 // removed useLocation to avoid unused var and unnecessary re-subscribes
 
 // Icon components
@@ -35,16 +39,16 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
     if (!avatar || typeof avatar !== 'string') return null;
     if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
     const file = avatar.replace(/^\/+/, '');
-    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    const UPLOADS_BASE = API_BASE_URL + '/uploads/';
     return `${UPLOADS_BASE}${file}`;
   };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE_URL}/api/profile/others`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    })
       .then((res) => res.json())
       .then((list) => {
         const map = {};

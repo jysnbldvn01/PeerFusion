@@ -15,6 +15,7 @@ const SubjectManagement = () => {
   const [activeTab, setActiveTab] = useState('categories');
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editSubjectName, setEditSubjectName] = useState('');
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     fetchSubjects();
@@ -23,7 +24,7 @@ const SubjectManagement = () => {
   const fetchSubjects = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/subjects', {
+      const res = await axios.get(`${API_BASE_URL}/api/admin/subjects`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCategories(res.data.categories || []);
@@ -39,7 +40,7 @@ const SubjectManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/admin/categories', 
+      await axios.post(`${API_BASE_URL}/api/admin/categories`, 
         { name: newCategory },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -57,7 +58,7 @@ const SubjectManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/admin/subjects', 
+      await axios.post(`${API_BASE_URL}/api/admin/subjects`, 
         newSubject,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -78,7 +79,7 @@ const SubjectManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/admin/categories/${categoryId}`, 
+      await axios.put(`${API_BASE_URL}/api/admin/categories/${categoryId}`, 
         { name: newName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -100,7 +101,7 @@ const SubjectManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/admin/subjects/${subjectId}`, 
+      await axios.put(`${API_BASE_URL}/api/admin/subjects/${subjectId}`, 
         { name: newName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -119,7 +120,7 @@ const SubjectManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/categories/${categoryId}`, {
+      await axios.delete(`${API_BASE_URL}/api/admin/categories/${categoryId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchSubjects();
@@ -135,7 +136,7 @@ const SubjectManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/subjects/${subjectId}`, {
+      await axios.delete(`${API_BASE_URL}/api/admin/subjects/${subjectId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchSubjects();

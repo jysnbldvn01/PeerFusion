@@ -41,6 +41,7 @@ const SupportManagement = () => {
   const [itemsPerPage] = useState(50);
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   // Status counts state
   const [statusCounts, setStatusCounts] = useState({
@@ -88,7 +89,7 @@ const SupportManagement = () => {
         }
       });
 
-      const response = await axios.get('http://localhost:5000/api/support/tickets', {
+      const response = await axios.get(`${API_BASE_URL}/api/support/tickets`, {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
@@ -115,7 +116,7 @@ const SupportManagement = () => {
   const fetchTotalCounts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/support/tickets', {
+      const response = await axios.get(`${API_BASE_URL}/api/support/tickets`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           page: 1,
@@ -152,7 +153,7 @@ const SupportManagement = () => {
   const fetchTicketDetails = async (ticketId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/support/tickets/${ticketId}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/support/tickets/${ticketId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -254,7 +255,7 @@ const SupportManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(
-        `http://localhost:5000/api/support/tickets/${ticketId}`,
+        `${API_BASE_URL}/api/support/tickets/${ticketId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -302,7 +303,7 @@ const SupportManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(
-        'http://localhost:5000/api/support/tickets',
+        `${API_BASE_URL}/api/support/tickets`,
         {
           data: { ticketIds: Array.from(selectedTickets) },
           headers: { Authorization: `Bearer ${token}` }
@@ -360,7 +361,7 @@ const SupportManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.patch(
-        `http://localhost:5000/api/support/tickets/${ticketId}/status`, 
+        `${API_BASE_URL}/api/support/tickets/${ticketId}/status`, 
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -416,7 +417,7 @@ const SupportManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `http://localhost:5000/api/support/tickets/${ticketId}/responses`, 
+        `${API_BASE_URL}/api/support/tickets/${ticketId}/responses`, 
         { message: responseMessage },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -510,7 +511,7 @@ const SupportManagement = () => {
   const downloadEvidence = async (evidence) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/support/evidence/${evidence.filename}`, {
+      const response = await fetch(`${API_BASE_URL}/api/support/evidence/${evidence.filename}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

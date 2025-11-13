@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:3000", "https://peerfusion-1.onrender.com"],
+    "origin": ["https://peerfusion-frontend.onrender.com"],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
     "responseHeader": ["Content-Type", "x-goog-meta-*", "x-goog-resumable", "Authorization"],
     "maxAgeSeconds": 3600

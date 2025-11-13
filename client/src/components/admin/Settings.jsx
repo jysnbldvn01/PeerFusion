@@ -32,6 +32,8 @@ export default function Settings() {
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
   useEffect(() => {
     if (activeTab === 'moderators') {
       fetchModerators();
@@ -42,7 +44,7 @@ export default function Settings() {
     const token = localStorage.getItem('token');
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/moderators', {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/moderators`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setModerators(response.data);
@@ -90,7 +92,7 @@ export default function Settings() {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.put('http://localhost:5000/api/admin/change-password', 
+      await axios.put(`${API_BASE_URL}/api/admin/change-password`, 
         {
           currentPassword: changePassword.currentPassword,
           newPassword: changePassword.newPassword
@@ -129,7 +131,7 @@ export default function Settings() {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.post('http://localhost:5000/api/admin/moderators', 
+      await axios.post(`${API_BASE_URL}/api/admin/moderators`, 
         newModerator,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -156,7 +158,7 @@ export default function Settings() {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`http://localhost:5000/api/admin/moderators/${moderatorId}`, {
+      await axios.delete(`${API_BASE_URL}/api/admin/moderators/${moderatorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -194,7 +196,7 @@ export default function Settings() {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.put(`http://localhost:5000/api/admin/moderators/${moderatorId}`, 
+      await axios.put(`${API_BASE_URL}/api/admin/moderators/${moderatorId}`, 
         editForm,
         {
           headers: { Authorization: `Bearer ${token}` }

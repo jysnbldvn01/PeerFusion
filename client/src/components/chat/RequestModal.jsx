@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const RequestModal = ({ peer, currentUser, onClose, onRequested }) => {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ const RequestModal = ({ peer, currentUser, onClose, onRequested }) => {
   const sendRequest = async () => {
     setLoading(true);
     try {
-      await axios.post(`${API}/session/request`, { requester_id: currentUser.id, receiver_id: peer.id });
+      await axios.post(`${API_BASE_URL}/session/request`, { requester_id: currentUser.id, receiver_id: peer.id });
       onRequested && onRequested();
     } catch (err) {
       console.error(err);

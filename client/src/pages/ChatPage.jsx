@@ -15,6 +15,7 @@ import {
   arrayUnion
 } from "firebase/firestore";
 import { db } from "../firebase";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // Icon components
 const SearchIcon = () => (
@@ -75,11 +76,10 @@ export default function ChatPage() {
     if (!avatar || typeof avatar !== 'string') return null;
     if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
     const file = avatar.replace(/^\/+/, '');
-    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    const UPLOADS_BASE = API_BASE_URL + '/uploads/';
     return `${UPLOADS_BASE}${file}`;
-  };
 
+  };
   // Search states
   const [conversationSearch, setConversationSearch] = useState("");
   const [messageSearch, setMessageSearch] = useState("");
@@ -406,7 +406,7 @@ export default function ChatPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const API = (process.env.REACT_APP_API_URL || 'http://:5000/api').replace(/\/$/, '');
     fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
       .then((list) => {
@@ -453,51 +453,50 @@ export default function ChatPage() {
   const closeMediaModal = () => setShowMediaModal(false);
   const closeFilesModal = () => setShowFilesModal(false);
 
-  const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const handleReportUser = async () => {
+      if (!activeConversation?.otherUser?.id) return;
+      try {
+        setReportUserSubmitting(true);
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        // Add report data
+        formData.append('reported_user_id', activeConversation.otherUser.id);
+        formData.append('report_type', reportUserOffense);
+        formData.append('description', reportUserReason);
+        formData.append('source', 'chat_page');
+        
+        // Add evidence files
+        evidenceFiles.forEach(file => {
+          formData.append('evidence', file);
+        });
 
-  const handleReportUser = async () => {
-    if (!activeConversation?.otherUser?.id) return;
-    try {
-      setReportUserSubmitting(true);
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-      // Add report data
-      formData.append('reported_user_id', activeConversation.otherUser.id);
-      formData.append('report_type', reportUserOffense);
-      formData.append('description', reportUserReason);
-      formData.append('source', 'chat_page');
-      
-      // Add evidence files
-      evidenceFiles.forEach(file => {
-      formData.append('evidence', file);
-    });
-
-    const res = await fetch(`${API}/reports`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      body: formData
-    });
-      
-      const data = await res.json();
-      
-      if (data?.success) {
-        alert('Report submitted successfully.');
-        setShowReportUserModal(false);
-        setReportUserReason("");
-        setReportUserOffense('Harassment');
-        setEvidenceFiles([]);
-      } else {
-        alert(data?.error || 'Failed to submit report');
+        // Updated API endpoint
+        const res = await fetch(`${API_BASE_URL}/api/reports`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        const data = await res.json();
+        
+        if (data?.success) {
+          alert('Report submitted successfully.');
+          setShowReportUserModal(false);
+          setReportUserReason("");
+          setReportUserOffense('Harassment');
+          setEvidenceFiles([]);
+        } else {
+          alert(data?.error || 'Failed to submit report');
+        }
+      } catch (e) {
+        console.error('Report user error:', e);
+        alert('Error submitting report.');
+      } finally {
+        setReportUserSubmitting(false);
       }
-    } catch (e) {
-      console.error('Report user error:', e);
-      alert('Error submitting report.');
-    } finally {
-      setReportUserSubmitting(false);
-    }
-  };
+    };
 
   if (loading) {
     return (

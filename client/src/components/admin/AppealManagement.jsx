@@ -200,9 +200,7 @@ const AppealManagement = () => {
     pagination: true
   });
 
-  const API_BASE = process.env.NODE_ENV === 'production' 
-    ? process.env.REACT_APP_API_URL_PROD 
-    : process.env.REACT_APP_API_URL;
+  const API_BASE = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     fetchAppeals();

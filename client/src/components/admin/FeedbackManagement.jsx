@@ -45,6 +45,8 @@ export default function FeedbackManagement() {
     filters: false
   });
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
   // Get avatar URL - handle both full URLs and relative paths
   const getAvatarUrl = (avatar) => {
     if (!avatar) return null;
@@ -54,11 +56,11 @@ export default function FeedbackManagement() {
     
     // If it starts with /uploads or similar, construct full URL
     if (avatar.startsWith('/')) {
-      return `http://localhost:5000${avatar}`;
+      return `${API_BASE_URL}${avatar}`;
     }
     
     // If it's just a filename, assume it's in uploads directory
-    return `http://localhost:5000/uploads/${avatar}`;
+    return `${API_BASE_URL}/uploads/${avatar}`;
   };
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function FeedbackManagement() {
     try {
       setSkeletonLoading(prev => ({ ...prev, users: true, header: true }));
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/feedback/unique-users-with-recommended', {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/feedback/unique-users-with-recommended`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUniqueUsers(response.data.users);
@@ -92,7 +94,7 @@ export default function FeedbackManagement() {
     const token = localStorage.getItem('token');
     try {
       setSkeletonLoading(prev => ({ ...prev, stats: true }));
-      const response = await axios.get('http://localhost:5000/api/admin/feedback/stats', {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/feedback/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const statsData = response.data.stats || {};
@@ -132,7 +134,7 @@ export default function FeedbackManagement() {
     try {
       setSkeletonLoading(prev => ({ ...prev, feedback: true, filters: true }));
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/admin/feedback/user/${userId}?page=${page}&limit=10`, {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/feedback/user/${userId}?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

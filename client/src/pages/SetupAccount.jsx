@@ -4,6 +4,8 @@ import axios from 'axios';
 import { FiUpload, FiUser, FiAward, FiFileText, FiCalendar, FiUsers, FiLink, FiPhone, FiSave, FiX, FiClock, FiChevronRight, FiChevronLeft, FiCheck } from 'react-icons/fi';
 import '../css/setup.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const SetupAccount = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState({
@@ -63,7 +65,7 @@ const SetupAccount = () => {
       }
 
       try {
-        const res = await axios.get('http://localhost:5000/api/profile', {
+        const res = await axios.get(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data?.username && res.data.username !== `User ${res.data.user_id}`) {
@@ -87,7 +89,7 @@ const SetupAccount = () => {
     const fetchSubjects = async () => {
       try {
         setIsLoadingSubjects(true);
-        const res = await axios.get('http://localhost:5000/api/profile/subjects');
+        const res = await axios.get(`${API_BASE_URL}/api/profile/subjects`);
         console.log('Fetched subjects:', res.data);
         setSubjectCategories(res.data);
       } catch (err) {
@@ -293,7 +295,7 @@ const SetupAccount = () => {
         formData.append('avatar', avatarFile);
       }
 
-      const response = await axios.post('http://localhost:5000/api/profile/setup', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/profile/setup`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

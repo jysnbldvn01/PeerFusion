@@ -77,6 +77,7 @@ const FloatingChatToggle = () => {
   const [conversationUnreadCounts, setConversationUnreadCounts] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [profilesById, setProfilesById] = useState({});
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const chatRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -93,8 +94,7 @@ const FloatingChatToggle = () => {
     if (!avatar || typeof avatar !== 'string') return null;
     if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
     const file = avatar.replace(/^\/+/, '');
-    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    const UPLOADS_BASE = API.replace(/\/api$/, '') + '/uploads/';
+    const UPLOADS_BASE = API_BASE_URL + '/uploads/';
     return `${UPLOADS_BASE}${file}`;
   };
 
@@ -102,8 +102,9 @@ const FloatingChatToggle = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE_URL}/api/profile/others`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    })
       .then((res) => res.json())
       .then((list) => {
         const map = {};

@@ -167,6 +167,8 @@ const ReportManagement = () => {
     pagination: true
   });
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
   const getExpectedConsequence = (currentStrikes, reportType, severity) => {
     const zeroToleranceTypes = ['Hate Speech', 'Sexual Content', 'Violence or Threats', 'Self-harm'];
     
@@ -215,7 +217,7 @@ const ReportManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/admin/reports?page=${currentPage}&limit=${ITEMS_PER_PAGE}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/reports?page=${currentPage}&limit=${ITEMS_PER_PAGE}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -314,7 +316,7 @@ const filterAndSortReports = () => {
   const updateReportStatus = async (reportId, status) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:5000/api/admin/reports/${reportId}/status`, 
+      await axios.patch(`${API_BASE_URL}/api/admin/reports/${reportId}/status`, 
         { 
           status, 
           resolution_notes: resolutionNotes,
@@ -514,7 +516,7 @@ const filterAndSortReports = () => {
   const downloadEvidence = async (evidence) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/reports/evidence/${evidence.filename}`, {
+      const response = await fetch(`${API_BASE_URL}/api/reports/evidence/${evidence.filename}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

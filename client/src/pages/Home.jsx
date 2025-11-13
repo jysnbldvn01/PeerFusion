@@ -17,6 +17,7 @@ const Home = () => {
   const [showAllFeedback, setShowAllFeedback] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState({});
   const [recommendedUsers, setRecommendedUsers] = useState([]);
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const slides = [
     { image: "/images/banner1.png", alt: "Share your skills" },
@@ -32,11 +33,11 @@ const Home = () => {
       setIsLoading(true);
       try {
         const [usersRes, subjectsRes, recommendedRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/profile/others', {
+          axios.get(`${API_BASE_URL}/api/profile/others`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           }),
-          axios.get('http://localhost:5000/api/profile/subjects'),
-          axios.get('http://localhost:5000/api/profile/recommended', {
+          axios.get(`${API_BASE_URL}/api/profile/subjects`),
+          axios.get(`${API_BASE_URL}/api/profile/recommended`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           }).catch(err => {
             console.error('Recommended API Error:', err.response?.data || err.message);
@@ -130,7 +131,7 @@ const Home = () => {
   const fetchFeedback = async (userId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/profile/feedback/${userId}`,
+        `${API_BASE_URL}/api/profile/feedback/${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -173,7 +174,7 @@ const Home = () => {
 
     try {
       const countRes = await axios.get(
-        `http://localhost:5000/api/session/unique-partners/${user.id}`,
+        `${API_BASE_URL}/api/session/unique-partners/${user.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSelectedUser((prev) => ({
@@ -190,14 +191,14 @@ const Home = () => {
 
     try {
       const { data: me } = await axios.get(
-        "http://localhost:5000/api/profile",
+        `${API_BASE_URL}/api/profile`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!me.user_id) { alert("❌ Error: Could not fetch your user ID."); return; }
 
       const response = await axios.post(
-        "http://localhost:5000/api/session/request",
+        `${API_BASE_URL}/api/session/request`,
         { requester_id: me.user_id, receiver_id: selectedUser.id },
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
       );
@@ -349,7 +350,7 @@ const Home = () => {
                 <div className="peerfusion-card-avatar-container">
                   {user.avatar && (
                     <img 
-                      src={`http://localhost:5000/uploads/${user.avatar}`} 
+                      src={`${API_BASE_URL}/uploads/${user.avatar}`} 
                       alt="Avatar" 
                       className="peerfusion-user-avatar" 
                     />
@@ -405,7 +406,7 @@ const Home = () => {
             <div className="peerfusion-modal-avatar-container">
               {selectedUser.avatar && (
                 <img
-                  src={`http://localhost:5000/uploads/${selectedUser.avatar}`}
+                  src={`${API_BASE_URL}/uploads/${selectedUser.avatar}`}
                   alt="Avatar"
                   className="peerfusion-modal-avatar"
                 />
@@ -528,7 +529,7 @@ const Home = () => {
                           <div className="peerfusion-feedback-item">
                             <div className="peerfusion-feedback-header">
                               <img 
-                                src={reviews[0].sender_avatar ? `http://localhost:5000/uploads/${reviews[0].sender_avatar}` : '/default-avatar.png'} 
+                                src={reviews[0].sender_avatar ? `${API_BASE_URL}/uploads/${reviews[0].sender_avatar}` : '/default-avatar.png'} 
                                 alt={reviews[0].sender_name} 
                                 className="peerfusion-feedback-avatar" 
                               />

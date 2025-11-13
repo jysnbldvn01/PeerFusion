@@ -21,6 +21,9 @@ export default function ModeratorSettings() {
     confirm: false
   });
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setError('');
@@ -54,7 +57,7 @@ export default function ModeratorSettings() {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.put('http://localhost:5000/api/admin/change-password', 
+      await axios.put(`${API_BASE_URL}/api/admin/change-password`, 
         {
           currentPassword: changePassword.currentPassword,
           newPassword: changePassword.newPassword

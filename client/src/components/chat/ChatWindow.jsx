@@ -19,7 +19,7 @@ import "../../css/chat.css";
 
 import { socket, identifySocket } from "../../utils/socket";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -138,7 +138,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     if (typeof avatar !== 'string') return null;
     if (avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
     const file = avatar.replace(/^\/+/, "");
-    const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+    const API_BASE = API_BASE_URL + '/api';
     const UPLOADS_BASE = API_BASE.replace(/\/api$/, "") + "/uploads/";
     return `${UPLOADS_BASE}${file}`;
   };
@@ -149,7 +149,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       if (!conversationId || !currentUser?.user_id) return;
       
       try {
-        const res = await fetch(`${API}/session/can-schedule/${conversationId}/${currentUser.user_id}`);
+        const res = await fetch(`${API_BASE_URL}/api/session/can-schedule/${conversationId}/${currentUser.user_id}`);
         const data = await res.json();
         
         if (data.canSchedule !== undefined) {
@@ -189,8 +189,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
-    fetch(`${API_BASE}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE_URL}/api/profile/others`)
       .then(res => res.json())
       .then(list => {
         const map = {};
@@ -250,7 +249,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         return;
       }
       try {
-        const res = await fetch(`${API}/meeting/conversation/${conversationId}`);
+        const res = await fetch(`${API_BASE_URL}/api/meeting/conversation/${conversationId}`);
         const data = await res.json();
         if (data.success) {
           setCurrentMeeting(data.meeting || null);
@@ -622,7 +621,7 @@ const handleJoin = () => {
     }
 
     try {
-      const res = await fetch(`${API}/meeting/schedule`, {
+       const res = await fetch(`${API_BASE_URL}/api/meeting/schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -703,8 +702,7 @@ const handleJoin = () => {
         description,
         source: 'chat_message'
       };
-      const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
-      const res = await fetch(`${API_BASE}/reports`, {
+      const res = await fetch(`${API_BASE_URL}/api/reports`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

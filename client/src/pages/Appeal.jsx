@@ -18,7 +18,7 @@ const AppealPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+ const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     fetchUserData();
@@ -61,7 +61,7 @@ const AppealPage = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${API_BASE}/profile`, {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -92,7 +92,7 @@ const AppealPage = () => {
   const fetchUserAppeals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/appeals/my-appeals`, {
+      const response = await fetch(`${API_BASE_URL}/appeals/my-appeals`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -194,7 +194,7 @@ const handleSubmit = async (e) => {
       strike_count: strikeCount
     });
 
-    const response = await fetch(`${API_BASE}/appeals/submit`, {
+    const response = await fetch(`${API_BASE_URL}/appeals/submit`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`

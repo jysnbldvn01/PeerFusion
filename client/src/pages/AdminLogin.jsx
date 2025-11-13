@@ -12,6 +12,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [roleType, setRoleType] = useState('admin');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -27,7 +28,7 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', form);
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, form);
       const { token } = res.data;
       const decoded = JSON.parse(atob(token.split('.')[1]));
 
