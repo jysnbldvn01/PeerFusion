@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { identifySocket } from '../utils/socket';
+import { socket } from '../utils/socket';
 import '../css/auth.css';
 const API_BASE_URL = process.env.REACT_APP_API_URL || "https://peerfusion-xh73.onrender.com";
 // SVG Icons for features
