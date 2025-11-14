@@ -267,7 +267,7 @@ const fetchAppeals = async () => {
     
     for (const userId of userIds) {
       try {
-        const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+        const response = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -305,7 +305,7 @@ const fetchAppeals = async () => {
   const fetchUserProfile = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+      const response = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
