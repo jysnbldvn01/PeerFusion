@@ -558,6 +558,7 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
   );
 };
 
+
 // Change Email Modal Component
 const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   const [emailForm, setEmailForm] = useState({
@@ -567,6 +568,38 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   });
   const [emailErrors, setEmailErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationStep, setVerificationStep] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [hasPendingChange, setHasPendingChange] = useState(false);
+
+  // Check for pending email change when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      checkPendingEmailChange();
+    }
+  }, [isOpen]);
+
+  const checkPendingEmailChange = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/profile/pending-email-change`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.hasPendingChange) {
+        setHasPendingChange(true);
+        setPendingEmail(response.data.currentEmail);
+        setVerificationStep(true);
+      }
+    } catch (err) {
+      console.error('Error checking pending email change:', err);
+    }
+  };
 
   const handleEmailInputChange = (e) => {
     const { name, value } = e.target;
@@ -608,16 +641,138 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
     }
 
     setIsLoading(true);
-    const success = await onEmailChange(emailForm.currentPassword, emailForm.newEmail);
-    setIsLoading(false);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/change-email`,
+        {
+          currentPassword: emailForm.currentPassword,
+          newEmail: emailForm.newEmail
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        if (response.data.requiresVerification) {
+          setPendingEmail(emailForm.newEmail);
+          setVerificationStep(true);
+          setHasPendingChange(true);
+          setEmailErrors({});
+        } else {
+          alert('Email changed successfully!');
+          handleClose();
+        }
+      }
+    } catch (err) {
+      console.error('Email change error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to change email';
+      if (err.response?.status === 401) {
+        setEmailErrors({ currentPassword: 'Current password is incorrect' });
+      } else if (err.response?.status === 409) {
+        setEmailErrors({ newEmail: 'This email is already in use' });
+      } else {
+        setEmailErrors({ general: errorMessage });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
     
-    if (success) {
-      setEmailForm({
-        currentPassword: '',
-        newEmail: '',
-        confirmEmail: ''
-      });
-      setEmailErrors({});
+    if (!verificationCode) {
+      setEmailErrors({ verification: 'Please enter the verification code' });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/verify-email-change`,
+        {
+          verificationCode: verificationCode
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Email changed successfully! Please check your new email for verification.');
+        handleClose();
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to verify email';
+      setEmailErrors({ verification: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/resend-email-change-code`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('New verification code sent to your email.');
+        setEmailErrors({});
+      }
+    } catch (err) {
+      console.error('Resend error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to resend code';
+      setEmailErrors({ verification: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelChange = async () => {
+    if (!window.confirm('Are you sure you want to cancel the email change? Your email will be reverted to the original address.')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/cancel-email-change`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Email change cancelled successfully.');
+        handleClose();
+      }
+    } catch (err) {
+      console.error('Cancel error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to cancel email change';
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -628,6 +783,10 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
       confirmEmail: ''
     });
     setEmailErrors({});
+    setVerificationStep(false);
+    setVerificationCode('');
+    setPendingEmail('');
+    setHasPendingChange(false);
     onClose();
   };
 
@@ -640,96 +799,184 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
           <CloseIcon />
         </button>
 
-        <div className="peerfusion-email-header">
-          <h3 className="peerfusion-email-title">Change Email Address</h3>
-          <p className="peerfusion-email-subtitle">Enter your current password and new email address</p>
-        </div>
-
-        <div className="peerfusion-modal-main">
-          <form onSubmit={handleSubmit} className="peerfusion-email-form">
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">Current Password</label>
-              <input 
-                type="password" 
-                name="currentPassword"
-                value={emailForm.currentPassword}
-                onChange={handleEmailInputChange}
-                className={`peerfusion-email-input ${emailErrors.currentPassword ? 'peerfusion-email-input-error' : ''}`}
-                placeholder="Enter your current password"
-                disabled={isLoading}
-              />
-              {emailErrors.currentPassword && (
-                <span className="peerfusion-email-error">{emailErrors.currentPassword}</span>
-              )}
+        {!verificationStep ? (
+          <>
+            <div className="peerfusion-email-header">
+              <h3 className="peerfusion-email-title">Change Email Address</h3>
+              <p className="peerfusion-email-subtitle">Enter your current password and new email address</p>
             </div>
 
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">New Email Address</label>
-              <input 
-                type="email" 
-                name="newEmail"
-                value={emailForm.newEmail}
-                onChange={handleEmailInputChange}
-                className={`peerfusion-email-input ${emailErrors.newEmail ? 'peerfusion-email-input-error' : ''}`}
-                placeholder="Enter your new email address"
-                disabled={isLoading}
-              />
-              {emailErrors.newEmail && (
-                <span className="peerfusion-email-error">{emailErrors.newEmail}</span>
-              )}
-            </div>
+            <div className="peerfusion-modal-main">
+              <form onSubmit={handleSubmit} className="peerfusion-email-form">
+                <div className="peerfusion-form-group">
+                  <label className="peerfusion-form-label">Current Password</label>
+                  <input 
+                    type="password" 
+                    name="currentPassword"
+                    value={emailForm.currentPassword}
+                    onChange={handleEmailInputChange}
+                    className={`peerfusion-email-input ${emailErrors.currentPassword ? 'peerfusion-email-input-error' : ''}`}
+                    placeholder="Enter your current password"
+                    disabled={isLoading}
+                  />
+                  {emailErrors.currentPassword && (
+                    <span className="peerfusion-email-error">{emailErrors.currentPassword}</span>
+                  )}
+                </div>
 
-            <div className="peerfusion-form-group">
-              <label className="peerfusion-form-label">Confirm New Email</label>
-              <input 
-                type="email" 
-                name="confirmEmail"
-                value={emailForm.confirmEmail}
-                onChange={handleEmailInputChange}
-                className={`peerfusion-email-input ${emailErrors.confirmEmail ? 'peerfusion-email-input-error' : ''}`}
-                placeholder="Confirm your new email address"
-                disabled={isLoading}
-              />
-              {emailErrors.confirmEmail && (
-                <span className="peerfusion-email-error">{emailErrors.confirmEmail}</span>
-              )}
-            </div>
+                <div className="peerfusion-form-group">
+                  <label className="peerfusion-form-label">New Email Address</label>
+                  <input 
+                    type="email" 
+                    name="newEmail"
+                    value={emailForm.newEmail}
+                    onChange={handleEmailInputChange}
+                    className={`peerfusion-email-input ${emailErrors.newEmail ? 'peerfusion-email-input-error' : ''}`}
+                    placeholder="Enter your new email address"
+                    disabled={isLoading}
+                  />
+                  {emailErrors.newEmail && (
+                    <span className="peerfusion-email-error">{emailErrors.newEmail}</span>
+                  )}
+                </div>
 
-            <div className="peerfusion-email-notice">
-              <p className="peerfusion-email-notice-title">Important Note</p>
-              <ul className="peerfusion-email-notice-list">
-                <li className="peerfusion-email-notice-item">You will need to verify your new email address</li>
-                <li className="peerfusion-email-notice-item">Your login credentials will be updated immediately</li>
-                <li className="peerfusion-email-notice-item">All future communications will be sent to the new email</li>
-              </ul>
-            </div>
+                <div className="peerfusion-form-group">
+                  <label className="peerfusion-form-label">Confirm New Email</label>
+                  <input 
+                    type="email" 
+                    name="confirmEmail"
+                    value={emailForm.confirmEmail}
+                    onChange={handleEmailInputChange}
+                    className={`peerfusion-email-input ${emailErrors.confirmEmail ? 'peerfusion-email-input-error' : ''}`}
+                    placeholder="Confirm your new email address"
+                    disabled={isLoading}
+                  />
+                  {emailErrors.confirmEmail && (
+                    <span className="peerfusion-email-error">{emailErrors.confirmEmail}</span>
+                  )}
+                </div>
 
-            <div className="peerfusion-email-actions">
-              <button 
-                type="button" 
-                className="peerfusion-email-cancel"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                className="peerfusion-email-submit"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="peerfusion-email-loading"></span>
-                    Changing...
-                  </>
-                ) : (
-                  'Change Email'
+                {emailErrors.general && (
+                  <div className="peerfusion-email-error-general">
+                    {emailErrors.general}
+                  </div>
                 )}
-              </button>
+
+                <div className="peerfusion-email-notice">
+                  <p className="peerfusion-email-notice-title">Important Note</p>
+                  <ul className="peerfusion-email-notice-list">
+                    <li className="peerfusion-email-notice-item">You will need to verify your new email address</li>
+                    <li className="peerfusion-email-notice-item">Your login credentials will be updated immediately</li>
+                    <li className="peerfusion-email-notice-item">All future communications will be sent to the new email</li>
+                  </ul>
+                </div>
+
+                <div className="peerfusion-email-actions">
+                  <button 
+                    type="button" 
+                    className="peerfusion-email-cancel"
+                    onClick={handleClose}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="peerfusion-email-submit"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="peerfusion-email-loading"></span>
+                        Verifying...
+                      </>
+                    ) : (
+                      'Send Verification Code'
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="peerfusion-email-header">
+              <h3 className="peerfusion-email-title">
+                {hasPendingChange ? 'Complete Email Change' : 'Verify Email Change'}
+              </h3>
+              <p className="peerfusion-email-subtitle">
+                {hasPendingChange 
+                  ? `Complete your pending email change to ${pendingEmail}`
+                  : `Enter the 6-digit code sent to ${pendingEmail}`
+                }
+              </p>
+            </div>
+
+            <div className="peerfusion-modal-main">
+              <form onSubmit={handleVerifyCode} className="peerfusion-email-form">
+                <div className="peerfusion-form-group">
+                  <label className="peerfusion-form-label">Verification Code</label>
+                  <input 
+                    type="text" 
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    className={`peerfusion-email-input ${emailErrors.verification ? 'peerfusion-email-input-error' : ''}`}
+                    placeholder="Enter 6-digit code"
+                    maxLength="6"
+                    disabled={isLoading}
+                  />
+                  {emailErrors.verification && (
+                    <span className="peerfusion-email-error">{emailErrors.verification}</span>
+                  )}
+                </div>
+
+                <div className="peerfusion-email-actions-verification">
+                  <button 
+                    type="button" 
+                    className="peerfusion-email-secondary"
+                    onClick={handleResendCode}
+                    disabled={isLoading}
+                  >
+                    Resend Code
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="peerfusion-email-submit"
+                    disabled={isLoading || verificationCode.length !== 6}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="peerfusion-email-loading"></span>
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify & Change Email'
+                    )}
+                  </button>
+                </div>
+
+                <div className="peerfusion-email-actions">
+                  <button 
+                    type="button" 
+                    className="peerfusion-email-cancel"
+                    onClick={handleCancelChange}
+                    disabled={isLoading}
+                  >
+                    Cancel Email Change
+                  </button>
+                  <button 
+                    type="button" 
+                    className="peerfusion-email-back"
+                    onClick={() => setVerificationStep(false)}
+                    disabled={isLoading}
+                  >
+                    Back to Email Form
+                  </button>
+                </div>
+              </form>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

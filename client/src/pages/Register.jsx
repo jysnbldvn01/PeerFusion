@@ -72,10 +72,8 @@ export default function Register() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? process.env.REACT_APP_API_URL_PROD
-  : process.env.REACT_APP_API_URL;
-
+  
+ const API_BASE_URL = process.env.REACT_APP_API_URL;
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
@@ -93,19 +91,18 @@ export default function Register() {
     }
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     
     setError('');
     setSuccess('');
     
-    // Validation
+    // Validation (same as before)
     if (!form.name || !form.email || !form.password || !form.confirmPassword) {
       setError('Please fill in all fields');
       return;
     }
     
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       setError('Please enter a valid email address');
@@ -117,13 +114,11 @@ export default function Register() {
       return;
     }
     
-    // Password confirmation validation
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
     
-    // Terms and conditions validation
     if (!form.acceptTerms) {
       setError('Please accept the Terms of Service and Privacy Policy');
       return;
@@ -132,7 +127,6 @@ export default function Register() {
     setLoading(true);
     
     try {
-      // Only send name, email, and password to backend
       const { confirmPassword, acceptTerms, ...submitData } = form;
       const response = await axios.post(`${API_BASE_URL}/api/auth/register`, submitData);
       
@@ -155,6 +149,53 @@ export default function Register() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+    const handleVerifyEmail = async (e) => {
+    e.preventDefault();
+    
+    if (!verificationCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+    
+    setVerifying(true);
+    setError('');
+    
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-email`, {
+        email: userEmail,
+        code: verificationCode
+      });
+      
+      if (response.data.success) {
+        setSuccess('Email verified successfully! You can now login to your account.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Verification failed. Please try again.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError('');
+    setSuccess('');
+    
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/resend-verification`, {
+        email: userEmail
+      });
+      
+      if (response.data.success) {
+        setSuccess('New verification code sent to your email.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to resend verification code.');
     }
   };
 
@@ -513,22 +554,79 @@ export default function Register() {
                   </div>
                 </>
               ) : (
+                // Verification Code Section
                 <div className="verification-sent">
                   <div className="verification-icon">
                     <EmailIcon />
                   </div>
                   <h2>Verify your email address</h2>
                   <p>
-                    We've sent a verification link to <strong>{userEmail}</strong>. 
-                    Please check your inbox and click the link to verify your account.
+                    We've sent a 6-digit verification code to <strong>{userEmail}</strong>. 
+                    Please check your inbox and enter the code below to verify your account.
                   </p>
                   
+                  <form className="auth-form" onSubmit={handleVerifyEmail}>
+                    <div className="form-group">
+                      <label htmlFor="verificationCode">Verification Code</label>
+                      <input
+                        id="verificationCode"
+                        name="verificationCode"
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter 6-digit code"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        maxLength="6"
+                        pattern="[0-9]{6}"
+                      />
+                      <small className="form-text">
+                        Enter the 6-digit code from your email
+                      </small>
+                    </div>
+
+                    <div className={`error-message ${error ? 'show' : ''}`}>
+                      {error}
+                    </div>
+                    
+                    {success && (
+                      <div className="success-message">
+                        {success}
+                      </div>
+                    )}
+
+                    <div className="verification-actions">
+                      <button 
+                        type="submit" 
+                        className="submit-btn" 
+                        disabled={verifying || verificationCode.length !== 6}
+                      >
+                        {verifying ? (
+                          <>
+                            <span className="button-loader"></span>
+                            Verifying...
+                          </>
+                        ) : (
+                          'Verify Email'
+                        )}
+                      </button>
+                      
+                      <button 
+                        type="button" 
+                        className="secondary-btn"
+                        onClick={handleResendCode}
+                        disabled={verifying}
+                      >
+                        Resend Code
+                      </button>
+                    </div>
+                  </form>
+
                   <div className="verification-help">
-                    <p>Didn't receive the email?</p>
+                    <p>Didn't receive the code?</p>
                     <ul>
                       <li>Check your spam folder</li>
                       <li>Make sure you entered the correct email address</li>
-                      <li>Wait a few minutes and try registering again</li>
+                      <li>Wait a few minutes and try resending the code</li>
                     </ul>
                   </div>
 

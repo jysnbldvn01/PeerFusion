@@ -17,9 +17,8 @@ export default function AdminForgotPassword({ onBackToLogin, roleType }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState([false, false, false]);
-  const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.REACT_APP_API_URL_PROD 
-  : process.env.REACT_APP_API_URL;
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const handleChange = (e) => {
     const { name, value } = e.target;

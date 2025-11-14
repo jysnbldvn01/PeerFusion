@@ -32,9 +32,8 @@ const ResetPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-    const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.REACT_APP_API_URL_PROD 
-  : process.env.REACT_APP_API_URL;
+  
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
   
   const { token } = useParams();
   const navigate = useNavigate();

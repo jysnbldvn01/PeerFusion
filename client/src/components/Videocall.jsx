@@ -26,9 +26,7 @@ const Videocall = () => {
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
-  const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? process.env.REACT_APP_API_URL_PROD 
-    : process.env.REACT_APP_API_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const REPORT_TYPES = [
     "Inappropriate Behavior",
@@ -449,7 +447,7 @@ const handleReportSubmit = async () => {
             <div className="feedback-partner-info">
               {partnerInfo?.avatar ? (
                 <img 
-                  src={`${API_BASE_URL}/uploads/${partnerInfo.avatar}`} 
+                  src={`${API_BASE_URL}/api/uploads/${partnerInfo.avatar}`} 
                   alt={partnerInfo.username}
                   className="partner-avatar"
                   onError={(e) => {
@@ -567,7 +565,7 @@ const handleReportSubmit = async () => {
             <div className="feedback-partner-info">
               {partnerInfo?.avatar ? (
                 <img 
-                  src={`${API_BASE_URL}/uploads/${partnerInfo.avatar}`} 
+                  src={`${API_BASE_URL}api/uploads/${partnerInfo.avatar}`} 
                   alt={partnerInfo.username}
                   className="partner-avatar"
                 />

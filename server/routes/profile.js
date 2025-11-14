@@ -5,7 +5,12 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const transporter = require('../config/mailer');
+const crypto = require('crypto');
 
+function generateSixDigitCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => {
@@ -962,6 +967,8 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 
 // ------------------- Change Email --------------------------- //
 router.post('/change-email', authenticateToken, async (req, res) => {
+  let originalEmail = null;
+  
   try {
     const { currentPassword, newEmail } = req.body;
     const userId = req.user.id;
@@ -985,10 +992,10 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     }
 
     const currentPasswordHash = userResults[0].password;
-    const currentEmail = userResults[0].email;
+    originalEmail = userResults[0].email; // Store original email for rollback
 
     // Check if new email is the same as current email
-    if (newEmail === currentEmail) {
+    if (newEmail === originalEmail) {
       return res.status(400).json({ error: 'New email cannot be the same as current email' });
     }
 
@@ -1011,14 +1018,21 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
     const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    // Store verification code in database
+    // Store verification code AND original email in verification_token column
+    // Format: "hashedCode:originalEmail"
+    const verificationData = `${hashedCode}:${originalEmail}`;
+    
     const updateSql = `
       UPDATE users 
-      SET email_verification_code = ?, email_verification_expires = ?, pending_email = ?
+      SET 
+        email = ?,  // Temporarily set to new email
+        is_verified = FALSE, // Mark as unverified until confirmed
+        verification_token = ?, 
+        verification_expires = ?
       WHERE id = ?
     `;
     
-    await db.query(updateSql, [hashedCode, codeExpires, newEmail, userId]);
+    await db.query(updateSql, [newEmail, verificationData, codeExpires, userId]);
 
     // Send verification email to the new email address
     try {
@@ -1046,7 +1060,7 @@ router.post('/change-email', authenticateToken, async (req, res) => {
               <td style="padding: 30px; font-size: 16px; color: #333333;">
                 <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Verification</h2>
                 <p>Hello,</p>
-                <p>You requested to change your PeerFusion account email to this address. Use the following 6-digit verification code to confirm this change:</p>
+                <p>You requested to change your PeerFusion account email from <strong>${originalEmail}</strong> to this address. Use the following 6-digit verification code to confirm this change:</p>
                 <div style="text-align:center; margin: 30px 0;">
                   <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
                     <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
@@ -1055,7 +1069,7 @@ router.post('/change-email', authenticateToken, async (req, res) => {
                 <p style="text-align: center; color: #666; font-size: 14px;">
                   This code will expire in <strong>15 minutes</strong>.
                 </p>
-                <p>If you didn't request this email change, please ignore this email or contact support immediately.</p>
+                <p><strong>Important:</strong> If you didn't request this change, you can cancel it from your profile settings.</p>
                 <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
               </td>
             </tr>
@@ -1074,10 +1088,10 @@ router.post('/change-email', authenticateToken, async (req, res) => {
       
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
-      // Clear the pending email and code if email sending fails
+      // Revert the email change if sending fails
       await db.query(
-        'UPDATE users SET email_verification_code = NULL, email_verification_expires = NULL, pending_email = NULL WHERE id = ?',
-        [userId]
+        'UPDATE users SET email = ?, is_verified = TRUE, verification_token = NULL, verification_expires = NULL WHERE id = ?',
+        [originalEmail, userId]
       );
       return res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
     }
@@ -1090,6 +1104,13 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Email change error:', err);
+    // Rollback email change on any error
+    if (originalEmail) {
+      await db.query(
+        'UPDATE users SET email = ?, is_verified = TRUE, verification_token = NULL, verification_expires = NULL WHERE id = ?',
+        [originalEmail, userId]
+      );
+    }
     res.status(500).json({ error: 'Failed to change email' });
   }
 });
@@ -1104,8 +1125,8 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Verification code is required' });
     }
 
-    // Get user's pending email and verification code
-    const userSql = 'SELECT pending_email, email_verification_code, email_verification_expires FROM users WHERE id = ?';
+    // Get user's current data
+    const userSql = 'SELECT email, verification_token, verification_expires FROM users WHERE id = ?';
     const [userResults] = await db.query(userSql, [userId]);
 
     if (userResults.length === 0) {
@@ -1115,67 +1136,47 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
     const user = userResults[0];
 
     // Check if there's a pending email change
-    if (!user.pending_email || !user.email_verification_code) {
+    if (!user.verification_token) {
       return res.status(400).json({ error: 'No pending email change request found. The request may have expired or been cancelled.' });
     }
 
     // Check if verification code has expired
-    if (new Date(user.email_verification_expires) < new Date()) {
-      // Clear expired data automatically
+    if (new Date(user.verification_expires) < new Date()) {
+      // Extract original email from verification_token and revert
+      const originalEmail = user.verification_token.split(':')[1];
       await db.query(
-        'UPDATE users SET email_verification_code = NULL, email_verification_expires = NULL, pending_email = NULL WHERE id = ?',
-        [userId]
+        'UPDATE users SET email = ?, is_verified = TRUE, verification_token = NULL, verification_expires = NULL WHERE id = ?',
+        [originalEmail, userId]
       );
       return res.status(400).json({ error: 'Verification code has expired. Please request a new email change.' });
     }
 
+    // Extract hashed code and original email from verification_token
+    const [hashedStoredCode, originalEmail] = user.verification_token.split(':');
+
     // Verify the code
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
-    if (user.email_verification_code !== hashedCode) {
+    if (hashedStoredCode !== hashedCode) {
       return res.status(400).json({ error: 'Invalid verification code' });
     }
 
-    // Check if the pending email is still available (not taken by another user)
-    const emailCheckSql = 'SELECT id FROM users WHERE email = ? AND id != ?';
-    const [emailResults] = await db.query(emailCheckSql, [user.pending_email, userId]);
-
-    if (emailResults.length > 0) {
-      // Clear pending data since email is no longer available
-      await db.query(
-        'UPDATE users SET email_verification_code = NULL, email_verification_expires = NULL, pending_email = NULL WHERE id = ?',
-        [userId]
-      );
-      return res.status(409).json({ error: 'This email is no longer available. Please try a different email.' });
-    }
-
-    // Update the email and clear verification data
+    // Email change verified successfully - keep the new email and clear verification tokens
     const updateSql = `
       UPDATE users 
-      SET email = ?, 
-          is_verified = FALSE, 
-          email_verification_code = NULL, 
-          email_verification_expires = NULL, 
-          pending_email = NULL,
-          verification_token = ?,
-          verification_expires = ?
+      SET 
+        is_verified = TRUE,
+        verification_token = NULL, 
+        verification_expires = NULL
       WHERE id = ?
     `;
     
-    const newVerificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await db.query(updateSql, [userId]);
 
-    await db.query(updateSql, [
-      user.pending_email, 
-      newVerificationToken, 
-      verificationExpires, 
-      userId
-    ]);
-
-    // Send welcome email to the new email address
+    // Send confirmation email
     try {
       const welcomeMailOptions = {
         from: '"PeerFusion" <onboarding@resend.dev>',
-        to: user.pending_email,
+        to: user.email, // This is now the new email
         subject: 'Email Changed Successfully - PeerFusion',
         html: `
         <!DOCTYPE html>
@@ -1197,12 +1198,11 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
               <td style="padding: 30px; font-size: 16px; color: #333333;">
                 <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Changed Successfully</h2>
                 <p>Hello,</p>
-                <p>Your PeerFusion account email has been successfully changed to this address.</p>
+                <p>Your PeerFusion account email has been successfully changed from <strong>${originalEmail}</strong> to this address.</p>
                 <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #f0f9f0; border-radius: 8px;">
-                  <p style="margin: 0; color: #0ea050ff; font-weight: bold;">Your email has been updated!</p>
+                  <p style="margin: 0; color: #0ea050ff; font-weight: bold;">Your email has been updated and verified!</p>
                 </div>
-                <p><strong>Important:</strong> You will need to verify this email address to access all features.</p>
-                <p>If you did not make this change, please contact our support team immediately.</p>
+                <p>All future communications will be sent to this email address.</p>
                 <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
               </td>
             </tr>
@@ -1225,8 +1225,8 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Email changed successfully! Please check your new email for verification instructions.',
-      newEmail: user.pending_email
+      message: 'Email changed and verified successfully!',
+      newEmail: user.email
     });
   } catch (err) {
     console.error('Email verification error:', err);
@@ -1234,13 +1234,13 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
   }
 });
 
-// ------------------- Resend Email Change Code --------------------------- //
-router.post('/resend-email-change-code', authenticateToken, async (req, res) => {
+// ------------------- Cancel Email Change --------------------------- //
+router.post('/cancel-email-change', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get user's pending email
-    const userSql = 'SELECT pending_email FROM users WHERE id = ?';
+    // Get user's current verification data
+    const userSql = 'SELECT verification_token FROM users WHERE id = ?';
     const [userResults] = await db.query(userSql, [userId]);
 
     if (userResults.length === 0) {
@@ -1249,29 +1249,136 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
 
     const user = userResults[0];
 
-    if (!user.pending_email) {
-      return res.status(400).json({ error: 'No pending email change request found' });
+    if (!user.verification_token) {
+      return res.status(400).json({ error: 'No pending email change request to cancel.' });
     }
 
-    // Generate new verification code
-    const verificationCode = generateSixDigitCode();
-    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
-    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    // Extract original email from verification_token
+    const originalEmail = user.verification_token.split(':')[1];
 
-    // Update verification code in database
+    if (!originalEmail) {
+      return res.status(400).json({ error: 'Invalid pending email change data.' });
+    }
+
+    // Revert to original email and clear verification data
     const updateSql = `
       UPDATE users 
-      SET email_verification_code = ?, email_verification_expires = ?
+      SET 
+        email = ?,
+        is_verified = TRUE,
+        verification_token = NULL, 
+        verification_expires = NULL
       WHERE id = ?
     `;
     
-    await db.query(updateSql, [hashedCode, codeExpires, userId]);
+    await db.query(updateSql, [originalEmail, userId]);
 
-    // Resend verification email
+    // Send cancellation confirmation email to the original email
+    try {
+      const currentUserSql = 'SELECT email FROM users WHERE id = ?';
+      const [currentUser] = await db.query(currentUserSql, [userId]);
+      
+      const cancelMailOptions = {
+        from: '"PeerFusion" <onboarding@resend.dev>',
+        to: originalEmail,
+        subject: 'Email Change Cancelled - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Email Change Cancelled</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Cancelled</h2>
+                <p>Hello,</p>
+                <p>Your recent email change request has been cancelled successfully.</p>
+                <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
+                  <p style="margin: 0; color: #856404; font-weight: bold;">Your email remains: <strong>${originalEmail}</strong></p>
+                </div>
+                <p>If you did not request this cancellation, please contact our support team immediately to secure your account.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
+
+      await transporter.sendMail(cancelMailOptions);
+      console.log(`Cancellation confirmation sent to: ${originalEmail}`);
+      
+    } catch (emailError) {
+      console.error('Failed to send cancellation email:', emailError);
+      // Continue even if cancellation email fails
+    }
+
+    res.json({
+      success: true,
+      message: 'Email change cancelled successfully. Your email has been reverted to the original address.',
+      email: originalEmail
+    });
+  } catch (err) {
+    console.error('Cancel email change error:', err);
+    res.status(500).json({ error: 'Failed to cancel email change' });
+  }
+});
+
+// ------------------- Resend Email Change Code --------------------------- //
+router.post('/resend-email-change-code', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const userSql = 'SELECT email, verification_token, verification_expires FROM users WHERE id = ?';
+    const [userResults] = await db.query(userSql, [userId]);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResults[0];
+
+    if (!user.verification_token) {
+      return res.status(400).json({ error: 'No pending email change request found' });
+    }
+    const [oldHashedCode, originalEmail] = user.verification_token.split(':');
+    if (!originalEmail) {
+      return res.status(400).json({ error: 'Invalid pending email change data' });
+    }
+
+    const verificationCode = generateSixDigitCode();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const verificationData = `${hashedCode}:${originalEmail}`;
+    
+    const updateSql = `
+      UPDATE users 
+      SET verification_token = ?, verification_expires = ?
+      WHERE id = ?
+    `;
+    
+    await db.query(updateSql, [verificationData, codeExpires, userId]);
+
+    // Resend verification email to the PENDING email (user.email contains the new email)
     try {
       const mailOptions = {
         from: '"PeerFusion" <onboarding@resend.dev>',
-        to: user.pending_email,
+        to: user.email, // This is the pending new email address
         subject: 'New Verification Code - PeerFusion',
         html: `
         <!DOCTYPE html>
@@ -1293,16 +1400,16 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
               <td style="padding: 30px; font-size: 16px; color: #333333;">
                 <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">New Verification Code</h2>
                 <p>Hello,</p>
-                <p>You requested a new verification code for your email change request. Use the following 6-digit code:</p>
+                <p>You requested a new verification code for your email change from <strong>${originalEmail}</strong> to this address.</p>
                 <div style="text-align:center; margin: 30px 0;">
                   <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
                     <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
                   </div>
                 </div>
                 <p style="text-align: center; color: #666; font-size: 14px;">
-                  This code will expire in <strong>15 minutes</strong>.
+                  This new code will expire in <strong>15 minutes</strong>.
                 </p>
-                <p>If you didn't request this code, please contact support immediately.</p>
+                <p><strong>Important:</strong> If you didn't request this code, you can cancel the email change from your profile settings.</p>
                 <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
               </td>
             </tr>
@@ -1317,7 +1424,7 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
       };
 
       await transporter.sendMail(mailOptions);
-      console.log(`New verification code sent to: ${user.pending_email}`);
+      console.log(`New verification code sent to: ${user.email}`);
       
     } catch (emailError) {
       console.error('Failed to resend verification email:', emailError);
@@ -1334,6 +1441,41 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
   }
 });
 
+// ------------------- Check Pending Email Change --------------------------- //
+router.get('/pending-email-change', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const userSql = 'SELECT email, verification_token, verification_expires FROM users WHERE id = ?';
+    const [userResults] = await db.query(userSql, [userId]);
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResults[0];
+
+    if (!user.verification_token) {
+      return res.json({
+        hasPendingChange: false
+      });
+    }
+
+    const originalEmail = user.verification_token.split(':')[1];
+    const isExpired = new Date(user.verification_expires) < new Date();
+
+    res.json({
+      hasPendingChange: true,
+      currentEmail: user.email,
+      originalEmail: originalEmail,
+      isExpired: isExpired,
+      expiresAt: user.verification_expires
+    });
+  } catch (err) {
+    console.error('Check pending email change error:', err);
+    res.status(500).json({ error: 'Failed to check pending email change' });
+  }
+});
 // ------------------- Account Deactivation & Activation --------------------------- //
 
 // Request account deactivation (voluntary break)

@@ -1553,3 +1553,302 @@
     font-size: 0.85rem;
   }
 }
+/* Verification Code Styles - ADD THESE */
+.verification-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.secondary-btn {
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.secondary-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: #6ba84f;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.text-btn:hover:not(:disabled) {
+  color: #4a7c3a;
+  background: rgba(107, 168, 79, 0.05);
+  border-radius: 6px;
+}
+
+.text-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-text {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Enhanced Verification Help Section */
+.verification-help {
+  margin-top: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border-left: 4px solid #6ba84f;
+  animation: fadeInUp 0.6s ease-out 0.7s both;
+}
+
+.verification-help p {
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: #2d5a27;
+  font-size: 0.95rem;
+}
+
+.verification-help ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #4a5568;
+}
+
+.verification-help li {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+.verification-help li::before {
+  content: '•';
+  color: #6ba84f;
+  font-weight: bold;
+  position: absolute;
+  left: -12px;
+}
+
+/* Verification Code Input Specific Styles */
+.verification-sent .auth-form {
+  text-align: left;
+  animation: fadeInUp 0.6s ease-out 0.4s both;
+}
+
+.verification-sent .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.verification-sent .form-control {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.verification-sent .form-control:focus {
+  border-color: #6ba84f;
+  box-shadow: 0 0 0 3px rgba(107, 168, 79, 0.1);
+  background: #ffffff;
+}
+
+.verification-sent .form-control:valid {
+  border-color: #6ba84f;
+  background: #f0f7ed;
+}
+
+/* Update the existing verification-sent styles */
+.verification-sent {
+  text-align: center;
+  padding: 2rem 1rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.verification-sent h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.verification-sent p {
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.verification-sent strong {
+  color: #2d5a27;
+  font-weight: 600;
+  background: rgba(107, 168, 79, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Verification Icon Animation */
+.verification-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bounceIn 0.8s ease-out, float 3s ease-in-out infinite;
+}
+
+.verification-icon svg {
+  width: 40px;
+  height: 40px;
+  color: #ffffff;
+}
+
+/* Countdown Timer */
+.verification-countdown {
+  color: #718096;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+  animation: fadeInUp 0.6s ease-out 0.6s both;
+}
+
+/* Success State for Verification */
+.verification-success {
+  background: #c6f6d5;
+  color: #276749;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 1px solid #9ae6b4;
+  animation: fadeInUp 0.5s ease-out;
+  text-align: center;
+}
+
+/* Responsive Design for Verification */
+@media (max-width: 768px) {
+  .verification-sent {
+    padding: 1.5rem 0.5rem;
+  }
+  
+  .verification-icon {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .verification-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .verification-sent h2 {
+    font-size: 1.5rem;
+  }
+  
+  .verification-actions {
+    gap: 0.75rem;
+  }
+  
+  .secondary-btn,
+  .text-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .verification-help {
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  
+  .verification-sent .form-control {
+    font-size: 1.1rem;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .verification-sent {
+    padding: 1rem 0.25rem;
+  }
+  
+  .verification-sent h2 {
+    font-size: 1.25rem;
+  }
+  
+  .verification-sent p {
+    font-size: 0.9rem;
+  }
+  
+  .verification-help {
+    padding: 1rem;
+  }
+  
+  .verification-help li {
+    font-size: 0.85rem;
+  }
+  
+  .verification-sent .form-control {
+    font-size: 1rem;
+    padding: 0.875rem;
+  }
+}
+
+.verification-sent .submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.verification-sent .button-loader {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+.verification-sent .form-control:focus-visible {
+  outline: 2px solid #6ba84f;
+  outline-offset: 2px;
+}
+
+.secondary-btn:focus-visible,
+.text-btn:focus-visible {
+  outline: 2px solid #6ba84f;
+  outline-offset: 2px;
+}

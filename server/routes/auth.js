@@ -26,16 +26,211 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Email already registered', code: 'EMAIL_EXISTS' });
     }
 
-    // Hash password and create user
+    // Hash password
     const hashed = await bcrypt.hash(password, 10);
-    const insertSql = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
     
-    const [result] = await db.query(insertSql, [name, email, hashed]);
+    // Generate verification code
+    const verificationCode = generateSixDigitCode();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    const codeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create user with verification token (not verified yet)
+    const insertSql = 'INSERT INTO users (name, email, password, verification_token, verification_expires, is_verified, status) VALUES (?, ?, ?, ?, ?, false, "active")';
     
-    res.status(201).json({ message: 'Registered successfully', userId: result.insertId });
+    const [result] = await db.query(insertSql, [name, email, hashed, hashedCode, codeExpires]);
+    
+    // Send verification email
+    const mailOptions = {
+      from: '"PeerFusion" <onboarding@resend.dev>',
+      to: email,
+      subject: 'Verify Your Email - PeerFusion',
+      html: `
+      <!DOCTYPE html>
+      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Email Verification</title>
+      </head>
+      <body style="background-color: #f5f5f5; padding: 40px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+          <tr>
+            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; font-size: 16px; color: #333333;">
+              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Verify Your Email Address</h2>
+              <p>Hello ${name},</p>
+              <p>Welcome to PeerFusion! To complete your registration and start learning with our community, please verify your email address using the code below:</p>
+              <div style="text-align:center; margin: 30px 0;">
+                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
+                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
+                </div>
+              </div>
+              <p style="text-align: center; color: #666; font-size: 14px;">
+                This code will expire in <strong>24 hours</strong>.
+              </p>
+              <p>If you didn't create an account with PeerFusion, please ignore this email.</p>
+              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+              &copy; 2025 PeerFusion. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(201).json({ 
+      message: 'Registration successful! Please check your email to verify your account.',
+      userId: result.insertId,
+      email: email
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration process failed', details: error.message });
+  }
+});
+
+//-------------------------- Verify Email --------------------------//
+router.post('/verify-email', async (req, res) => {
+  const { email, code } = req.body;
+
+  try {
+    const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+
+    // Find user with valid verification code
+    const findUserSql = 'SELECT * FROM users WHERE email = ? AND verification_token = ? AND verification_expires > NOW()';
+    const [users] = await db.query(findUserSql, [email, hashedCode]);
+
+    if (users.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid or expired verification code.' 
+      });
+    }
+
+    const user = users[0];
+
+    // Mark user as verified and clear verification token
+    await db.query(
+      'UPDATE users SET is_verified = true, verification_token = NULL, verification_expires = NULL WHERE id = ?',
+      [user.id]
+    );
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Email verified successfully! You can now login to your account.'
+    });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Email verification failed',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+
+//-------------------------- Resend Verification Code --------------------------//
+router.post('/resend-verification', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Check if user exists and is not verified
+    const findUserSql = 'SELECT * FROM users WHERE email = ? AND is_verified = false';
+    const [users] = await db.query(findUserSql, [email]);
+
+    if (users.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'User not found or already verified.' 
+      });
+    }
+
+    const user = users[0];
+    
+    // Generate new verification code
+    const verificationCode = generateSixDigitCode();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    const codeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Update verification token
+    await db.query(
+      'UPDATE users SET verification_token = ?, verification_expires = ? WHERE id = ?',
+      [hashedCode, codeExpires, user.id]
+    );
+
+    // Send verification email
+    const mailOptions = {
+      from: '"PeerFusion" <onboarding@resend.dev>',
+      to: email,
+      subject: 'New Verification Code - PeerFusion',
+      html: `
+      <!DOCTYPE html>
+      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>New Verification Code</title>
+      </head>
+      <body style="background-color: #f5f5f5; padding: 40px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+          <tr>
+            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; font-size: 16px; color: #333333;">
+              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">New Verification Code</h2>
+              <p>Hello ${user.name},</p>
+              <p>Here is your new verification code for PeerFusion:</p>
+              <div style="text-align:center; margin: 30px 0;">
+                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
+                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
+                </div>
+              </div>
+              <p style="text-align: center; color: #666; font-size: 14px;">
+                This code will expire in <strong>24 hours</strong>.
+              </p>
+              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+              &copy; 2025 PeerFusion. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ 
+      success: true,
+      message: 'New verification code sent to your email.'
+    });
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to resend verification code'
+    });
   }
 });
 

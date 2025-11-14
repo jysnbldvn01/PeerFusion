@@ -34,10 +34,7 @@ const UserAppealPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-const API_BASE = 
-  process.env.NODE_ENV === 'production' 
-    ? process.env.REACT_APP_API_URL_PROD 
-    : process.env.REACT_APP_API_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -99,7 +96,7 @@ const API_BASE =
       console.log('Submitting public appeal:', formData);
 
       // Use the new public endpoint
-      const response = await fetch(`${API_BASE}/appeals/public-submit`, {
+      const response = await fetch(`${API_BASE_URL}/appeals/public-submit`, {
         method: 'POST',
         body: formDataToSend
       });

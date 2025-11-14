@@ -5,9 +5,8 @@ const authenticateToken = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const API_BASE = process.env.NODE_ENV === 'production'
-  ? process.env.REACT_APP_API_URL_PROD
-  : process.env.REACT_APP_API_URL;
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const adminCheckCache = new Map();
 const moderatorCheckCache = new Map();
@@ -2329,9 +2328,9 @@ router.get('/appeals', authenticateToken, requireModeratorOrAdmin, async (req, r
       if (evidence && Array.isArray(evidence)) {
         evidence_urls = evidence.map(evidenceItem => ({
           ...evidenceItem,
-          url: `${API_BASE}/admin/appeals/evidence/${evidenceItem.filename}`,
+          url: `${API_BASE_URL}/admin/appeals/evidence/${evidenceItem.filename}`,
           previewUrl: evidenceItem.mimetype?.startsWith('image/') ? 
-            `${API_BASE}/admin/appeals/evidence/${evidenceItem.filename}` : null
+            `${API_BASE_URL}/admin/appeals/evidence/${evidenceItem.filename}` : null
         }));
       }
       
