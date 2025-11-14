@@ -72,8 +72,11 @@ export default function Register() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+
  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
@@ -91,13 +94,13 @@ export default function Register() {
     }
   };
 
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     setError('');
     setSuccess('');
     
-    // Validation (same as before)
+    // Validation
     if (!form.name || !form.email || !form.password || !form.confirmPassword) {
       setError('Please fill in all fields');
       return;
@@ -152,7 +155,7 @@ export default function Register() {
     }
   };
 
-    const handleVerifyEmail = async (e) => {
+   const handleVerifyEmail = async (e) => {
     e.preventDefault();
     
     if (!verificationCode) {
