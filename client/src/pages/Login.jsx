@@ -4,10 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { identifySocket } from '../utils/socket';
 import '../css/auth.css';
-import { io } from 'socket.io-client';
-const SOCKET_BASE_URL = process.env.REACT_APP_API_URL;
-
-const socket = io(SOCKET_BASE_URL);
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://peerfusion-xh73.onrender.com";
 // SVG Icons for features
 
 const MenuIcon = () => (
@@ -63,7 +60,7 @@ export default function Login() {
     try {
       localStorage.setItem('token', token);
 
-      const profileRes = await axios.get(`${SOCKET_BASE_URL}/api/profile`, {
+      const profileRes = await axios.get(`${API_BASE_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -100,7 +97,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const res = await axios.post(`${SOCKET_BASE_URL}/api/auth/login`, form);
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, form);
       const token = res.data.token;
       await handleLoginSuccess(token);
     } catch (err) {
@@ -112,7 +109,7 @@ export default function Login() {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${SOCKET_BASE_URL}/api/auth/google-login`, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/google-login`, {
         token: credentialResponse.credential,
       });
       const { token } = res.data;

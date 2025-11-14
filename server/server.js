@@ -164,13 +164,14 @@ const startServer = () => {
   const firestore = initializeFirebase();
   const app = express();
 
-  app.use(
-    cors({
-      origin: process.env.FRONTEND_ORIGIN,
-      credentials: true,
-    })
-  );
-
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "https://peerfusion-frontend.onrender.com",
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
   app.use(express.json());
   app.use('/uploads', express.static('uploads'));
 

@@ -324,7 +324,7 @@ router.get('/others', authenticateToken, async (req, res) => {
     `;
 
     const [results] = await db.query(sql, [req.user.id]);
-    console.log('✅ Query successful, found users:', results.length);
+    console.log(' Query successful, found users:', results.length);
 
     // Parse availability JSON strings
     const usersWithParsedAvailability = results.map(user => {

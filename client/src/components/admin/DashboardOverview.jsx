@@ -394,44 +394,44 @@ const processDashboardData = useCallback((data) => {
     const requests = [
       { 
         key: 'users', 
-        url: `${API_BASE_URL}/admin/users?limit=1000`,
+        url: `${API_BASE_URL}/api/admin/users?limit=1000`,
         fallback: { users: [] }
       },
       ...(isModerator ? [] : [
         { 
           key: 'moderators', 
-          url: `${API_BASE_URL}/admin/moderators`,
+          url: `${API_BASE_URL}/api/admin/moderators`,
           fallback: [] 
         }
       ]),
       { 
         key: 'feedback', 
-        url: `${API_BASE_URL}/admin/feedback/stats`,
+        url: `${API_BASE_URL}/api/admin/feedback/stats`,
         fallback: { stats: {} } 
       },
       { 
         key: 'reports', 
-        url: `${API_BASE_URL}/admin/reports/stats`,
+        url: `${API_BASE_URL}/api/admin/reports/stats`,
         fallback: { stats: {} } 
       },
       { 
         key: 'subjects', 
-        url: `${API_BASE_URL}/admin/subjects`,
+        url: `${API_BASE_URL}/api/admin/subjects`,
         fallback: { categories: [] } 
       },
       { 
         key: 'appeals', 
-        url: `${API_BASE_URL}/admin/appeals/stats`,
+        url: `${API_BASE_URL}/api/admin/appeals/stats`,
         fallback: { stats: {} } 
       },
       { 
         key: 'supportTickets', 
-        url: `${API_BASE_URL}/support/tickets?limit=3`,
+        url: `${API_BASE_URL}/api/support/tickets?limit=3`,
         fallback: { tickets: [] } 
       },
       { 
         key: 'recentReports', 
-        url: `${API_BASE_URL}/admin/reports?limit=5`,
+        url: `${API_BASE_URL}/api/admin/reports?limit=5`,
         fallback: { reports: [] } 
       }
     ];

@@ -72,14 +72,17 @@ export default function ChatPage() {
   const [profilesById, setProfilesById] = useState({});
 
   // Ensure avatar is an absolute URL
-  const ensureAvatarUrl = (avatar) => {
-    if (!avatar || typeof avatar !== 'string') return null;
-    if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
-    const file = avatar.replace(/^\/+/, '');
-    const UPLOADS_BASE = API_BASE_URL + '/uploads/';
-    return `${UPLOADS_BASE}${file}`;
-
-  };
+const ensureAvatarUrl = (avatar) => {
+  if (!avatar || typeof avatar !== 'string') return null;
+  if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+    return avatar;
+  }
+  if (avatar.startsWith('/uploads/')) {
+    return `${API_BASE_URL}${avatar}`;
+  }
+  const file = avatar.replace(/^\/+/, '');
+  return `${API_BASE_URL}/uploads/${file}`;
+};
   // Search states
   const [conversationSearch, setConversationSearch] = useState("");
   const [messageSearch, setMessageSearch] = useState("");
@@ -406,7 +409,7 @@ export default function ChatPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API = (process.env.REACT_APP_API_URL || 'http://:5000/api').replace(/\/$/, '');
+    const API = API_BASE_URL.replace(/\/$/, '');
     fetch(`${API}/profile/others`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
       .then((list) => {
@@ -453,50 +456,53 @@ export default function ChatPage() {
   const closeMediaModal = () => setShowMediaModal(false);
   const closeFilesModal = () => setShowFilesModal(false);
 
-    const handleReportUser = async () => {
-      if (!activeConversation?.otherUser?.id) return;
-      try {
-        setReportUserSubmitting(true);
-        const token = localStorage.getItem('token');
-        const formData = new FormData();
-        // Add report data
-        formData.append('reported_user_id', activeConversation.otherUser.id);
-        formData.append('report_type', reportUserOffense);
-        formData.append('description', reportUserReason);
-        formData.append('source', 'chat_page');
+      const handleReportUser = async () => {
+        if (!activeConversation?.otherUser?.id) return;
         
-        // Add evidence files
-        evidenceFiles.forEach(file => {
-          formData.append('evidence', file);
-        });
+        try {
+          setReportUserSubmitting(true);
+          const token = localStorage.getItem('token');
+          const formData = new FormData();
+          
+          formData.append('reported_user_id', activeConversation.otherUser.id);
+          formData.append('report_type', reportUserOffense);
+          formData.append('description', reportUserReason);
+          formData.append('source', 'chat_page');
+          
+          evidenceFiles.forEach(file => {
+            formData.append('evidence', file);
+          });
 
-        // Updated API endpoint
-        const res = await fetch(`${API_BASE_URL}/api/reports`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          body: formData
-        });
-        
-        const data = await res.json();
-        
-        if (data?.success) {
-          alert('Report submitted successfully.');
-          setShowReportUserModal(false);
-          setReportUserReason("");
-          setReportUserOffense('Harassment');
-          setEvidenceFiles([]);
-        } else {
-          alert(data?.error || 'Failed to submit report');
+          const res = await fetch(`${API_BASE_URL}/api/reports`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          
+          if (data?.success) {
+            alert('Report submitted successfully.');
+            setShowReportUserModal(false);
+            setReportUserReason("");
+            setReportUserOffense('Harassment');
+            setEvidenceFiles([]);
+          } else {
+            alert(data?.error || 'Failed to submit report');
+          }
+        } catch (e) {
+          console.error('Report user error:', e);
+          alert('Error submitting report: ' + e.message);
+        } finally {
+          setReportUserSubmitting(false);
         }
-      } catch (e) {
-        console.error('Report user error:', e);
-        alert('Error submitting report.');
-      } finally {
-        setReportUserSubmitting(false);
-      }
-    };
+      };
 
   if (loading) {
     return (

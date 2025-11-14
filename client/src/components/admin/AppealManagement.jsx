@@ -200,7 +200,7 @@ const AppealManagement = () => {
     pagination: true
   });
 
-  const API_BASE = process.env.REACT_APP_API_URL;
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://peerfusion-xh73.onrender.com/api';
 
   useEffect(() => {
     fetchAppeals();
@@ -232,7 +232,7 @@ const fetchAppeals = async () => {
     if (typeFilter !== 'all') params.append('type', typeFilter);
     if (sourceFilter !== 'all') params.append('source', sourceFilter);
 
-    const response = await fetch(`${API_BASE}/admin/appeals?${params.toString()}`, {
+    const response = await fetch(`${API_BASE}/api/admin/appeals?${params.toString()}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -321,7 +321,7 @@ const fetchAppeals = async () => {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/admin/appeals/stats`, {
+      const response = await fetch(`${API_BASE}/api/admin/appeals/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

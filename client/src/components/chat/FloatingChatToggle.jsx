@@ -15,6 +15,7 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebas
 import { db, storage } from "../../firebase";
 import { AuthContext } from "../../context/AuthContext";
 import { useLocation } from "react-router-dom";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // Icon components
 const ChatIcon = () => (
@@ -76,8 +77,7 @@ const FloatingChatToggle = () => {
   const [fileItems, setFileItems] = useState([]);
   const [conversationUnreadCounts, setConversationUnreadCounts] = useState({});
   const [notifications, setNotifications] = useState([]);
-  const [profilesById, setProfilesById] = useState({});
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const [profilesById, setProfilesById] = useState({});  
 
   const chatRef = useRef(null);
   const messagesEndRef = useRef(null);

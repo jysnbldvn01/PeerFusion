@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaGavel, FaUpload, FaExclamationTriangle, FaInfoCircle, FaClock, FaCheck, FaTimes, FaEye, FaUserSlash, FaHistory } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../css/appealpage.css';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const AppealPage = () => {
   const [appealType, setAppealType] = useState('');
@@ -18,7 +19,6 @@ const AppealPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
- const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     fetchUserData();

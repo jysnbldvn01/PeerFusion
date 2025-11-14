@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../css/adminauth.css';
 import AdminForgotPassword from '../components/AdminForgotPassword';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -11,8 +12,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [roleType, setRoleType] = useState('admin');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const [showForgotPassword, setShowForgotPassword] = useState(false);  
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
