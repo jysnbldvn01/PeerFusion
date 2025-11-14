@@ -992,7 +992,7 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     }
 
     const currentPasswordHash = userResults[0].password;
-    originalEmail = userResults[0].email; // Store original email for rollback
+    originalEmail = userResults[0].email;
 
     // Check if new email is the same as current email
     if (newEmail === originalEmail) {
@@ -1019,14 +1019,14 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Store verification code AND original email in verification_token column
-    // Format: "hashedCode:originalEmail"
     const verificationData = `${hashedCode}:${originalEmail}`;
     
+    // FIXED: Remove JavaScript comments from SQL query
     const updateSql = `
       UPDATE users 
       SET 
-        email = ?,  // Temporarily set to new email
-        is_verified = FALSE, // Mark as unverified until confirmed
+        email = ?,
+        is_verified = FALSE,
         verification_token = ?, 
         verification_expires = ?
       WHERE id = ?
@@ -1104,7 +1104,6 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Email change error:', err);
-    // Rollback email change on any error
     if (originalEmail) {
       await db.query(
         'UPDATE users SET email = ?, is_verified = TRUE, verification_token = NULL, verification_expires = NULL WHERE id = ?',

@@ -745,36 +745,57 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
     }
   };
 
-  const handleCancelChange = async () => {
-    if (!window.confirm('Are you sure you want to cancel the email change? Your email will be reverted to the original address.')) {
+const handleCancelChange = async () => {
+  if (!window.confirm('Are you sure you want to cancel the email change? Your email will be reverted to the original address.')) {
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    const checkResponse = await axios.get(
+      `${API_BASE_URL}/api/profile/pending-email-change`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+
+    if (!checkResponse.data.hasPendingChange) {
+      alert('No pending email change to cancel.');
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/profile/cancel-email-change`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
+    const response = await axios.post(
+      `${API_BASE_URL}/api/profile/cancel-email-change`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
-      );
-
-      if (response.data.success) {
-        alert('Email change cancelled successfully.');
-        handleClose();
       }
-    } catch (err) {
-      console.error('Cancel error:', err);
-      const errorMessage = err.response?.data?.error || 'Failed to cancel email change';
-      alert(`Error: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
+    );
+
+    if (response.data.success) {
+      alert('Email change cancelled successfully.');
+      handleClose();
     }
-  };
+  } catch (err) {
+    console.error('Cancel error:', err);
+    const errorMessage = err.response?.data?.error || 'Failed to cancel email change';
+    
+    // Handle specific error cases
+    if (err.response?.status === 400) {
+      alert('No pending email change request found. It may have already been cancelled or expired.');
+    } else {
+      alert(`Error: ${errorMessage}`);
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleClose = () => {
     setEmailForm({
@@ -955,24 +976,26 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
                   </button>
                 </div>
 
-                <div className="peerfusion-email-actions">
-                  <button 
-                    type="button" 
-                    className="peerfusion-email-cancel"
-                    onClick={handleCancelChange}
-                    disabled={isLoading}
-                  >
-                    Cancel Email Change
-                  </button>
-                  <button 
-                    type="button" 
-                    className="peerfusion-email-back"
-                    onClick={() => setVerificationStep(false)}
-                    disabled={isLoading}
-                  >
-                    Back to Email Form
-                  </button>
-                </div>
+                    {hasPendingChange && (
+                      <div className="peerfusion-email-actions">
+                        <button 
+                          type="button" 
+                          className="peerfusion-email-cancel"
+                          onClick={handleCancelChange}
+                          disabled={isLoading}
+                        >
+                          Cancel Email Change
+                        </button>
+                        <button 
+                          type="button" 
+                          className="peerfusion-email-back"
+                          onClick={() => setVerificationStep(false)}
+                          disabled={isLoading}
+                        >
+                          Back to Email Form
+                        </button>
+                      </div>
+                    )}
               </form>
             </div>
           </>
@@ -1552,49 +1575,48 @@ const Profile = () => {
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     const resetForm = () => {
-    if (profile) {
-      setForm({
-        username: profile.username || '',
-        bio: profile.bio || '',
-        birthday: profile.birthday || '',
-        gender: profile.gender || '',
-        social_links: profile.social_links || '',
-        contact_number: profile.contact_number || '',
-        role: profile.role || 'Skill Learner',
-        year_level: profile.year_level || ''
-      });
+      if (profile) {
+        setForm({
+          username: profile.username || '',
+          bio: profile.bio || '',
+          birthday: profile.birthday || '',
+          gender: profile.gender || '',
+          social_links: profile.social_links || '',
+          contact_number: profile.contact_number || '',
+          role: profile.role || 'Skill Learner',
+          year_level: profile.year_level || ''
+        });
       
-      const initialSubjects = profile.subject ? profile.subject.split(',') : [];
-      setSelectedSubjects(initialSubjects);
+    const initialSubjects = profile.subject ? profile.subject.split(',') : [];
+    setSelectedSubjects(initialSubjects);
       
       // Reset availability
-      if (profile.availability) {
-        try {
-          let parsedAvailability = [];
-          if (typeof profile.availability === 'string') {
-            parsedAvailability = JSON.parse(profile.availability);
-          } else {
-            parsedAvailability = profile.availability;
-          }
-          setAvailability(parsedAvailability);
-        } catch (err) {
-          console.error('Error parsing availability:', err);
-          setAvailability([]);
+ if (profile.availability) {
+      try {
+        let parsedAvailability = [];
+        if (typeof profile.availability === 'string') {
+          parsedAvailability = JSON.parse(profile.availability);
+        } else {
+          parsedAvailability = profile.availability;
         }
-      } else {
+        setAvailability(parsedAvailability);
+      } catch (err) {
+        console.error('Error parsing availability:', err);
         setAvailability([]);
       }
+    } else {
+      setAvailability([]);
+    }
       
       // Reset avatar preview
-      if (profile.avatar) {
-        setAvatarPreview(`${API_BASE_URL}uploads/${profile.avatar}`);
-      } else {
-        setAvatarPreview('');
-      }
-      setAvatarFile(null);
+    if (profile.avatar) {
+      setAvatarPreview(`${API_BASE_URL}/api/uploads/${profile.avatar}`);
+    } else {
+      setAvatarPreview('');
     }
-  };
-
+    setAvatarFile(null);
+  }
+};
  useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
