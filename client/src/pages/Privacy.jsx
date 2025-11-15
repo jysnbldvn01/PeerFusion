@@ -62,7 +62,7 @@ const PrivacyPolicy = () => {
         <div className="peerfusion-nav-container">
           <div className="peerfusion-nav-logos" onClick={() => navigate('/')}>
             <img 
-              src="/logos.png" 
+              src="/Logos.png" 
               alt="PeerFusion" 
               className="peerfusion-logo-image"
               onError={(e) => {

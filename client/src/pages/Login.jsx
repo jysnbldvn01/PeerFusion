@@ -230,7 +230,7 @@ const GoogleLoginButton = ({ onSuccess, onError, loading }) => {
   const login = useGoogleLogin({
     onSuccess: onSuccess,
     onError: onError,
-    flow: 'implicit',
+    flow: 'auth-code',
   });
 
   return (
