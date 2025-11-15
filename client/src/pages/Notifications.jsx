@@ -107,18 +107,18 @@ const Notification = () => {
     return formattedMessage;
   };
 
-    useEffect(() => {
-      const handleNotificationsUpdated = () => {
-        console.log('📢 Notifications updated event received, refreshing...');
-        fetchNotifications();
-      };
+  useEffect(() => {
+    const handleNotificationsUpdated = () => {
+      console.log('📢 Notifications updated event received, refreshing...');
+      fetchNotifications();
+    };
 
-      window.addEventListener('notificationsUpdated', handleNotificationsUpdated);
-      
-      return () => {
-        window.removeEventListener('notificationsUpdated', handleNotificationsUpdated);
-      };
-    }, []);
+    window.addEventListener('notificationsUpdated', handleNotificationsUpdated);
+    
+    return () => {
+      window.removeEventListener('notificationsUpdated', handleNotificationsUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     const handleLinkClick = (event) => {
@@ -162,6 +162,7 @@ const Notification = () => {
     }
   };
 
+  // Fixed fetchNotifications function
   const fetchNotifications = useCallback(async (tab = activeTab) => {
     const token = localStorage.getItem('token');
     const url =
@@ -173,7 +174,7 @@ const Notification = () => {
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Fetched notifications:', res.data);
+      console.log('Fetched notifications for tab:', tab, res.data);
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -181,7 +182,7 @@ const Notification = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab]); // Add activeTab as dependency
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -215,90 +216,7 @@ const Notification = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [fetchNotifications]);
 
-const getDisplayName = (notification) => {
-  console.log('Processing notification:', {
-    id: notification.id,
-    type: notification.type,
-    sender_id: notification.sender_id,
-    sender_name: notification.sender_name,
-    message: notification.message?.substring(0, 100)
-  });
-
-  if (notification.type === 'penalty') {
-    return 'PeerFusion Team';
-  }
-  
-  if (notification.sender_id === null || notification.sender_id === 0) {
-    return 'PeerFusion Team';
-  }
-  
-  if (notification.type === 'warning' || 
-      notification.type === 'suspension' || 
-      notification.type === 'ban' || 
-      notification.type === 'appeal_approved' ||
-      notification.type === 'appeal_rejected' ||
-      notification.type === 'account_reactivated' ||
-      notification.type === 'strikes_adjusted' ||
-      notification.type === 'account_status') {
-    return 'PeerFusion Team';
-  }
-
-  if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
-    return 'PeerFusion Team';
-  }
-  
-  return notification.sender_name || 'System';
-};
-
-const getDisplayAvatar = (notification) => {
-  if (notification.type === 'penalty' || 
-      notification.sender_id === null || 
-      notification.sender_id === 0 ||
-      notification.type === 'warning' || 
-      notification.type === 'suspension' || 
-      notification.type === 'ban' || 
-      notification.type === 'appeal_approved' ||
-      notification.type === 'appeal_rejected' ||
-      notification.type === 'account_reactivated' ||
-      notification.type === 'strikes_adjusted' ||
-      notification.type === 'account_status') {
-    return null;
-  }
-  
-  if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
-    return null;
-  }
-  
-  return notification.sender_avatar;
-};
-
-  const getAvatarPlaceholder = (notification) => {
-    const displayName = getDisplayName(notification);
-    if (displayName === 'PeerFusion Team') {
-      return <InternetIcons.Team />;
-    }
-    return displayName.charAt(0) || 'U';
-  };
-
-  const fetchFeedbackDetails = async (notificationId) => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/api/profile/notification-feedback/${notificationId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (res.data.success) {
-        setFeedbackDetails(res.data.feedback);
-      }
-    } catch (err) {
-      console.error('Failed to fetch feedback details:', err);
-      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch feedback details');
-    }
-  };
-
+  // Fixed action handlers
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
@@ -310,6 +228,7 @@ const getDisplayAvatar = (notification) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      // Pass current activeTab to ensure we fetch the correct notifications
       fetchNotifications(activeTab);
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
@@ -319,25 +238,25 @@ const getDisplayAvatar = (notification) => {
     }
   };
 
-const markNotificationAsUnread = async (id, e) => {
-  if (e) e.stopPropagation();
-  const token = localStorage.getItem('token');
-  try {
-    await axios.put(
-      `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    fetchNotifications(activeTab);
-    window.dispatchEvent(new Event('notificationsUpdated'));
-    setOpenMenuId(null);
-  } catch (err) {
-    console.error('Failed to mark notification as unread:', err);
-    window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
-  }
-};
+  const markNotificationAsUnread = async (id, e) => {
+    if (e) e.stopPropagation();
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      fetchNotifications(activeTab);
+      window.dispatchEvent(new Event('notificationsUpdated'));
+      setOpenMenuId(null);
+    } catch (err) {
+      console.error('Failed to mark notification as unread:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
+    }
+  };
 
   const archiveNotification = async (id, e) => {
     if (e) e.stopPropagation();
@@ -379,32 +298,32 @@ const markNotificationAsUnread = async (id, e) => {
     }
   };
 
-    const markAllAsRead = async () => {
-      if (!notifications || notifications.length === 0) return;
-      const token = localStorage.getItem('token');
-      const unread = notifications.filter(n => !n.is_read);
-      if (unread.length === 0) {
-        window.pfToast?.info?.('All notifications are already read');
-        return;
-      }
-      try {
-        await Promise.all(
-          unread.map(n =>
-            axios.put(
-              `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
-              {},
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
+  const markAllAsRead = async () => {
+    if (!notifications || notifications.length === 0) return;
+    const token = localStorage.getItem('token');
+    const unread = notifications.filter(n => !n.is_read);
+    if (unread.length === 0) {
+      window.pfToast?.info?.('All notifications are already read');
+      return;
+    }
+    try {
+      await Promise.all(
+        unread.map(n =>
+          axios.put(
+            `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
           )
-        );
-        await fetchNotifications(activeTab);
-        window.dispatchEvent(new Event('notificationsUpdated'));
-        window.pfToast?.success?.('All notifications marked as read');
-      } catch (err) {
-        console.error('Failed to mark all as read:', err);
-        window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
-      }
-    };
+        )
+      );
+      await fetchNotifications(activeTab);
+      window.dispatchEvent(new Event('notificationsUpdated'));
+      window.pfToast?.success?.('All notifications marked as read');
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
+    }
+  };
 
   const deleteNotification = async (id, e) => {
     if (e) e.stopPropagation();
@@ -424,7 +343,6 @@ const markNotificationAsUnread = async (id, e) => {
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to delete notification');
     }
   };
-
 
   const toggleMenu = (id, event) => {
     event.stopPropagation();
@@ -467,7 +385,7 @@ const markNotificationAsUnread = async (id, e) => {
         window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
       } else {
-        fetchNotifications();
+        fetchNotifications(activeTab);
         window.pfToast?.info?.('Session accepted');
       }
     } catch (err) {
@@ -494,6 +412,96 @@ const markNotificationAsUnread = async (id, e) => {
     } catch (err) {
       console.error("❌ Failed to reject session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error rejecting session request');
+    }
+  };
+
+  // Add useEffect to refetch when activeTab changes
+  useEffect(() => {
+    fetchNotifications(activeTab);
+  }, [activeTab, fetchNotifications]);
+
+  // Rest of your component remains the same...
+  const getDisplayName = (notification) => {
+    console.log('Processing notification:', {
+      id: notification.id,
+      type: notification.type,
+      sender_id: notification.sender_id,
+      sender_name: notification.sender_name,
+      message: notification.message?.substring(0, 100)
+    });
+
+    if (notification.type === 'penalty') {
+      return 'PeerFusion Team';
+    }
+    
+    if (notification.sender_id === null || notification.sender_id === 0) {
+      return 'PeerFusion Team';
+    }
+    
+    if (notification.type === 'warning' || 
+        notification.type === 'suspension' || 
+        notification.type === 'ban' || 
+        notification.type === 'appeal_approved' ||
+        notification.type === 'appeal_rejected' ||
+        notification.type === 'account_reactivated' ||
+        notification.type === 'strikes_adjusted' ||
+        notification.type === 'account_status') {
+      return 'PeerFusion Team';
+    }
+
+    if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
+      return 'PeerFusion Team';
+    }
+    
+    return notification.sender_name || 'System';
+  };
+
+  const getDisplayAvatar = (notification) => {
+    if (notification.type === 'penalty' || 
+        notification.sender_id === null || 
+        notification.sender_id === 0 ||
+        notification.type === 'warning' || 
+        notification.type === 'suspension' || 
+        notification.type === 'ban' || 
+        notification.type === 'appeal_approved' ||
+        notification.type === 'appeal_rejected' ||
+        notification.type === 'account_reactivated' ||
+        notification.type === 'strikes_adjusted' ||
+        notification.type === 'account_status') {
+      return null;
+    }
+    
+    if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
+      return null;
+    }
+    
+    return notification.sender_avatar;
+  };
+
+  const getAvatarPlaceholder = (notification) => {
+    const displayName = getDisplayName(notification);
+    if (displayName === 'PeerFusion Team') {
+      return <InternetIcons.Team />;
+    }
+    return displayName.charAt(0) || 'U';
+  };
+
+  const fetchFeedbackDetails = async (notificationId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/api/profile/notification-feedback/${notificationId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res.data.success) {
+        setFeedbackDetails(res.data.feedback);
+      }
+    } catch (err) {
+      console.error('Failed to fetch feedback details:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch feedback details');
     }
   };
 
@@ -579,7 +587,6 @@ const markNotificationAsUnread = async (id, e) => {
           </span>
         );
       }
-      // ADD THIS CASE FOR ACCOUNT STATUS NOTIFICATIONS
       case 'account_status': {
         if (notification.message.includes('deactivated')) {
           return (
@@ -941,7 +948,7 @@ const markNotificationAsUnread = async (id, e) => {
                     {selectedNotification.type === 'appeal_approved' && <InternetIcons.Approved />}
                     {selectedNotification.type === 'appeal_rejected' && <InternetIcons.Rejected />}
                     {selectedNotification.type === 'account_reactivated' && <InternetIcons.Approved />}
-                    {selectedNotification.type === 'account_status' && <InternetIcons.Team />} {/* ADD this */}
+                    {selectedNotification.type === 'account_status' && <InternetIcons.Team />}
                   </div>
                   <p>
                     {selectedNotification.type === 'warning' && 
@@ -959,7 +966,7 @@ const markNotificationAsUnread = async (id, e) => {
                     {selectedNotification.type === 'account_reactivated' && 
                       'Your account has been reactivated by the PeerFusion Team. Welcome back!'}
                     {selectedNotification.type === 'account_status' && 
-                      'This is an automated notification about your account status changes.'} {/* ADD this */}
+                      'This is an automated notification about your account status changes.'}
                   </p>
                 </div>
               )}
