@@ -24,6 +24,57 @@ const CloseIcon = () => (
   </svg>
 );
 
+const SuspendedIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+    <path d="M12 8v4" />
+  </svg>
+);
+
+const BannedIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+    <path d="M16 8a4 4 0 0 0-6.83-2.83" />
+  </svg>
+);
+
+const WarningIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const DeletionIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M3 6h18" />
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    <line x1="10" y1="11" x2="10" y2="17" />
+    <line x1="14" y1="11" x2="14" y2="17" />
+  </svg>
+);
+
+const DeactivatedIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="12" cy="12" r="10" />
+    <path d="m4.93 4.93 14.14 14.14" />
+    <path d="M16 12a4 4 0 0 0-4-4" />
+    <path d="M12 16a4 4 0 0 0 4-4" />
+  </svg>
+);
+
+const InfoIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
 // Account Status Modal Component
 const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) => {
   const getStatusDetails = () => {
@@ -31,67 +82,67 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
       case 'suspended':
         return {
           title: 'Account Suspended',
-          icon: '⏸️',
+          icon: <SuspendedIcon />,
           color: '#ff9800',
           type: 'blocked',
           message: 'Your account is temporarily suspended and cannot access the platform.',
           actions: [
-            { label: 'Appeal Suspension', path: '/appeal', type: 'primary' },
+            { label: 'Appeal Suspension', path: '/user-appeal', type: 'primary' },
             { label: 'Contact Support', path: '/support', type: 'secondary' }
           ]
         };
       case 'banned':
         return {
           title: 'Account Banned',
-          icon: '🚫',
+          icon: <BannedIcon />,
           color: '#f44336',
           type: 'blocked',
           message: 'Your account has been permanently banned from the platform.',
           actions: [
-            { label: 'Submit Appeal', path: '/appeal', type: 'primary' },
+            { label: 'Submit Appeal', path: '/user-appeal', type: 'primary' },
             { label: 'Contact Support', path: '/support', type: 'secondary' }
           ]
         };
       case 'warning':
         return {
           title: 'Account Warning',
-          icon: '⚠️',
+          icon: <WarningIcon />,
           color: '#ffc107',
           type: 'allowed',
           message: 'Your account has active warnings. Please review community guidelines.',
           actions: [
-            { label: 'Review Guidelines', path: '/guidelines', type: 'primary' },
+            { label: 'Review Terms of use', path: '/terms', type: 'primary' },
             { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
           ]
         };
       case 'deletion_pending':
         return {
           title: 'Account Scheduled for Deletion',
-          icon: '🗑️',
+          icon: <DeletionIcon />,
           color: '#9c27b0',
           type: 'allowed',
           message: 'Your account is scheduled for deletion. You can cancel this process.',
           actions: [
-            { label: 'Cancel Deletion', path: '/account-settings', type: 'primary' },
+            { label: 'Cancel Deletion', path: '/profile', type: 'primary' },
             { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
           ]
         };
       case 'deactivated':
         return {
           title: 'Account Deactivated',
-          icon: '💤',
+          icon: <DeactivatedIcon />,
           color: '#607d8b',
           type: 'allowed',
           message: 'Your account is currently deactivated. You can reactivate it.',
           actions: [
-            { label: 'Reactivate Account', path: '/reactivate', type: 'primary' },
+            { label: 'Reactivate Account', path: '/profile', type: 'primary' },
             { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
           ]
         };
       default:
         return {
           title: 'Account Status',
-          icon: 'ℹ️',
+          icon: <InfoIcon />,
           color: '#2196f3',
           type: 'allowed',
           actions: []
@@ -116,7 +167,9 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
     <div className="account-status-modal-overlay">
       <div className="account-status-modal">
         <div className="account-status-header" style={{ backgroundColor: statusDetails.color }}>
-          <div className="account-status-icon">{statusDetails.icon}</div>
+          <div className="account-status-icon">
+            {statusDetails.icon}
+          </div>
           <h2>{statusDetails.title}</h2>
         </div>
         
