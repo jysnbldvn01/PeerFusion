@@ -572,6 +572,7 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   const [verificationCode, setVerificationCode] = useState('');
   const [pendingEmail, setPendingEmail] = useState('');
   const [hasPendingChange, setHasPendingChange] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Check for pending email change when modal opens
   useEffect(() => {
@@ -579,6 +580,17 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
       checkPendingEmailChange();
     }
   }, [isOpen]);
+
+  // Add useEffect for resend cooldown timer
+  useEffect(() => {
+    let interval;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
   const checkPendingEmailChange = async () => {
     try {
@@ -633,82 +645,84 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
     return Object.keys(errors).length === 0;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateEmail()) {
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    console.log('=== EMAIL CHANGE DEBUG INFO ===');
-    console.log('API Base URL:', API_BASE_URL);
-    console.log('Full endpoint:', `${API_BASE_URL}/api/profile/change-email`);
-    console.log('Request data:', {
-      newEmail: emailForm.newEmail,
-      currentPasswordLength: emailForm.currentPassword?.length
-    });
-
-    const response = await axios.post(
-      `${API_BASE_URL}/api/profile/change-email`,
-      {
-        currentPassword: emailForm.currentPassword,
-        newEmail: emailForm.newEmail
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    );
-
-    console.log('Email change successful:', response.data);
-
-    if (response.data.success) {
-      if (response.data.requiresVerification) {
-        setPendingEmail(emailForm.newEmail);
-        setVerificationStep(true);
-        setHasPendingChange(true);
-        setEmailErrors({});
-        alert('Verification code sent to your new email address!');
-      } else {
-        alert('Email changed successfully!');
-        handleClose();
-      }
-    }
-  } catch (err) {
-    console.error('❌ Email change failed:', {
-      message: err.message,
-      code: err.code,
-      status: err.response?.status,
-      statusText: err.response?.statusText,
-      data: err.response?.data,
-      headers: err.response?.headers
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // More specific error handling
-    if (err.response?.status === 500) {
-      console.error('500 Internal Server Error Details:', err.response?.data);
-      setEmailErrors({ 
-        general: 'Server error. Our team has been notified. Please try again in a few minutes.' 
-      });
-    } else if (err.response?.status === 401) {
-      setEmailErrors({ currentPassword: 'Current password is incorrect' });
-    } else if (err.response?.status === 409) {
-      setEmailErrors({ newEmail: 'This email is already in use' });
-    } else if (err.code === 'ERR_NETWORK') {
-      setEmailErrors({ general: 'Network error. Please check your internet connection.' });
-    } else {
-      const errorMessage = err.response?.data?.error || 'Failed to change email. Please try again.';
-      setEmailErrors({ general: errorMessage });
+    if (!validateEmail()) {
+      return;
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    setIsLoading(true);
+    try {
+      console.log('=== EMAIL CHANGE DEBUG INFO ===');
+      console.log('API Base URL:', API_BASE_URL);
+      console.log('Full endpoint:', `${API_BASE_URL}/api/profile/change-email`);
+      console.log('Request data:', {
+        newEmail: emailForm.newEmail,
+        currentPasswordLength: emailForm.currentPassword?.length
+      });
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/change-email`,
+        {
+          currentPassword: emailForm.currentPassword,
+          newEmail: emailForm.newEmail
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      console.log('Email change successful:', response.data);
+
+      if (response.data.success) {
+        if (response.data.requiresVerification) {
+          setPendingEmail(emailForm.newEmail);
+          setVerificationStep(true);
+          setHasPendingChange(true);
+          setEmailErrors({});
+          // Start cooldown timer when verification code is sent
+          setResendCooldown(60); // 60 seconds cooldown
+          alert('Verification code sent to your new email address!');
+        } else {
+          alert('Email changed successfully!');
+          handleClose();
+        }
+      }
+    } catch (err) {
+      console.error('❌ Email change failed:', {
+        message: err.message,
+        code: err.code,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        headers: err.response?.headers
+      });
+      
+      // More specific error handling
+      if (err.response?.status === 500) {
+        console.error('500 Internal Server Error Details:', err.response?.data);
+        setEmailErrors({ 
+          general: 'Server error. Our team has been notified. Please try again in a few minutes.' 
+        });
+      } else if (err.response?.status === 401) {
+        setEmailErrors({ currentPassword: 'Current password is incorrect' });
+      } else if (err.response?.status === 409) {
+        setEmailErrors({ newEmail: 'This email is already in use' });
+      } else if (err.code === 'ERR_NETWORK') {
+        setEmailErrors({ general: 'Network error. Please check your internet connection.' });
+      } else {
+        const errorMessage = err.response?.data?.error || 'Failed to change email. Please try again.';
+        setEmailErrors({ general: errorMessage });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleVerifyCode = async (e) => {
     e.preventDefault();
@@ -747,6 +761,8 @@ const handleSubmit = async (e) => {
   };
 
   const handleResendCode = async () => {
+    if (resendCooldown > 0) return; // Prevent resend during cooldown
+    
     setIsLoading(true);
     try {
       const response = await axios.post(
@@ -763,6 +779,8 @@ const handleSubmit = async (e) => {
       if (response.data.success) {
         alert('New verification code sent to your email.');
         setEmailErrors({});
+        // Start cooldown timer
+        setResendCooldown(60); // 60 seconds cooldown
       }
     } catch (err) {
       console.error('Resend error:', err);
@@ -773,57 +791,57 @@ const handleSubmit = async (e) => {
     }
   };
 
-const handleCancelChange = async () => {
-  if (!window.confirm('Are you sure you want to cancel the email change? Your email will be reverted to the original address.')) {
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    const checkResponse = await axios.get(
-      `${API_BASE_URL}/api/profile/pending-email-change`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
-
-    if (!checkResponse.data.hasPendingChange) {
-      alert('No pending email change to cancel.');
-      setIsLoading(false);
+  const handleCancelChange = async () => {
+    if (!window.confirm('Are you sure you want to cancel the email change? Your email will be reverted to the original address.')) {
       return;
     }
 
-    const response = await axios.post(
-      `${API_BASE_URL}/api/profile/cancel-email-change`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+    setIsLoading(true);
+    try {
+      const checkResponse = await axios.get(
+        `${API_BASE_URL}/api/profile/pending-email-change`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      }
-    );
+      );
 
-    if (response.data.success) {
-      alert('Email change cancelled successfully.');
-      handleClose();
+      if (!checkResponse.data.hasPendingChange) {
+        alert('No pending email change to cancel.');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/cancel-email-change`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Email change cancelled successfully.');
+        handleClose();
+      }
+    } catch (err) {
+      console.error('Cancel error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to cancel email change';
+      
+      // Handle specific error cases
+      if (err.response?.status === 400) {
+        alert('No pending email change request found. It may have already been cancelled or expired.');
+      } else {
+        alert(`Error: ${errorMessage}`);
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error('Cancel error:', err);
-    const errorMessage = err.response?.data?.error || 'Failed to cancel email change';
-    
-    // Handle specific error cases
-    if (err.response?.status === 400) {
-      alert('No pending email change request found. It may have already been cancelled or expired.');
-    } else {
-      alert(`Error: ${errorMessage}`);
-    }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleClose = () => {
     setEmailForm({
@@ -836,6 +854,7 @@ const handleCancelChange = async () => {
     setVerificationCode('');
     setPendingEmail('');
     setHasPendingChange(false);
+    setResendCooldown(0); // Reset cooldown on close
     onClose();
   };
 
@@ -1019,34 +1038,36 @@ const handleCancelChange = async () => {
                     )}
                   </button>
                 </div>
+                
                 {/* Resend counter display */}
-                  {resendCooldown > 0 && (
-                    <div className="peerfusion-resend-counter cooldown">
-                      You can request a new code in {resendCooldown} seconds
-                    </div>
-                  )}
-                    {/* Cancel and Back buttons */}
-                    {hasPendingChange && (
-                      <div className="peerfusion-email-actions">
-                        <button 
-                          type="button" 
-                          className="peerfusion-email-cancel"
-                          onClick={handleCancelChange}
-                          disabled={isLoading}
-                        >
-                          Cancel Email Change
-                        </button>
-                        <button 
-                          type="button" 
-                          className="peerfusion-email-back"
-                          onClick={() => setVerificationStep(false)}
-                          disabled={isLoading}
-                        >
-                          <span className="peerfusion-email-back-icon"></span>
-                          Back to Email Form
-                        </button>
-                      </div>
-                    )}
+                {resendCooldown > 0 && (
+                  <div className="peerfusion-resend-counter cooldown">
+                    You can request a new code in {resendCooldown} seconds
+                  </div>
+                )}
+                
+                {/* Cancel and Back buttons */}
+                {hasPendingChange && (
+                  <div className="peerfusion-email-actions">
+                    <button 
+                      type="button" 
+                      className="peerfusion-email-cancel"
+                      onClick={handleCancelChange}
+                      disabled={isLoading}
+                    >
+                      Cancel Email Change
+                    </button>
+                    <button 
+                      type="button" 
+                      className="peerfusion-email-back"
+                      onClick={() => setVerificationStep(false)}
+                      disabled={isLoading}
+                    >
+                      <span className="peerfusion-email-back-icon"></span>
+                      Back to Email Form
+                    </button>
+                  </div>
+                )}
               </form>
             </div>
           </>
