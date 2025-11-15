@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
+import { googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { identifySocket } from '../utils/socket';
 import { socket } from '../utils/socket';
 import '../css/auth.css';
@@ -112,7 +112,6 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
           message: 'Your account has active warnings. Please review community guidelines.',
           actions: [
             { label: 'Review Terms of use', path: '/terms', type: 'primary' },
-            { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
           ]
         };
       case 'deletion_pending':
@@ -224,6 +223,32 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
         </div>
       </div>
     </div>
+  );
+};
+
+const GoogleLoginButton = ({ onSuccess, onError, loading }) => {
+  const login = useGoogleLogin({
+    onSuccess: onSuccess,
+    onError: onError,
+    flow: 'implicit',
+  });
+
+  return (
+    <button 
+      onClick={login}
+      className="google-login-custom-btn"
+      type="button"
+      disabled={loading}
+    >
+      <img 
+        src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4yNzI3M0g5LjE4MTY0VjEwLjcyNzNIxMy40NTQ1QzEzLjE0NTUgMTIuNDUgMTEuNTQ1NSAxMy42MzY0IDkuMTgxNjQgMTMuNjM2NEM2LjQ0NTQ2IDEzLjYzNjQgNC4yMTgxOCAxMS40MDkxIDQuMjE4MTggOC42NzI3M0M0LjIxODE4IDUuOTM2MzYgNi40NDU0NiAzLjcwOTA5IDkuMTgxNjQgMy43MDkwOUMxMC43NzI3IDMuNzA5MDkgMTIuMTgxOCA0LjM0NTQ2IDEzLjEwOTEgNS4zMTM2NEwxNC40MTgyIDMuOTk1NDVDMTMuMDQ1NSAyLjcxMzY0IDExLjI0NTUgMi4wNDU0NiA5LjE4MTY0IDIuMDQ1NDZDNS4yNzI3MyAyLjA0NTQ2IDIuMDQ1NDUgNS4yNzI3MyAyLjA0NTQ1IDkuMTgxODJDMi4wNDU0NSAxMy4wOTA5IDUuMjcyNzMgMTYuMzE4MiA5LjE4MTY0IDE2LjMxODJDMTIuODQ1NSAxNi4zMTgyIDE1LjcyNzMgMTMuNTQ1NSAxNS43MjczIDkuMjcyNzNDMTUuNzI3MyA4LjY4MTgyIDE1LjY2MzYgOC4xMTM2NCAxNS41NCA3LjU3NzI3TDE2LjUxIDkuMjA0NTVaIiBmaWxsPSIjNDI4NUY0Ii8+Cjwvc3ZnPgo=" 
+        alt="Google" 
+        width="18" 
+        height="18"
+        style={{ marginRight: '12px' }}
+      />
+      Continue with Google
+    </button>
   );
 };
 
@@ -506,6 +531,7 @@ export default function Login() {
     }
     closeAccountStatusModal();
   };
+  
 
   return (
     <div className="auth-container">
@@ -745,13 +771,10 @@ export default function Login() {
               </div>
               
               <div className="google-login-container">
-                <GoogleLogin
+                <GoogleLoginButton 
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
-                  theme="filled_blue"
-                  shape="rectangular"
-                  text="continue_with"
-                  size="large"
+                  loading={loading}
                 />
               </div>
 
