@@ -5,9 +5,10 @@ import { GoogleLogin } from '@react-oauth/google';
 import { identifySocket } from '../utils/socket';
 import { socket } from '../utils/socket';
 import '../css/auth.css';
-const API_BASE_URL = process.env.REACT_APP_API_URL || "https://peerfusion-xh73.onrender.com";
-// SVG Icons for features
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://peerfusion-xh73.onrender.com";
+
+// SVG Icons for features
 const MenuIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -23,25 +24,157 @@ const CloseIcon = () => (
   </svg>
 );
 
-const CheckIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M16.25 6.875L8.125 15L3.75 10.625" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
+// Account Status Modal Component
+const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) => {
+  const getStatusDetails = () => {
+    switch (status) {
+      case 'suspended':
+        return {
+          title: 'Account Suspended',
+          icon: '⏸️',
+          color: '#ff9800',
+          type: 'blocked',
+          message: 'Your account is temporarily suspended and cannot access the platform.',
+          actions: [
+            { label: 'Appeal Suspension', path: '/appeal', type: 'primary' },
+            { label: 'Contact Support', path: '/support', type: 'secondary' }
+          ]
+        };
+      case 'banned':
+        return {
+          title: 'Account Banned',
+          icon: '🚫',
+          color: '#f44336',
+          type: 'blocked',
+          message: 'Your account has been permanently banned from the platform.',
+          actions: [
+            { label: 'Submit Appeal', path: '/appeal', type: 'primary' },
+            { label: 'Contact Support', path: '/support', type: 'secondary' }
+          ]
+        };
+      case 'warning':
+        return {
+          title: 'Account Warning',
+          icon: '⚠️',
+          color: '#ffc107',
+          type: 'allowed',
+          message: 'Your account has active warnings. Please review community guidelines.',
+          actions: [
+            { label: 'Review Guidelines', path: '/guidelines', type: 'primary' },
+            { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
+          ]
+        };
+      case 'deletion_pending':
+        return {
+          title: 'Account Scheduled for Deletion',
+          icon: '🗑️',
+          color: '#9c27b0',
+          type: 'allowed',
+          message: 'Your account is scheduled for deletion. You can cancel this process.',
+          actions: [
+            { label: 'Cancel Deletion', path: '/account-settings', type: 'primary' },
+            { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
+          ]
+        };
+      case 'deactivated':
+        return {
+          title: 'Account Deactivated',
+          icon: '💤',
+          color: '#607d8b',
+          type: 'allowed',
+          message: 'Your account is currently deactivated. You can reactivate it.',
+          actions: [
+            { label: 'Reactivate Account', path: '/reactivate', type: 'primary' },
+            { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
+          ]
+        };
+      default:
+        return {
+          title: 'Account Status',
+          icon: 'ℹ️',
+          color: '#2196f3',
+          type: 'allowed',
+          actions: []
+        };
+    }
+  };
 
-const UsersIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M13.75 16.25V15C13.75 13.7574 12.9926 12.5 11.25 12.5H8.75C7.00736 12.5 6.25 13.7574 6.25 15V16.25"/>
-    <path d="M10 9.375C11.3807 9.375 12.5 8.25571 12.5 6.875C12.5 5.49429 11.3807 4.375 10 4.375C8.61929 4.375 7.5 5.49429 7.5 6.875C7.5 8.25571 8.61929 9.375 10 9.375Z"/>
-  </svg>
-);
+  const statusDetails = getStatusDetails();
+  const navigate = useNavigate();
 
-const VideoIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-    <polygon points="15 5 10 8.75 15 12.5 15 5"/>
-    <rect x="3.75" y="4.375" width="7.5" height="11.25" rx="1.25"/>
-  </svg>
-);
+  const handleAction = (action) => {
+    if (action.path) {
+      navigate(action.path);
+      onClose();
+    } else if (action.action === 'continue') {
+      onContinue();
+      onClose();
+    }
+  };
+
+  return (
+    <div className="account-status-modal-overlay">
+      <div className="account-status-modal">
+        <div className="account-status-header" style={{ backgroundColor: statusDetails.color }}>
+          <div className="account-status-icon">{statusDetails.icon}</div>
+          <h2>{statusDetails.title}</h2>
+        </div>
+        
+        <div className="account-status-body">
+          <div className="status-message">
+            <p>{statusDetails.message}</p>
+            {message && <p className="additional-message">{message}</p>}
+          </div>
+
+          {userData && (
+            <div className="status-details">
+              {userData.strike_count > 0 && (
+                <div className="status-detail">
+                  <strong>Strikes:</strong> {userData.strike_count}/3
+                </div>
+              )}
+              {userData.suspended_until && (
+                <div className="status-detail">
+                  <strong>Suspended Until:</strong> {new Date(userData.suspended_until).toLocaleDateString()}
+                </div>
+              )}
+              {status === 'deletion_pending' && userData.scheduled_for_deletion_at && (
+                <div className="status-detail">
+                  <strong>Scheduled Deletion:</strong> {new Date(userData.scheduled_for_deletion_at).toLocaleDateString()}
+                </div>
+              )}
+              {status === 'deactivated' && userData.deactivation_requested_at && (
+                <div className="status-detail">
+                  <strong>Deactivated Since:</strong> {new Date(userData.deactivation_requested_at).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="status-actions">
+            {statusDetails.actions.map((action, index) => (
+              <button
+                key={index}
+                className={`status-action-btn ${action.type === 'primary' ? 'primary' : 'secondary'}`}
+                onClick={() => handleAction(action)}
+              >
+                {action.label}
+              </button>
+            ))}
+            {statusDetails.type === 'allowed' && (
+              <button className="status-action-btn primary" onClick={onContinue}>
+                Continue to Platform
+              </button>
+            )}
+            <button className="status-action-btn secondary" onClick={onClose}>
+              {statusDetails.type === 'blocked' ? 'Close' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function Login() {
   const navigate = useNavigate();
@@ -50,6 +183,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountStatus, setAccountStatus] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [pendingLogin, setPendingLogin] = useState(null);
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -57,10 +193,28 @@ export default function Login() {
     setError('');
   };
 
-  const handleLoginSuccess = async (token) => {
+  const completeLogin = (userData) => {
+    const userId = userData.id || userData.user_id;
+    if (userId) {
+      identifySocket(userId);
+      socket.emit('user_logged_in', userId);
+    }
+
+    setLoading(false);
+    
+    // Check if user needs to setup account
+    if (userData && userData.username) {
+      navigate('/home');
+    } else {
+      navigate('/setup-account');
+    }
+  };
+
+  const handleLoginSuccess = async (token, userDataFromLogin = null) => {
     try {
       localStorage.setItem('token', token);
 
+      // Fetch fresh profile data to get latest status
       const profileRes = await axios.get(`${API_BASE_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -68,25 +222,89 @@ export default function Login() {
       const user = profileRes.data;
       localStorage.setItem('user', JSON.stringify(user));
 
-      const userId = user.id || user.user_id;
-      if (userId) {
-        identifySocket(userId);
-        socket.emit('user_logged_in', userId);
-      }
-
-      setLoading(false);
-      alert('Login successful!');
-
-      if (user && user.username) {
-        navigate('/home');
+      // Check account status and handle accordingly
+      if (user.status === 'suspended') {
+        // Check if suspension period has ended (auto-reactivate should have happened, but double check)
+        if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+          setAccountStatus('suspended');
+          setUserData(user);
+          setError(`Your account is suspended until ${new Date(user.suspended_until).toLocaleDateString()}`);
+          setLoading(false);
+          // Clear token since they can't login
+          localStorage.removeItem('token');
+          return;
+        } else {
+          // Suspension ended, proceed with login
+          completeLogin(user);
+        }
+      } else if (user.status === 'banned') {
+        setAccountStatus('banned');
+        setUserData(user);
+        setError('Your account has been permanently banned.');
+        setLoading(false);
+        // Clear token since they can't login
+        localStorage.removeItem('token');
+        return;
+      } else if (user.status === 'warning') {
+        // User can login but show warning
+        setAccountStatus('warning');
+        setUserData(user);
+        setPendingLogin(() => () => completeLogin(user));
+        return;
+      } else if (user.status === 'deletion_pending') {
+        // User can login to cancel deletion
+        setAccountStatus('deletion_pending');
+        setUserData(user);
+        setPendingLogin(() => () => completeLogin(user));
+        return;
+      } else if (user.status === 'deactivated') {
+        // User can login to reactivate
+        setAccountStatus('deactivated');
+        setUserData(user);
+        setPendingLogin(() => () => completeLogin(user));
+        return;
       } else {
-        navigate('/setup-account');
+        // Active user, proceed normally
+        completeLogin(user);
       }
     } catch (err) {
       console.error('Could not fetch profile', err);
       setLoading(false);
-      alert('Login successful, but profile fetch failed. Redirecting to home.');
-      navigate('/home');
+      
+      // If profile fetch fails but we have user data from login, use that
+      if (userDataFromLogin) {
+        localStorage.setItem('user', JSON.stringify(userDataFromLogin));
+        
+        // Check status from login response
+        if (userDataFromLogin.status === 'suspended') {
+          setAccountStatus('suspended');
+          setUserData(userDataFromLogin);
+          setError(`Your account is suspended until ${new Date(userDataFromLogin.suspended_until).toLocaleDateString()}`);
+          localStorage.removeItem('token');
+        } else if (userDataFromLogin.status === 'banned') {
+          setAccountStatus('banned');
+          setUserData(userDataFromLogin);
+          setError('Your account has been permanently banned.');
+          localStorage.removeItem('token');
+        } else if (userDataFromLogin.status === 'warning') {
+          setAccountStatus('warning');
+          setUserData(userDataFromLogin);
+          setPendingLogin(() => () => completeLogin(userDataFromLogin));
+        } else if (userDataFromLogin.status === 'deletion_pending') {
+          setAccountStatus('deletion_pending');
+          setUserData(userDataFromLogin);
+          setPendingLogin(() => () => completeLogin(userDataFromLogin));
+        } else if (userDataFromLogin.status === 'deactivated') {
+          setAccountStatus('deactivated');
+          setUserData(userDataFromLogin);
+          setPendingLogin(() => () => completeLogin(userDataFromLogin));
+        } else {
+          completeLogin(userDataFromLogin);
+        }
+      } else {
+        alert('Login successful, but profile fetch failed. Redirecting to home.');
+        navigate('/home');
+      }
     }
   };
 
@@ -97,27 +315,113 @@ export default function Login() {
       return;
     }
     setLoading(true);
+    setError('');
+    
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/login`, form);
-      const token = res.data.token;
-      await handleLoginSuccess(token);
+      
+      if (res.data.success) {
+        const token = res.data.token;
+        const userData = res.data.user;
+        
+        await handleLoginSuccess(token, userData);
+      } else {
+        setError(res.data.error || 'Login failed');
+        setLoading(false);
+      }
     } catch (err) {
       setLoading(false);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      
+      // Enhanced error handling to show specific suspension/ban messages
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        
+        // Handle suspended account with specific message
+        if (errorData.status === 'suspended') {
+          const suspensionMessage = errorData.error || `Your account has been suspended. It will be reactivated in ${errorData.timeLeft} days.`;
+          setAccountStatus('suspended');
+          setUserData({
+            suspended_until: errorData.suspended_until,
+            strike_count: errorData.strike_count
+          });
+          setError(suspensionMessage);
+        } 
+        // Handle banned account with specific message
+        else if (errorData.status === 'banned') {
+          const banMessage = errorData.error || 'Your account has been permanently banned. Please contact support.';
+          setAccountStatus('banned');
+          setUserData({
+            strike_count: errorData.strike_count
+          });
+          setError(banMessage);
+        }
+        // Handle other specific error messages from backend
+        else if (errorData.error) {
+          setError(errorData.error);
+        }
+        // Handle validation errors
+        else if (errorData.message) {
+          setError(errorData.message);
+        }
+        // Fallback for other errors
+        else {
+          setError('Login failed. Please try again.');
+        }
+      } else {
+        setError('Login failed. Please check your connection and try again.');
+      }
     }
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
+    setError('');
+    
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/google-login`, {
         token: credentialResponse.credential,
       });
-      const { token } = res.data;
-      await handleLoginSuccess(token);
+      
+      if (res.data.success) {
+        const { token, user: userData } = res.data;
+        await handleLoginSuccess(token, userData);
+      } else {
+        setError(res.data.error || 'Google login failed');
+        setLoading(false);
+      }
     } catch (err) {
       setLoading(false);
-      setError(err.response?.data?.message || 'Google login failed.');
+      
+      // Enhanced error handling for Google login
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        
+        if (errorData.status === 'suspended') {
+          const suspensionMessage = errorData.error || `Your account has been suspended. It will be reactivated in ${errorData.timeLeft} days.`;
+          setAccountStatus('suspended');
+          setUserData({
+            suspended_until: errorData.suspended_until,
+            strike_count: errorData.strike_count
+          });
+          setError(suspensionMessage);
+        } 
+        else if (errorData.status === 'banned') {
+          const banMessage = errorData.error || 'Your account has been permanently banned. Please contact support.';
+          setAccountStatus('banned');
+          setUserData({
+            strike_count: errorData.strike_count
+          });
+          setError(banMessage);
+        }
+        else if (errorData.error) {
+          setError(errorData.error);
+        }
+        else {
+          setError('Google login failed. Please try again.');
+        }
+      } else {
+        setError('Google login failed. Please check your connection and try again.');
+      }
     }
   };
 
@@ -136,143 +440,156 @@ export default function Login() {
   };
 
   const toggleMobileMenu = () => {
-  setMobileMenuOpen(!mobileMenuOpen);
-};
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const closeAccountStatusModal = () => {
+    setAccountStatus(null);
+    setUserData(null);
+    setPendingLogin(null);
+  };
+
+  const handleContinueToPlatform = () => {
+    if (pendingLogin) {
+      pendingLogin();
+    }
+    closeAccountStatusModal();
+  };
 
   return (
     <div className="auth-container">
-      {/* Navigation - Same as landing page */}
-<nav className="peerfusion-auth-nav">
-  <div className="nav-container">
-    <div className="nav-logo" onClick={() => navigate('/')}>
-      <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
-      <span>PeerFusion</span>
-    </div>
-    
-    {/* Desktop Navigation Links */}
-    <div className="nav-links">
-      <a 
-        href="#home" 
-        className="nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('home'), 100);
-        }}
-      >
-        Home
-      </a>
-      <a 
-        href="#about" 
-        className="nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('about'), 100);
-        }}
-      >
-        About
-      </a>
-      <a 
-        href="#features" 
-        className="nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('features'), 100);
-        }}
-      >
-        Features
-      </a>
-      <a 
-        href="#community" 
-        className="nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('community'), 100);
-        }}
-      >
-        Community
-      </a>
-    </div>
+      {/* Navigation - Same as before */}
+      <nav className="peerfusion-auth-nav">
+        <div className="nav-container">
+          <div className="nav-logo" onClick={() => navigate('/')}>
+            <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
+            <span>PeerFusion</span>
+          </div>
+          
+          {/* Desktop Navigation Links */}
+          <div className="nav-links">
+            <a 
+              href="#home" 
+              className="nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('home'), 100);
+              }}
+            >
+              Home
+            </a>
+            <a 
+              href="#about" 
+              className="nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('about'), 100);
+              }}
+            >
+              About
+            </a>
+            <a 
+              href="#features" 
+              className="nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('features'), 100);
+              }}
+            >
+              Features
+            </a>
+            <a 
+              href="#community" 
+              className="nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('community'), 100);
+              }}
+            >
+              Community
+            </a>
+          </div>
 
-    {/* Desktop Actions */}
-    <div className="nav-actions">
-      <button className="nav-login" onClick={() => navigate('/login')}>
-        Log in
-      </button>
-      <button className="nav-get-started" onClick={() => navigate('/register')}>
-        Get Started
-      </button>
-    </div>
+          {/* Desktop Actions */}
+          <div className="nav-actions">
+            <button className="nav-login" onClick={() => navigate('/login')}>
+              Log in
+            </button>
+            <button className="nav-get-started" onClick={() => navigate('/register')}>
+              Get Started
+            </button>
+          </div>
 
-    {/* Mobile Menu Button - ADD THIS */}
-    <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
-      {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
-    </button>
-  </div>
+          {/* Mobile Menu Button */}
+          <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
+            {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
+        </div>
 
-  {/* Mobile Dropdown Menu - ADD THIS */}
-  <div className={`mobile-dropdown-menu ${mobileMenuOpen ? 'open' : ''}`}>
-    <div className="mobile-nav-links">
-      <a 
-        href="#home" 
-        className="mobile-nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('home'), 100);
-        }}
-      >
-        Home
-      </a>
-      <a 
-        href="#about" 
-        className="mobile-nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('about'), 100);
-        }}
-      >
-        About
-      </a>
-      <a 
-        href="#features" 
-        className="mobile-nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('features'), 100);
-        }}
-      >
-        Features
-      </a>
-      <a 
-        href="#community" 
-        className="mobile-nav-link"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate('/');
-          setTimeout(() => scrollToSection('community'), 100);
-        }}
-      >
-        Community
-      </a>
-    </div>
-    <div className="mobile-nav-actions">
-      <button className="mobile-nav-login" onClick={() => navigate('/login')}>
-        Log in
-      </button>
-      <button className="mobile-nav-get-started" onClick={() => navigate('/register')}>
-        Get Started
-      </button>
-    </div>
-  </div>
-</nav>
+        {/* Mobile Dropdown Menu */}
+        <div className={`mobile-dropdown-menu ${mobileMenuOpen ? 'open' : ''}`}>
+          <div className="mobile-nav-links">
+            <a 
+              href="#home" 
+              className="mobile-nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('home'), 100);
+              }}
+            >
+              Home
+            </a>
+            <a 
+              href="#about" 
+              className="mobile-nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('about'), 100);
+              }}
+            >
+              About
+            </a>
+            <a 
+              href="#features" 
+              className="mobile-nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('features'), 100);
+              }}
+            >
+              Features
+            </a>
+            <a 
+              href="#community" 
+              className="mobile-nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setTimeout(() => scrollToSection('community'), 100);
+              }}
+            >
+              Community
+            </a>
+          </div>
+          <div className="mobile-nav-actions">
+            <button className="mobile-nav-login" onClick={() => navigate('/login')}>
+              Log in
+            </button>
+            <button className="mobile-nav-get-started" onClick={() => navigate('/register')}>
+              Get Started
+            </button>
+          </div>
+        </div>
+      </nav>
 
-      {/* Main Content - CodeCred.dev Style */}
+      {/* Main Content */}
       <main className="auth-main">
         <div className="auth-layout">
           {/* Left Side - Brand Section */}
@@ -286,14 +603,13 @@ export default function Login() {
                 Continue your journey of knowledge sharing and skill development.
               </p>
 
-                  {/* Add the SVG here */}
-                <div className="brand-graphic">
-                  <img 
-                    src="/Graphics2 design.svg" 
-                    alt="PeerFusion Learning Illustration" 
-                    className="brand-svg"
-                  />
-                </div>
+              <div className="brand-graphic">
+                <img 
+                  src="/Graphics2 design.svg" 
+                  alt="PeerFusion Learning Illustration" 
+                  className="brand-svg"
+                />
+              </div>
             </div>
           </div>
 
@@ -464,6 +780,17 @@ export default function Login() {
           </div>
         </div>
       </footer>
+
+      {/* Account Status Modal */}
+      {accountStatus && (
+        <AccountStatusModal
+          status={accountStatus}
+          message={error}
+          userData={userData}
+          onClose={closeAccountStatusModal}
+          onContinue={handleContinueToPlatform}
+        />
+      )}
     </div>
   );
 }

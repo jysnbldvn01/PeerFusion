@@ -267,7 +267,7 @@ router.post('/login', async (req, res) => {
 
     const user = users[0];
 
-    // Check user status
+    // Check user status with comprehensive handling
     if (user.status === 'suspended') {
       // Check if suspension period has ended
       if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
@@ -276,7 +276,9 @@ router.post('/login', async (req, res) => {
           success: false,
           error: `Your account has been suspended. It will be reactivated in ${timeLeft} days.`,
           status: 'suspended',
-          suspended_until: user.suspended_until
+          suspended_until: user.suspended_until,
+          timeLeft: timeLeft,
+          strike_count: user.strike_count || 0
         });
       } else {
         // Auto-reactivate if suspension period has passed
@@ -292,11 +294,33 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ 
         success: false,
         error: 'Your account has been permanently banned. Please contact support.',
-        status: 'banned'
+        status: 'banned',
+        strike_count: user.strike_count || 0
       });
+    } else if (user.status === 'deletion_pending') {
+      // Check if deletion period has passed
+      if (user.scheduled_for_deletion_at && new Date(user.scheduled_for_deletion_at) <= new Date()) {
+        console.log('User deletion period has passed, account should be deleted:', user.id);
+        return res.status(403).json({ 
+          success: false,
+          error: 'Your account has been permanently deleted. Please contact support if you believe this is an error.',
+          status: 'deleted'
+        });
+      } else {
+        // Allow users pending deletion to login so they can cancel deletion
+        console.log('User is pending deletion but can login to cancel:', user.id);
+        // Continue with login - user can access platform to cancel deletion
+      }
+    } else if (user.status === 'deactivated') {
+      // Allow deactivated users to login so they can reactivate
+      console.log('User is deactivated but can login to reactivate:', user.id);
+      // Continue with login - user can access platform to reactivate
     } else if (user.status === 'warning') {
+      // User can still login but has warnings
       console.log(`Login for user with warning status: ${email}, strike count: ${user.strike_count}`);
-      // User can login but has warnings
+    } else if (user.status === 'active') {
+      console.log('User is active and can proceed:', user.id);
+      // Normal active user, no special handling needed
     }
 
     // Verify password
@@ -322,6 +346,7 @@ router.post('/login', async (req, res) => {
 
     console.log(`Successful login for user: ${email}, status: ${user.status}`);
     
+    // Return comprehensive user data including all status information
     res.json({ 
       success: true,
       token, 
@@ -332,7 +357,10 @@ router.post('/login', async (req, res) => {
         role: user.role || 'user',
         status: user.status,
         strike_count: user.strike_count || 0,
-        suspended_until: user.suspended_until
+        suspended_until: user.suspended_until,
+        deactivation_requested_at: user.deactivation_requested_at,
+        deletion_scheduled_at: user.deletion_scheduled_at,
+        scheduled_for_deletion_at: user.scheduled_for_deletion_at
       } 
     });
 
@@ -384,7 +412,7 @@ router.post('/google-login', async (req, res) => {
       // User exists - login
       const existingUser = users[0];
       
-      // Check user status
+      // Check user status with comprehensive handling
       if (existingUser.status === 'suspended') {
         if (existingUser.suspended_until && new Date(existingUser.suspended_until) > new Date()) {
           const timeLeft = Math.ceil((new Date(existingUser.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
@@ -392,7 +420,9 @@ router.post('/google-login', async (req, res) => {
             success: false,
             error: `Your account has been suspended. It will be reactivated in ${timeLeft} days.`,
             status: 'suspended',
-            suspended_until: existingUser.suspended_until
+            suspended_until: existingUser.suspended_until,
+            timeLeft: timeLeft,
+            strike_count: existingUser.strike_count || 0
           });
         } else {
           // Auto-reactivate if suspension period has passed
@@ -407,8 +437,33 @@ router.post('/google-login', async (req, res) => {
         return res.status(403).json({ 
           success: false,
           error: 'Your account has been permanently banned. Please contact support.',
-          status: 'banned'
+          status: 'banned',
+          strike_count: existingUser.strike_count || 0
         });
+      } else if (existingUser.status === 'deletion_pending') {
+        // Check if deletion period has passed
+        if (existingUser.scheduled_for_deletion_at && new Date(existingUser.scheduled_for_deletion_at) <= new Date()) {
+          console.log('User deletion period has passed, account should be deleted:', existingUser.id);
+          return res.status(403).json({ 
+            success: false,
+            error: 'Your account has been permanently deleted. Please contact support if you believe this is an error.',
+            status: 'deleted'
+          });
+        } else {
+          // Allow users pending deletion to login so they can cancel deletion
+          console.log('User is pending deletion but can login to cancel:', existingUser.id);
+          // Continue with login - user can access platform to cancel deletion
+        }
+      } else if (existingUser.status === 'deactivated') {
+        // Allow deactivated users to login so they can reactivate
+        console.log('User is deactivated but can login to reactivate:', existingUser.id);
+        // Continue with login - user can access platform to reactivate
+      } else if (existingUser.status === 'warning') {
+        // User can still login but has warnings
+        console.log(`Google login for user with warning status: ${email}, strike count: ${existingUser.strike_count}`);
+      } else if (existingUser.status === 'active') {
+        console.log('User is active and can proceed:', existingUser.id);
+        // Normal active user, no special handling needed
       }
       
       // Update user with latest Google info if needed
@@ -417,6 +472,7 @@ router.post('/google-login', async (req, res) => {
           'UPDATE users SET google_id = ?, name = ? WHERE id = ?',
           [googleId, name, existingUser.id]
         );
+        existingUser.name = name; // Update local object for response
       }
       
       // Generate app JWT token
@@ -431,7 +487,7 @@ router.post('/google-login', async (req, res) => {
         { expiresIn: '24h' }
       );
       
-      console.log(`Successful Google login for user: ${email}`);
+      console.log(`Successful Google login for user: ${email}, status: ${existingUser.status}`);
       
       return res.json({ 
         success: true,
@@ -443,7 +499,10 @@ router.post('/google-login', async (req, res) => {
           role: existingUser.role || 'user',
           status: existingUser.status,
           strike_count: existingUser.strike_count || 0,
-          suspended_until: existingUser.suspended_until
+          suspended_until: existingUser.suspended_until,
+          deactivation_requested_at: existingUser.deactivation_requested_at,
+          deletion_scheduled_at: existingUser.deletion_scheduled_at,
+          scheduled_for_deletion_at: existingUser.scheduled_for_deletion_at
         }
       });
     }
@@ -480,7 +539,10 @@ router.post('/google-login', async (req, res) => {
         role: 'user',
         status: 'active',
         strike_count: 0,
-        suspended_until: null
+        suspended_until: null,
+        deactivation_requested_at: null,
+        deletion_scheduled_at: null,
+        scheduled_for_deletion_at: null
       } 
     });
 
@@ -500,7 +562,6 @@ router.post('/google-login', async (req, res) => {
     });
   }
 });
-
 //-------------------------- Forgot Password --------------------------//
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-
 import {
   collection,
   addDoc,
@@ -15,8 +14,6 @@ import {
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../firebase";
 import "../../css/chat.css";
-
-
 import { socket, identifySocket } from "../../utils/socket";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -95,6 +92,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [canSchedule, setCanSchedule] = useState(false);
   const [userRole, setUserRole] = useState('');
   const [showScheduleTooltip, setShowScheduleTooltip] = useState(false);
+  const [avatarErrors, setAvatarErrors] = useState(new Set());
   const menuBtnRefs = useRef({});
   const scrollRef = useRef();
   const enableTimerRef = useRef(null);
@@ -102,6 +100,49 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const fileInputRef = useRef(null);
   const scheduleButtonRef = useRef(null);
   const isAuthenticated = !!localStorage.getItem('token');
+
+  // Get authentication token safely
+  const getAuthToken = () => {
+    try {
+      return localStorage.getItem('token');
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      return null;
+    }
+  };
+
+  // Enhanced API request function with proper error handling
+  const makeApiRequest = async (url, options = {}) => {
+    const token = getAuthToken();
+    const defaultOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, { ...defaultOptions, ...options });
+      
+      if (response.status === 401) {
+        console.warn('Authentication failed, redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw new Error('Authentication required');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  };
 
   // Seed otherUser immediately from parent to avoid placeholder-only flash
   useEffect(() => {
@@ -116,31 +157,48 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     }
   }, [initialOtherUser, onOtherUserResolved]);
 
+  // Socket message listener
   useEffect(() => {
-  if (!conversationId || !currentUser?.user_id) return;
-  const handleNewMessage = (message) => {
-    if (message.conversationId === conversationId && 
-        String(message.senderId) !== String(currentUser.user_id)) {
-      window.dispatchEvent(new Event('chatsUpdated'));
-    }
-  };
+    if (!conversationId || !currentUser?.user_id) return;
+    
+    const handleNewMessage = (message) => {
+      if (message.conversationId === conversationId && 
+          String(message.senderId) !== String(currentUser.user_id)) {
+        window.dispatchEvent(new Event('chatsUpdated'));
+      }
+    };
 
-  socket.on('receiveMessage', handleNewMessage);
+    socket.on('receiveMessage', handleNewMessage);
 
-  return () => {
-    socket.off('receiveMessage', handleNewMessage);
-  };
-}, [conversationId, currentUser?.user_id]);
+    return () => {
+      socket.off('receiveMessage', handleNewMessage);
+    };
+  }, [conversationId, currentUser?.user_id]);
 
-  // Normalize avatar -> absolute URL
+  // Fix avatar URL handling to prevent mixed content and connection errors
   const ensureAvatarUrl = (avatar) => {
     if (!avatar) return null;
     if (typeof avatar !== 'string') return null;
-    if (avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
+    
+    if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+      return avatar.replace('http://', 'https://');
+    }
+    
     const file = avatar.replace(/^\/+/, "");
-    const API_BASE = API_BASE_URL + '/api';
-    const UPLOADS_BASE = API_BASE.replace(/\/api$/, "") + "/uploads/";
+    const baseUrl = API_BASE_URL || window.location.origin;
+    const UPLOADS_BASE = baseUrl.replace(/\/api$/, "") + "/uploads/";
+    
     return `${UPLOADS_BASE}${file}`;
+  };
+
+  // Handle avatar image errors
+  const handleAvatarError = (userId) => {
+    setAvatarErrors(prev => new Set(prev).add(userId));
+  };
+
+  // Check if avatar has previously failed to load
+  const hasAvatarError = (userId) => {
+    return avatarErrors.has(userId);
   };
 
   // Check schedule permissions
@@ -149,8 +207,9 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       if (!conversationId || !currentUser?.user_id) return;
       
       try {
-        const res = await fetch(`${API_BASE_URL}/api/session/can-schedule/${conversationId}/${currentUser.user_id}`);
-        const data = await res.json();
+        const data = await makeApiRequest(
+          `${API_BASE_URL}/api/session/can-schedule/${conversationId}/${currentUser.user_id}`
+        );
         
         if (data.canSchedule !== undefined) {
           setCanSchedule(data.canSchedule);
@@ -158,40 +217,21 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         }
       } catch (err) {
         console.error("Error checking schedule permission:", err);
-        setCanSchedule(true); // Fallback to allow scheduling
+        setCanSchedule(true);
       }
     };
 
     checkSchedulePermission();
   }, [conversationId, currentUser?.user_id]);
 
-  // Handle schedule button click with tooltip
-  const handleScheduleClick = () => {
-    if (canSchedule) {
-      setShowMeetingModal(true);
-    } else {
-      setShowScheduleTooltip(true);
-      // Hide tooltip after 3 seconds
-      setTimeout(() => {
-        setShowScheduleTooltip(false);
-      }, 3000);
-    }
-  };
-
-  const openReportMessage = (message) => {
-    setReportTarget({ type: 'message', message });
-    setReportReason("");
-    setReportOffense('Harassment');
-    setShowReportModal(true);
-  };
-
-  // Load other users' profiles
+  // Enhanced profile fetching with error handling
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    fetch(`${API_BASE_URL}/api/profile/others`)
-      .then(res => res.json())
-      .then(list => {
+    const fetchProfiles = async () => {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      try {
+        const list = await makeApiRequest(`${API_BASE_URL}/api/profile/others`);
         const map = {};
         (list || []).forEach(u => {
           if (u && (u.id || u.user_id)) {
@@ -200,11 +240,15 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
           }
         });
         setProfilesById(map);
-      })
-      .catch(() => {});
+      } catch (error) {
+        console.error('Failed to fetch profiles:', error);
+      }
+    };
+
+    fetchProfiles();
   }, []);
 
-  // Fetch other user info (prefer externally provided profiles for instant resolution)
+  // Enhanced other user fetching
   useEffect(() => {
     const fetchOtherUser = async () => {
       if (!conversationId || !currentUser?.user_id) {
@@ -212,23 +256,34 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
         if (typeof onOtherUserResolved === 'function') onOtherUserResolved(null);
         return;
       }
+      
       try {
         const convRef = doc(db, "conversations", conversationId);
         const convSnap = await getDoc(convRef);
+        
         if (!convSnap.exists()) {
           setOtherUser(null);
           return;
         }
+        
         const data = convSnap.data();
         const otherId = data.participants?.find((p) => String(p) !== String(currentUser.user_id));
+        
+        if (!otherId) {
+          setOtherUser(null);
+          return;
+        }
+        
         const info = data.userInfo?.[String(otherId)] || {};
         const profile = (externalProfilesById && externalProfilesById[String(otherId)]) || profilesById[String(otherId)] || {};
         const avatarFilename = profile.avatar || info.avatar || "";
+        
         const resolved = {
           id: otherId,
           username: info.username || profile.username || `User ${otherId}`,
           avatar: ensureAvatarUrl(avatarFilename || ""),
         };
+        
         setOtherUser(resolved);
         if (typeof onOtherUserResolved === 'function') onOtherUserResolved(resolved);
       } catch (err) {
@@ -241,16 +296,16 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     fetchOtherUser();
   }, [conversationId, currentUser?.user_id, profilesById, externalProfilesById, onOtherUserResolved]);
 
-  // Fetch scheduled meeting
+  // Enhanced meeting fetch
   useEffect(() => {
     const fetchMeetingForConversation = async () => {
       if (!conversationId) {
         setCurrentMeeting(null);
         return;
       }
+      
       try {
-        const res = await fetch(`${API_BASE_URL}/api/meeting/conversation/${conversationId}`);
-        const data = await res.json();
+        const data = await makeApiRequest(`${API_BASE_URL}/api/meeting/conversation/${conversationId}`);
         if (data.success) {
           setCurrentMeeting(data.meeting || null);
         }
@@ -528,11 +583,14 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     });
   };
 
-  // Send message (text or file)
+  // Enhanced message sending with better error handling
   const send = async (file = null) => {
-    if (!currentUser?.user_id || !conversationId) return;
+    if (!currentUser?.user_id || !conversationId) {
+      window.pfToast?.error?.("Unable to send message. Please refresh the page.");
+      return;
+    }
+    
     const trimmed = text.trim();
-
     if (!trimmed && !file) return;
 
     setSending(true);
@@ -569,44 +627,44 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
 
       await addDoc(collection(db, "conversations", conversationId, "messages"), payload);
 
-    const convRef = doc(db, "conversations", conversationId);
-    await updateDoc(convRef, {
-      lastMessage: fileResult && fileResult.fileType === "image"
-        ? "📷 Image"
-        : fileResult && (fileResult.fileType === "pdf" || fileResult.fileType === "doc")
-        ? "📄 File"
-        : payload.content,
-      lastMessageTime: serverTimestamp(),
-    });
+      const convRef = doc(db, "conversations", conversationId);
+      await updateDoc(convRef, {
+        lastMessage: fileResult && fileResult.fileType === "image"
+          ? "📷 Image"
+          : fileResult && (fileResult.fileType === "pdf" || fileResult.fileType === "doc")
+          ? "📄 File"
+          : payload.content,
+        lastMessageTime: serverTimestamp(),
+      });
 
-    window.dispatchEvent(new Event('chatsUpdated'));
+      window.dispatchEvent(new Event('chatsUpdated'));
       setText("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       console.error("Failed to send message:", err);
-      window.pfToast?.error?.("Failed to send message. Try again.");
+      window.pfToast?.error?.("Failed to send message. Please check your connection and try again.");
     } finally {
       setSending(false);
     }
   };
 
-const handleJoin = () => {
-  if (!currentMeeting || !otherUser || !currentUser) return;
+  const handleJoin = () => {
+    if (!currentMeeting || !otherUser || !currentUser) return;
 
-  const partnerData = {
-    id: otherUser.id,
-    username: otherUser.username || `User ${otherUser.id}`,
-    avatar: otherUser.avatar ? otherUser.avatar.split("/").pop() : "",
+    const partnerData = {
+      id: otherUser.id,
+      username: otherUser.username || `User ${otherUser.id}`,
+      avatar: otherUser.avatar ? otherUser.avatar.split("/").pop() : "",
+    };
+
+    const videocallUrl = `/videocall?partnerId=${partnerData.id}&partnerUsername=${encodeURIComponent(
+      partnerData.username
+    )}&partnerAvatar=${encodeURIComponent(partnerData.avatar || "")}&conversationId=${conversationId}`;
+
+    const windowFeatures = "width=1000,height=700,noopener,noreferrer";
+    window.open(videocallUrl, "_blank", windowFeatures);
   };
 
-  // Pass conversationId to the video call
-  const videocallUrl = `/videocall?partnerId=${partnerData.id}&partnerUsername=${encodeURIComponent(
-    partnerData.username
-  )}&partnerAvatar=${encodeURIComponent(partnerData.avatar || "")}&conversationId=${conversationId}`;
-
-  const windowFeatures = "width=1000,height=700,noopener,noreferrer";
-  window.open(videocallUrl, "_blank", windowFeatures);
-};
   // Helper: check if a message is seen by the other party
   const isSeenByOther = (m) => {
     if (!m || !otherUser) return false;
@@ -621,10 +679,11 @@ const handleJoin = () => {
     }
 
     try {
-       const res = await fetch(`${API_BASE_URL}/api/meeting/schedule`, {
+      const res = await fetch(`${API_BASE_URL}/api/meeting/schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(getAuthToken() && { Authorization: `Bearer ${getAuthToken()}` }),
         },
         body: JSON.stringify({
           conversationId: conversationId,
@@ -632,6 +691,11 @@ const handleJoin = () => {
           scheduledAt: meetingDate,
         }),
       });
+
+      if (res.status === 401) {
+        window.pfToast?.error?.("Please log in again.");
+        return;
+      }
 
       const data = await res.json();
 
@@ -645,6 +709,68 @@ const handleJoin = () => {
     } catch (err) {
       console.error("Error scheduling meeting:", err);
       window.pfToast?.error?.("Error scheduling meeting. Please try again.");
+    }
+  };
+
+  // Handle schedule button click with tooltip
+  const handleScheduleClick = () => {
+    if (canSchedule) {
+      setShowMeetingModal(true);
+    } else {
+      setShowScheduleTooltip(true);
+      setTimeout(() => {
+        setShowScheduleTooltip(false);
+      }, 3000);
+    }
+  };
+
+  const openReportMessage = (message) => {
+    setReportTarget({ type: 'message', message });
+    setReportReason("");
+    setReportOffense('Harassment');
+    setShowReportModal(true);
+  };
+
+  // Enhanced report submission
+  const handleSubmitReport = async () => {
+    if (!otherUser?.id || !reportTarget) return;
+    
+    try {
+      setReportSubmitting(true);
+      
+      const msg = reportTarget.message || {};
+      let messagePreview = '';
+      
+      if (msg.fileType === 'image') {
+        messagePreview = '[Image]';
+      } else if (msg.fileType === 'pdf' || msg.fileType === 'doc') {
+        messagePreview = `${(msg.fileType || '').toUpperCase()} File: ${msg.fileName || 'File'}`;
+      } else {
+        messagePreview = (msg.content || '').toString().substring(0, 200);
+      }
+      
+      const description = `Message: "${messagePreview}", Reason: ${reportReason}`;
+      const payload = {
+        reported_user_id: otherUser.id,
+        report_type: reportOffense,
+        description,
+        source: 'chat_message'
+      };
+      
+      await makeApiRequest(`${API_BASE_URL}/api/reports`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      window.pfToast?.success?.('Report submitted successfully.');
+      setShowReportModal(false);
+      setReportTarget(null);
+      setReportReason("");
+    } catch (e) {
+      console.error('Report submission error:', e);
+      window.pfToast?.error?.('Error submitting report. Please try again.');
+    } finally {
+      setReportSubmitting(false);
     }
   };
 
@@ -667,63 +793,6 @@ const handleJoin = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       send();
-    }
-  };
-
-  // Group filtered messages
-  const groups = [];
-  for (let i = 0; i < filteredMessages.length; i++) {
-    const m = filteredMessages[i];
-    if (groups.length === 0 || String(groups[groups.length - 1].senderId) !== String(m.senderId)) {
-      groups.push({ senderId: m.senderId, msgs: [m] });
-    } else {
-      groups[groups.length - 1].msgs.push(m);
-    }
-  }
-
-  const handleSubmitReport = async () => {
-    if (!otherUser?.id || !reportTarget) return;
-    try {
-      setReportSubmitting(true);
-      const token = localStorage.getItem('token');
-      let messagePreview = '';
-      const msg = reportTarget.message || {};
-      if (msg.fileType === 'image') {
-        messagePreview = '[Image]';
-      } else if (msg.fileType === 'pdf' || msg.fileType === 'doc') {
-        messagePreview = `${(msg.fileType || '').toUpperCase()} File: ${msg.fileName || 'File'}`;
-      } else {
-        messagePreview = (msg.content || '').toString();
-      }
-      const description = `Message: "${messagePreview}", Reason: ${reportReason}`;
-      const payload = {
-        reported_user_id: otherUser.id,
-        report_type: reportOffense,
-        description,
-        source: 'chat_message'
-      };
-      const res = await fetch(`${API_BASE_URL}/api/reports`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        window.pfToast?.success?.('Report submitted successfully.');
-        setShowReportModal(false);
-        setReportTarget(null);
-        setReportReason("");
-      } else {
-        window.pfToast?.error?.(data?.error || 'Failed to submit report');
-      }
-    } catch (e) {
-      console.error('Report submission error:', e);
-      window.pfToast?.error?.('Error submitting report.');
-    } finally {
-      setReportSubmitting(false);
     }
   };
 
@@ -761,12 +830,62 @@ const handleJoin = () => {
     });
   };
 
+  // Render avatar with error handling
+  const renderAvatar = (user, className = "peerfusion-chat-partner-avatar", size = 'medium') => {
+    const userId = user?.id;
+    const shouldShowAvatar = user?.avatar && !hasAvatarError(userId);
+    const fontSize = size === 'small' ? '12px' : '16px';
+    
+    return (
+      <div 
+        className={className} 
+        style={{ 
+          position: 'relative', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          background: '#e8efe5', 
+          color: '#666', 
+          fontSize: fontSize, 
+          fontWeight: 'bold' 
+        }}
+      >
+        {user?.username?.charAt(0) || 'U'}
+        {shouldShowAvatar && (
+          <img
+            src={ensureAvatarUrl(user.avatar)}
+            alt={user.username}
+            style={{ 
+              position: 'absolute', 
+              inset: 0, 
+              width: '100%', 
+              height: '100%', 
+              borderRadius: '50%' 
+            }}
+            onError={() => handleAvatarError(userId)}
+            loading="lazy"
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Group filtered messages
+  const groups = [];
+  for (let i = 0; i < filteredMessages.length; i++) {
+    const m = filteredMessages[i];
+    if (groups.length === 0 || String(groups[groups.length - 1].senderId) !== String(m.senderId)) {
+      groups.push({ senderId: m.senderId, msgs: [m] });
+    } else {
+      groups[groups.length - 1].msgs.push(m);
+    }
+  }
+
   return (
     <div className="peerfusion-chat-middle">
       {/* Chat Header with Mobile Controls */}
       <div className="peerfusion-chat-header">
         <div className="peerfusion-chat-partner-info">
-          {/* Back button for mobile */}
           {isMobile && (
             <button 
               className="peerfusion-chat-back-button"
@@ -777,18 +896,7 @@ const handleJoin = () => {
             </button>
           )}
 
-          <div className="peerfusion-chat-partner-avatar" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e8efe5', color: '#666', fontSize: '16px', fontWeight: 'bold' }}>
-            {otherUser?.username?.charAt(0) || 'U'}
-            {otherUser?.avatar && (
-              <img
-                src={ensureAvatarUrl(otherUser.avatar)}
-                alt={otherUser.username}
-                className="peerfusion-chat-partner-avatar"
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: '50%' }}
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-            )}
-          </div>
+          {renderAvatar(otherUser, "peerfusion-chat-partner-avatar")}
           <span className="peerfusion-chat-partner-name">
             {otherUser?.username}
             {userRole && (
@@ -809,14 +917,12 @@ const handleJoin = () => {
             >
               <CalendarIcon />
             </button>
-            {/* Tooltip for disabled schedule button */}
             {showScheduleTooltip && !canSchedule && (
               <div className="peerfusion-chat-schedule-tooltip">
                 Only the person who accepted your session can schedule meetings
               </div>
             )}
           </div>
-          {/* Info button for mobile */}
           {isMobile && (
             <button 
               className="peerfusion-chat-info-btn"
@@ -921,30 +1027,7 @@ const handleJoin = () => {
                   >
                     {!isMeGroup ? (
                       showTailAvatar ? (
-                        otherUser?.avatar ? (
-                          <img 
-                            src={ensureAvatarUrl(otherUser.avatar)} 
-                            alt={otherUser.username} 
-                            className="peerfusion-chat-message-avatar" 
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                        ) : (
-                          <div 
-                            className="peerfusion-chat-message-avatar"
-                            style={{
-                              background: '#e8efe5',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#666',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            {otherUser?.username?.charAt(0) || 'U'}
-                          </div>
-                        )
+                        renderAvatar(otherUser, "peerfusion-chat-message-avatar", 'small')
                       ) : (
                         <div className="peerfusion-chat-avatar-space" />
                       )
@@ -957,7 +1040,15 @@ const handleJoin = () => {
                     >
                       {/* Render inline image */}
                       {m.fileType === "image" && m.content ? (
-                        <img src={m.content} alt="uploaded" className="peerfusion-chat-image" />
+                        <img 
+                          src={m.content} 
+                          alt="uploaded" 
+                          className="peerfusion-chat-image" 
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
                       ) : null}
 
                       {/* Render PDF or DOC as inline file card */}
@@ -1106,7 +1197,7 @@ const handleJoin = () => {
         </button>
       </div>
 
-      {/* Report Modal - Updated to match ChatPage design */}
+      {/* Report Modal */}
       {showReportModal && (
         <div className="peerfusion-chat-modal-overlay" onClick={() => setShowReportModal(false)}>
           <div className="peerfusion-chat-modal-content peerfusion-chat-report-modal" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
@@ -1219,6 +1310,7 @@ const handleJoin = () => {
                         src={ensureAvatarUrl(currentUser.avatar)} 
                         alt={currentUser.username} 
                         className="peerfusion-chat-participant-avatar"
+                        onError={(e) => { e.target.style.display = 'none'; }}
                       />
                     ) : (
                       <div className="peerfusion-chat-participant-avatar-placeholder">
@@ -1230,9 +1322,10 @@ const handleJoin = () => {
                   <div className="peerfusion-chat-participant">
                     {otherUser?.avatar ? (
                       <img 
-                        src={otherUser.avatar} 
+                        src={ensureAvatarUrl(otherUser.avatar)} 
                         alt={otherUser.username} 
                         className="peerfusion-chat-participant-avatar"
+                        onError={(e) => { e.target.style.display = 'none'; }}
                       />
                     ) : (
                       <div className="peerfusion-chat-participant-avatar-placeholder">
