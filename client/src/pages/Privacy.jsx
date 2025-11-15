@@ -550,7 +550,7 @@ const PrivacyPolicy = () => {
           <div className="peerfusion-footer-brand">
             <div className="peerfusion-footer-logo">
               <img 
-                src="/logos.png" 
+                src="/Logos.png" 
                 alt="PeerFusion" 
                 className="peerfusion-logo-image"
                 onError={(e) => {
