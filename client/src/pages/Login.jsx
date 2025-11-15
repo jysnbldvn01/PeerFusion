@@ -124,7 +124,6 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
           message: 'Your account is scheduled for deletion. You can cancel this process.',
           actions: [
             { label: 'Cancel Deletion', path: '/profile', type: 'primary' },
-            { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
           ]
         };
       case 'deactivated':
@@ -136,7 +135,6 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
           message: 'Your account is currently deactivated. You can reactivate it.',
           actions: [
             { label: 'Reactivate Account', path: '/profile', type: 'primary' },
-            { label: 'Continue to Platform', action: 'continue', type: 'secondary' }
           ]
         };
       default:
@@ -214,6 +212,11 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
                 {action.label}
               </button>
             ))}
+            {statusDetails.type === 'allowed' && (
+              <button className="status-action-btn primary" onClick={onContinue}>
+                Continue to Platform
+              </button>
+            )}
             <button className="status-action-btn secondary" onClick={onClose}>
               {statusDetails.type === 'blocked' ? 'Close' : 'Cancel'}
             </button>

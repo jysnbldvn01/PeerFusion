@@ -96,7 +96,7 @@ const UserAppealPage = () => {
       console.log('Submitting public appeal:', formData);
 
       // Use the new public endpoint
-      const response = await fetch(`${API_BASE_URL}/appeals/public-submit`, {
+      const response = await fetch(`${API_BASE_URL}/api/appeals/public-submit`, {
         method: 'POST',
         body: formDataToSend
       });

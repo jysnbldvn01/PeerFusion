@@ -339,7 +339,7 @@ const fetchAppeals = async () => {
     setActionLoading(appealId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/admin/appeals/${appealId}/status`, {
+      const response = await fetch(`${API_BASE}/api/admin/appeals/${appealId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -381,7 +381,7 @@ const fetchAppeals = async () => {
   const handleDownloadEvidence = async (evidenceItem) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/admin/appeals/evidence/${evidenceItem.filename}`, {
+      const response = await fetch(`${API_BASE}/api/admin/appeals/evidence/${evidenceItem.filename}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

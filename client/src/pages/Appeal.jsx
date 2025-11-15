@@ -61,7 +61,7 @@ const AppealPage = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${API_BASE_URL}/profile`, {
+      const response = await fetch(`${API_BASE_URL}/api/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -92,7 +92,7 @@ const AppealPage = () => {
   const fetchUserAppeals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/appeals/my-appeals`, {
+      const response = await fetch(`${API_BASE_URL}/api/appeals/my-appeals`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -194,7 +194,7 @@ const handleSubmit = async (e) => {
       strike_count: strikeCount
     });
 
-    const response = await fetch(`${API_BASE_URL}/appeals/submit`, {
+    const response = await fetch(`${API_BASE_URL}/api/appeals/submit`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
