@@ -162,10 +162,10 @@ const Notification = () => {
     }
   };
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (tab = activeTab) => {
     const token = localStorage.getItem('token');
     const url =
-      activeTab === 'archived'
+      tab === 'archived'
         ? `${API_BASE_URL}/api/profile/notifications/archived`
         : `${API_BASE_URL}/api/profile/notifications`;
 
@@ -310,7 +310,7 @@ const getDisplayAvatar = (notification) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      fetchNotifications(activeTab);
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -319,25 +319,25 @@ const getDisplayAvatar = (notification) => {
     }
   };
 
-  const markNotificationAsUnread = async (id, e) => {
-    if (e) e.stopPropagation();
-    const token = localStorage.getItem('token');
-    try {
-      await axios.put(
-        `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      fetchNotifications();
-      window.dispatchEvent(new Event('notificationsUpdated'));
-      setOpenMenuId(null);
-    } catch (err) {
-      console.error('Failed to mark notification as unread:', err);
-      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
-    }
-  };
+const markNotificationAsUnread = async (id, e) => {
+  if (e) e.stopPropagation();
+  const token = localStorage.getItem('token');
+  try {
+    await axios.put(
+      `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    fetchNotifications(activeTab);
+    window.dispatchEvent(new Event('notificationsUpdated'));
+    setOpenMenuId(null);
+  } catch (err) {
+    console.error('Failed to mark notification as unread:', err);
+    window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
+  }
+};
 
   const archiveNotification = async (id, e) => {
     if (e) e.stopPropagation();
@@ -350,7 +350,7 @@ const getDisplayAvatar = (notification) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      fetchNotifications(activeTab);
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -370,7 +370,7 @@ const getDisplayAvatar = (notification) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      fetchNotifications(activeTab);
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -379,32 +379,32 @@ const getDisplayAvatar = (notification) => {
     }
   };
 
-  const markAllAsRead = async () => {
-    if (!notifications || notifications.length === 0) return;
-    const token = localStorage.getItem('token');
-    const unread = notifications.filter(n => !n.is_read);
-    if (unread.length === 0) {
-      window.pfToast?.info?.('All notifications are already read');
-      return;
-    }
-    try {
-      await Promise.all(
-        unread.map(n =>
-          axios.put(
-            `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
-            {},
-            { headers: { Authorization: `Bearer ${token}` } }
+    const markAllAsRead = async () => {
+      if (!notifications || notifications.length === 0) return;
+      const token = localStorage.getItem('token');
+      const unread = notifications.filter(n => !n.is_read);
+      if (unread.length === 0) {
+        window.pfToast?.info?.('All notifications are already read');
+        return;
+      }
+      try {
+        await Promise.all(
+          unread.map(n =>
+            axios.put(
+              `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
+              {},
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
           )
-        )
-      );
-      await fetchNotifications();
-      window.dispatchEvent(new Event('notificationsUpdated'));
-      window.pfToast?.success?.('All notifications marked as read');
-    } catch (err) {
-      console.error('Failed to mark all as read:', err);
-      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
-    }
-  };
+        );
+        await fetchNotifications(activeTab);
+        window.dispatchEvent(new Event('notificationsUpdated'));
+        window.pfToast?.success?.('All notifications marked as read');
+      } catch (err) {
+        console.error('Failed to mark all as read:', err);
+        window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
+      }
+    };
 
   const deleteNotification = async (id, e) => {
     if (e) e.stopPropagation();
@@ -416,7 +416,7 @@ const getDisplayAvatar = (notification) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      fetchNotifications(activeTab);
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -424,6 +424,7 @@ const getDisplayAvatar = (notification) => {
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to delete notification');
     }
   };
+
 
   const toggleMenu = (id, event) => {
     event.stopPropagation();
