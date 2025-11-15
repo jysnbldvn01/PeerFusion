@@ -1862,9 +1862,10 @@
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; 
   z-index: 1000;
   padding: 20px;
+  overflow-y: auto;
 }
 
 .account-status-modal {
@@ -1875,12 +1876,13 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: modalSlideIn 0.3s ease-out;
+  margin-top: 60px;
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-50px);
+    transform: translateY(-30px);
   }
   to {
     opacity: 1;
@@ -1889,55 +1891,54 @@
 }
 
 .account-status-header {
-  padding: 30px;
+  padding: 25px 30px;
   text-align: center;
   color: white;
 }
-
 .account-status-icon {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .account-status-icon svg {
-  width: 48px;
-  height: 48px;
-}
+  width: 42px;
+  height: 42px;
+  }
 
 /* For smaller screens */
 @media (max-width: 768px) {
   .account-status-icon svg {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
 }
 
 .account-status-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
 .account-status-body {
-  padding: 30px;
+  padding: 25px;
 }
 
 .status-message {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   text-align: center;
 }
 
 .status-message p {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.5;
   color: #333;
 }
 
 .additional-message {
-  margin-top: 10px !important;
+  margin-top: 8px !important;
   font-style: italic;
   color: #666 !important;
 }
@@ -1945,16 +1946,17 @@
 .status-details {
   background: #f8f9fa;
   border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
+  padding: 12px 15px;
+  margin-bottom: 18px; 
 }
 
 .status-detail {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
 }
+
 
 .status-detail:last-child {
   margin-bottom: 0;
@@ -1967,14 +1969,14 @@
 .status-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .status-action-btn {
-  padding: 12px 20px;
+  padding: 10px 18px;
   border: none;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -2041,6 +2043,7 @@
   .account-status-modal {
     margin: 20px;
     max-width: none;
+    margin-top: 40px;
   }
   
   .account-status-header {

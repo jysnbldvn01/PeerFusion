@@ -214,11 +214,6 @@ const AccountStatusModal = ({ status, message, onClose, userData, onContinue }) 
                 {action.label}
               </button>
             ))}
-            {statusDetails.type === 'allowed' && (
-              <button className="status-action-btn primary" onClick={onContinue}>
-                Continue to Platform
-              </button>
-            )}
             <button className="status-action-btn secondary" onClick={onClose}>
               {statusDetails.type === 'blocked' ? 'Close' : 'Cancel'}
             </button>
