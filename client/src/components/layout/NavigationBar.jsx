@@ -12,8 +12,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 const SOCKET_URL = API_BASE_URL;
 const socket = io(SOCKET_URL, { autoConnect: false });
 
-const NavigationBar = ({ isCollapsed, onToggle }) => {
-  const [isMobile, setIsMobile] = useState(false);
+const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [chatCount, setChatCount] = useState(0);
   const navigate = useNavigate();
@@ -121,13 +120,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
   };
 
   useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
     const timer = setTimeout(() => {
       fetchCounts();
     }, 100);
@@ -166,7 +158,6 @@ const NavigationBar = ({ isCollapsed, onToggle }) => {
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
       window.removeEventListener('notificationsUpdated', fetchCounts);
       socket.off('counts_updated', handleCountsUpdated);
       socket.off('new_notification', handleNewNotification);

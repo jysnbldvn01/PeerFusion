@@ -2115,3 +2115,354 @@
   color: #dc2626 !important;
   font-weight: 600;
 }
+/* Email Verification Actions */
+.peerfusion-email-actions-verification {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0 1.5rem 0;
+  padding: 1.5rem 0;
+  border-top: 1px solid #f0f7ed;
+  border-bottom: 1px solid #f0f7ed;
+}
+
+.peerfusion-email-secondary {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: 2px solid #e8efe5;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  color: #5a7c55;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.peerfusion-email-secondary:hover:not(:disabled) {
+  background: #f8faf7;
+  border-color: #4a7c3a;
+  color: #4a7c3a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.1);
+}
+
+.peerfusion-email-secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.peerfusion-email-secondary:disabled {
+  background: #f0f0f0;
+  border-color: #e0e0e0;
+  color: #a0a0a0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.peerfusion-email-back {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: 2px solid #e8efe5;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  color: #5a7c55;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.peerfusion-email-back:hover:not(:disabled) {
+  background: #f8faf7;
+  border-color: #4a7c3a;
+  color: #4a7c3a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.1);
+}
+
+.peerfusion-email-back:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.peerfusion-email-back:disabled {
+  background: #f0f0f0;
+  border-color: #e0e0e0;
+  color: #a0a0a0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Resend Code Button Specific Styles */
+.peerfusion-email-resend {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.peerfusion-email-resend:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-color: transparent;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+
+.peerfusion-email-resend:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Loading state for resend button */
+.peerfusion-email-resend-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: peerfusion-email-resend-spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes peerfusion-email-resend-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Success state for resend button */
+.peerfusion-email-resend-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.peerfusion-email-resend-success:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+/* Cooldown state for resend button */
+.peerfusion-email-resend-cooldown {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  border: none;
+  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+  cursor: not-allowed;
+}
+
+.peerfusion-email-resend-cooldown:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+}
+
+/* Resend counter display */
+.peerfusion-resend-counter {
+  font-size: 0.8rem;
+  color: #5a7c55;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.peerfusion-resend-counter.cooldown {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.peerfusion-resend-counter.ready {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* Email verification specific styles */
+.peerfusion-email-verification-section {
+  background: #f8faf7;
+  border: 1px solid #e8efe5;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
+}
+
+.peerfusion-email-verification-title {
+  color: #2d5a27;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.peerfusion-email-verification-subtitle {
+  color: #5a7c55;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem 0;
+}
+
+.peerfusion-email-verification-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.peerfusion-email-verification-input {
+  width: 50px;
+  height: 60px;
+  border: 2px solid #e8efe5;
+  border-radius: 10px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  background: white;
+  color: #2d5a27;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
+}
+
+.peerfusion-email-verification-input:focus {
+  border-color: #4a7c3a;
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.15);
+  transform: translateY(-2px);
+}
+
+.peerfusion-email-verification-input.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+
+.peerfusion-email-verification-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.peerfusion-email-verification-success-icon {
+  width: 48px;
+  height: 48px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") no-repeat center;
+  margin: 0 auto 1rem;
+}
+
+.peerfusion-email-verification-success-title {
+  color: #10b981;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.peerfusion-email-verification-success-message {
+  color: #065f46;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Email error states */
+.peerfusion-email-error-general {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  color: #dc2626;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.peerfusion-email-pending-notice {
+  background: #fffbeb;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  color: #92400e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Responsive design for email verification */
+@media (max-width: 768px) {
+  .peerfusion-email-actions-verification {
+    flex-direction: column;
+  }
+  
+  .peerfusion-email-verification-code {
+    gap: 0.3rem;
+  }
+  
+  .peerfusion-email-verification-input {
+    width: 45px;
+    height: 55px;
+    font-size: 1.3rem;
+  }
+  
+  .peerfusion-email-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .peerfusion-email-verification-input {
+    width: 40px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .peerfusion-email-verification-section {
+    padding: 1rem;
+  }
+  
+  .peerfusion-email-actions-verification {
+    margin: 1.5rem 0 1rem 0;
+    padding: 1rem 0;
+  }
+}
+
+/* Icons for the new buttons */
+.peerfusion-email-resend-icon {
+  width: 16px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.peerfusion-email-back-icon {
+  width: 16px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a7c55'%3E%3Cpath d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.peerfusion-email-secondary:hover .peerfusion-email-back-icon {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/%3E%3C/svg%3E") no-repeat center;
+}
+
+/* Success check icon */
+.peerfusion-email-success-icon {
+  width: 16px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
+}

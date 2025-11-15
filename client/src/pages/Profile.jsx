@@ -633,54 +633,82 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateEmail()) {
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateEmail()) {
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/profile/change-email`,
-        {
-          currentPassword: emailForm.currentPassword,
-          newEmail: emailForm.newEmail
+  setIsLoading(true);
+  try {
+    console.log('=== EMAIL CHANGE DEBUG INFO ===');
+    console.log('API Base URL:', API_BASE_URL);
+    console.log('Full endpoint:', `${API_BASE_URL}/api/profile/change-email`);
+    console.log('Request data:', {
+      newEmail: emailForm.newEmail,
+      currentPasswordLength: emailForm.currentPassword?.length
+    });
+
+    const response = await axios.post(
+      `${API_BASE_URL}/api/profile/change-email`,
+      {
+        currentPassword: emailForm.currentPassword,
+        newEmail: emailForm.newEmail
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+        timeout: 30000
+      }
+    );
 
-      if (response.data.success) {
-        if (response.data.requiresVerification) {
-          setPendingEmail(emailForm.newEmail);
-          setVerificationStep(true);
-          setHasPendingChange(true);
-          setEmailErrors({});
-        } else {
-          alert('Email changed successfully!');
-          handleClose();
-        }
-      }
-    } catch (err) {
-      console.error('Email change error:', err);
-      const errorMessage = err.response?.data?.error || 'Failed to change email';
-      if (err.response?.status === 401) {
-        setEmailErrors({ currentPassword: 'Current password is incorrect' });
-      } else if (err.response?.status === 409) {
-        setEmailErrors({ newEmail: 'This email is already in use' });
+    console.log('Email change successful:', response.data);
+
+    if (response.data.success) {
+      if (response.data.requiresVerification) {
+        setPendingEmail(emailForm.newEmail);
+        setVerificationStep(true);
+        setHasPendingChange(true);
+        setEmailErrors({});
+        alert('Verification code sent to your new email address!');
       } else {
-        setEmailErrors({ general: errorMessage });
+        alert('Email changed successfully!');
+        handleClose();
       }
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (err) {
+    console.error('❌ Email change failed:', {
+      message: err.message,
+      code: err.code,
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data,
+      headers: err.response?.headers
+    });
+    
+    // More specific error handling
+    if (err.response?.status === 500) {
+      console.error('500 Internal Server Error Details:', err.response?.data);
+      setEmailErrors({ 
+        general: 'Server error. Our team has been notified. Please try again in a few minutes.' 
+      });
+    } else if (err.response?.status === 401) {
+      setEmailErrors({ currentPassword: 'Current password is incorrect' });
+    } else if (err.response?.status === 409) {
+      setEmailErrors({ newEmail: 'This email is already in use' });
+    } else if (err.code === 'ERR_NETWORK') {
+      setEmailErrors({ general: 'Network error. Please check your internet connection.' });
+    } else {
+      const errorMessage = err.response?.data?.error || 'Failed to change email. Please try again.';
+      setEmailErrors({ general: errorMessage });
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleVerifyCode = async (e) => {
     e.preventDefault();
@@ -954,12 +982,28 @@ const handleCancelChange = async () => {
                 <div className="peerfusion-email-actions-verification">
                   <button 
                     type="button" 
-                    className="peerfusion-email-secondary"
+                    className="peerfusion-email-secondary peerfusion-email-resend"
                     onClick={handleResendCode}
-                    disabled={isLoading}
+                    disabled={isLoading || resendCooldown > 0}
                   >
-                    Resend Code
+                    {isLoading ? (
+                      <>
+                        <span className="peerfusion-email-resend-loading"></span>
+                        Sending...
+                      </>
+                    ) : resendCooldown > 0 ? (
+                      <>
+                        <span className="peerfusion-email-resend-icon"></span>
+                        Resend Code ({resendCooldown}s)
+                      </>
+                    ) : (
+                      <>
+                        <span className="peerfusion-email-resend-icon"></span>
+                        Resend Code
+                      </>
+                    )}
                   </button>
+                  
                   <button 
                     type="submit" 
                     className="peerfusion-email-submit"
@@ -975,7 +1019,13 @@ const handleCancelChange = async () => {
                     )}
                   </button>
                 </div>
-
+                {/* Resend counter display */}
+                  {resendCooldown > 0 && (
+                    <div className="peerfusion-resend-counter cooldown">
+                      You can request a new code in {resendCooldown} seconds
+                    </div>
+                  )}
+                    {/* Cancel and Back buttons */}
                     {hasPendingChange && (
                       <div className="peerfusion-email-actions">
                         <button 
@@ -992,6 +1042,7 @@ const handleCancelChange = async () => {
                           onClick={() => setVerificationStep(false)}
                           disabled={isLoading}
                         >
+                          <span className="peerfusion-email-back-icon"></span>
                           Back to Email Form
                         </button>
                       </div>
