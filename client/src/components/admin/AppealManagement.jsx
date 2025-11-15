@@ -513,7 +513,7 @@ const fetchAppeals = async () => {
     if (avatar.startsWith('/')) {
       return `${API_BASE}${avatar}`;
     }
-    return `${API_BASE}/uploads/${avatar}`;
+    return `${API_BASE}/api/uploads/${avatar}`;
   };
 
   const formatDate = (dateString) => {
