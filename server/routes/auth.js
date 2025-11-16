@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const crypto = require('crypto');
-const transporter = require('../config/mailer');
+const { sendEmail } = require('../config/mailer');
 
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -39,12 +39,9 @@ router.post('/register', async (req, res) => {
     
     const [result] = await db.query(insertSql, [name, email, hashed, hashedCode, codeExpires]);
     
-    // Send verification email
-    const mailOptions = {
-      from: '"PeerFusion" <noreply@peerfusionskillshare.com>',
-      to: email,
-      subject: 'Verify Your Email - PeerFusion',
-      html: `
+    // Send verification email using Resend API
+    try {
+      const emailHtml = `
       <!DOCTYPE html>
       <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
       <head>
@@ -84,16 +81,33 @@ router.post('/register', async (req, res) => {
           </tr>
         </table>
       </body>
-      </html>`
-    };
+      </html>`;
 
-    await transporter.sendMail(mailOptions);
+      await sendEmail(
+        email,
+        'Verify Your Email - PeerFusion',
+        emailHtml
+      );
 
-    res.status(201).json({ 
-      message: 'Registration successful! Please check your email to verify your account.',
-      userId: result.insertId,
-      email: email
-    });
+      console.log(`Verification code sent to: ${email} via Resend API`);
+
+      res.status(201).json({ 
+        message: 'Registration successful! Please check your email to verify your account.',
+        userId: result.insertId,
+        email: email
+      });
+
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Still return success but inform user about email issue
+      res.status(201).json({ 
+        message: 'Registration successful! However, we could not send the verification email. Please contact support or try resetting your password later.',
+        userId: result.insertId,
+        email: email,
+        note: 'Email delivery failed'
+      });
+    }
+
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration process failed', details: error.message });
@@ -141,7 +155,6 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
-
 //-------------------------- Resend Verification Code --------------------------//
 router.post('/resend-verification', async (req, res) => {
   const { email } = req.body;
@@ -171,12 +184,9 @@ router.post('/resend-verification', async (req, res) => {
       [hashedCode, codeExpires, user.id]
     );
 
-    // Send verification email
-    const mailOptions = {
-      from: '"PeerFusion" <verify@peerfusionskillshare.com>',
-      to: email,
-      subject: 'New Verification Code - PeerFusion',
-      html: `
+    // Send verification email using Resend API
+    try {
+      const emailHtml = `
       <!DOCTYPE html>
       <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
       <head>
@@ -215,15 +225,26 @@ router.post('/resend-verification', async (req, res) => {
           </tr>
         </table>
       </body>
-      </html>`
-    };
+      </html>`;
 
-    await transporter.sendMail(mailOptions);
+      await sendEmail(
+        email,
+        'New Verification Code - PeerFusion',
+        emailHtml
+      );
 
-    res.status(200).json({ 
-      success: true,
-      message: 'New verification code sent to your email.'
-    });
+      res.status(200).json({ 
+        success: true,
+        message: 'New verification code sent to your email.'
+      });
+
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to send verification code. Please try again later.'
+      });
+    }
 
   } catch (error) {
     console.error('Resend verification error:', error);
@@ -231,6 +252,96 @@ router.post('/resend-verification', async (req, res) => {
       success: false,
       error: 'Failed to resend verification code'
     });
+  }
+});
+
+//-------------------------- Forgot Password --------------------------//
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const findUserSql = 'SELECT * FROM users WHERE email = ?';
+    const [users] = await db.query(findUserSql, [email]);
+
+    if (users.length === 0) {
+      return res.status(200).json({ 
+        message: 'If an account with that email exists, a reset link has been sent.' 
+      });
+    }
+
+    const user = users[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    const updateUserSql = 'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?';
+    await db.query(updateUserSql, [hashedToken, tokenExpires, user.id]);
+
+    const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password/${token}`;
+
+    // Send password reset email using Resend API
+    try {
+      const emailHtml = `
+      <!DOCTYPE html>
+      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Password Reset</title>
+      </head>
+      <body style="background-color: #f5f5f5; padding: 40px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+          <tr>
+            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; font-size: 16px; color: #333333;">
+              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Reset Your Password</h2>
+              <p>Hello ${user.name || ''},</p>
+              <p>We received a request to reset your password. Click the button below to create a new one:</p>
+              <div style="text-align:center; margin: 30px 0;">
+                <a href="${resetLink}" 
+                   style="background-color:#1a73e8; color:#ffffff; padding:12px 20px; text-decoration:none; font-size:16px; border-radius:5px; display:inline-block;">
+                  Reset Password
+                </a>
+              </div>
+              <p>This link will expire in <strong>1 hour</strong>. If you didn't request this, you can safely ignore this email.</p>
+              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+              &copy; 2025 PeerFusion. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>`;
+
+      await sendEmail(
+        user.email,
+        'Reset Your Password - PeerFusion',
+        emailHtml,
+        'PeerFusion <support@peerfusionskillshare.com>'
+      );
+
+      res.status(200).json({ 
+        message: 'If an account with that email exists, a reset link has been sent.' 
+      });
+
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      res.status(200).json({ 
+        message: 'If an account with that email exists, a reset link has been sent.' 
+      });
+    }
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error during password reset process.' });
   }
 });
 
