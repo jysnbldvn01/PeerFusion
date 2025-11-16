@@ -964,6 +964,7 @@ router.post('/change-password', authenticateToken, async (req, res) => {
   }
 });
 // ------------------- End Change Password --------------------------- //
+
 // ------------------- Change Email --------------------------- //
 router.post('/change-email', authenticateToken, async (req, res) => {
   let originalEmail = null;
@@ -1020,6 +1021,7 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     // Store verification code AND original email in verification_token column
     const verificationData = `${hashedCode}:${originalEmail}`;
     
+    // FIXED: Remove JavaScript comments from SQL query
     const updateSql = `
       UPDATE users 
       SET 
@@ -1032,66 +1034,57 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     
     await db.query(updateSql, [newEmail, verificationData, codeExpires, userId]);
 
-    // Send verification email to the new email address using Resend API
+    // Send verification email to the new email address
     try {
-      const { Resend } = require('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const emailHtml = `
-      <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Email Change Verification</title>
-      </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-              style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Verification</h2>
-              <p>Hello,</p>
-              <p>You requested to change your PeerFusion account email from <strong>${originalEmail}</strong> to this address. Use the following 6-digit verification code to confirm this change:</p>
-              <div style="text-align:center; margin: 30px 0;">
-                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
-                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
-                </div>
-              </div>
-              <p style="text-align: center; color: #666; font-size: 14px;">
-                This code will expire in <strong>15 minutes</strong>.
-              </p>
-              <p><strong>Important:</strong> If you didn't request this change, you can cancel it from your profile settings.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>`;
-
-      const { data, error } = await resend.emails.send({
-        from: 'PeerFusion <noreply@peerfusionskillshare.com>',
+      const mailOptions = {
+        from: '"PeerFusion" <account@peerfusionskillshare.com>',
         to: newEmail,
         subject: 'Verify Your New Email Address - PeerFusion',
-        html: emailHtml
-      });
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Email Change Verification</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Verification</h2>
+                <p>Hello,</p>
+                <p>You requested to change your PeerFusion account email from <strong>${originalEmail}</strong> to this address. Use the following 6-digit verification code to confirm this change:</p>
+                <div style="text-align:center; margin: 30px 0;">
+                  <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
+                  </div>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px;">
+                  This code will expire in <strong>15 minutes</strong>.
+                </p>
+                <p><strong>Important:</strong> If you didn't request this change, you can cancel it from your profile settings.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
 
-      if (error) {
-        console.error('Resend API error:', error);
-        throw error;
-      }
-
-      console.log(`Verification code sent to: ${newEmail} via Resend API`);
+      await transporter.sendMail(mailOptions);
+      console.log(`Verification code sent to: ${newEmail}`);
       
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
@@ -1178,60 +1171,51 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
     
     await db.query(updateSql, [userId]);
 
-    // Send confirmation email using Resend API
+    // Send confirmation email
     try {
-      const { Resend } = require('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const emailHtml = `
-      <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Email Changed Successfully</title>
-      </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-              style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Changed Successfully</h2>
-              <p>Hello,</p>
-              <p>Your PeerFusion account email has been successfully changed from <strong>${originalEmail}</strong> to this address.</p>
-              <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #f0f9f0; border-radius: 8px;">
-                <p style="margin: 0; color: #0ea050ff; font-weight: bold;">Your email has been updated and verified!</p>
-              </div>
-              <p>All future communications will be sent to this email address.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>`;
-
-      const { data, error } = await resend.emails.send({
-        from: 'PeerFusion <noreply@peerfusionskillshare.com>',
+      const welcomeMailOptions = {
+        from: '"PeerFusion" <account@peerfusionskillshare.com>',
         to: user.email, // This is now the new email
         subject: 'Email Changed Successfully - PeerFusion',
-        html: emailHtml
-      });
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Email Changed Successfully</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Changed Successfully</h2>
+                <p>Hello,</p>
+                <p>Your PeerFusion account email has been successfully changed from <strong>${originalEmail}</strong> to this address.</p>
+                <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #f0f9f0; border-radius: 8px;">
+                  <p style="margin: 0; color: #0ea050ff; font-weight: bold;">Your email has been updated and verified!</p>
+                </div>
+                <p>All future communications will be sent to this email address.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
 
-      if (error) {
-        console.error('Failed to send confirmation email:', error);
-      } else {
-        console.log('Confirmation email sent via Resend API');
-      }
+      await transporter.sendMail(welcomeMailOptions);
       
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
@@ -1288,60 +1272,55 @@ router.post('/cancel-email-change', authenticateToken, async (req, res) => {
     
     await db.query(updateSql, [originalEmail, userId]);
 
-    // Send cancellation confirmation email to the original email using Resend API
+    // Send cancellation confirmation email to the original email
     try {
-      const { Resend } = require('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const emailHtml = `
-      <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Email Change Cancelled</title>
-      </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-              style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Cancelled</h2>
-              <p>Hello,</p>
-              <p>Your recent email change request has been cancelled successfully.</p>
-              <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
-                <p style="margin: 0; color: #856404; font-weight: bold;">Your email remains: <strong>${originalEmail}</strong></p>
-              </div>
-              <p>If you did not request this cancellation, please contact our support team immediately to secure your account.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>`;
-
-      const { data, error } = await resend.emails.send({
-        from: 'PeerFusion <noreply@peerfusionskillshare.com>',
+      const currentUserSql = 'SELECT email FROM users WHERE id = ?';
+      const [currentUser] = await db.query(currentUserSql, [userId]);
+      
+      const cancelMailOptions = {
+        from: '"PeerFusion" <support@peerfusionskillshare.com>',
         to: originalEmail,
         subject: 'Email Change Cancelled - PeerFusion',
-        html: emailHtml
-      });
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Email Change Cancelled</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Email Change Cancelled</h2>
+                <p>Hello,</p>
+                <p>Your recent email change request has been cancelled successfully.</p>
+                <div style="text-align:center; margin: 30px 0; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
+                  <p style="margin: 0; color: #856404; font-weight: bold;">Your email remains: <strong>${originalEmail}</strong></p>
+                </div>
+                <p>If you did not request this cancellation, please contact our support team immediately to secure your account.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
 
-      if (error) {
-        console.error('Failed to send cancellation email:', error);
-      } else {
-        console.log(`Cancellation confirmation sent to: ${originalEmail} via Resend API`);
-      }
+      await transporter.sendMail(cancelMailOptions);
+      console.log(`Cancellation confirmation sent to: ${originalEmail}`);
       
     } catch (emailError) {
       console.error('Failed to send cancellation email:', emailError);
@@ -1394,66 +1373,57 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
     
     await db.query(updateSql, [verificationData, codeExpires, userId]);
 
-    // Resend verification email to the PENDING email using Resend API
+    // Resend verification email to the PENDING email (user.email contains the new email)
     try {
-      const { Resend } = require('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const emailHtml = `
-      <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>New Verification Code</title>
-      </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-              style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">New Verification Code</h2>
-              <p>Hello,</p>
-              <p>You requested a new verification code for your email change from <strong>${originalEmail}</strong> to this address.</p>
-              <div style="text-align:center; margin: 30px 0;">
-                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
-                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
-                </div>
-              </div>
-              <p style="text-align: center; color: #666; font-size: 14px;">
-                This new code will expire in <strong>15 minutes</strong>.
-              </p>
-              <p><strong>Important:</strong> If you didn't request this code, you can cancel the email change from your profile settings.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>`;
-
-      const { data, error } = await resend.emails.send({
-        from: 'PeerFusion <noreply@peerfusionskillshare.com>',
+      const mailOptions = {
+        from: '"PeerFusion" <account@peerfusionskillshare.com>',
         to: user.email, // This is the pending new email address
         subject: 'New Verification Code - PeerFusion',
-        html: emailHtml
-      });
+        html: `
+        <!DOCTYPE html>
+        <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>New Verification Code</title>
+        </head>
+        <body style="background-color: #f5f5f5; padding: 40px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
+                style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
+                <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; font-size: 16px; color: #333333;">
+                <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">New Verification Code</h2>
+                <p>Hello,</p>
+                <p>You requested a new verification code for your email change from <strong>${originalEmail}</strong> to this address.</p>
+                <div style="text-align:center; margin: 30px 0;">
+                  <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
+                  </div>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px;">
+                  This new code will expire in <strong>15 minutes</strong>.
+                </p>
+                <p><strong>Important:</strong> If you didn't request this code, you can cancel the email change from your profile settings.</p>
+                <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                &copy; 2025 PeerFusion. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>`
+      };
 
-      if (error) {
-        console.error('Resend API error:', error);
-        throw error;
-      }
-
-      console.log(`New verification code sent to: ${user.email} via Resend API`);
+      await transporter.sendMail(mailOptions);
+      console.log(`New verification code sent to: ${user.email}`);
       
     } catch (emailError) {
       console.error('Failed to resend verification email:', emailError);
@@ -1505,7 +1475,6 @@ router.get('/pending-email-change', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to check pending email change' });
   }
 });
-
 // ------------------- Account Deactivation & Activation --------------------------- //
 
 // Request account deactivation (voluntary break)

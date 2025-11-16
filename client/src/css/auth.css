@@ -1618,9 +1618,7 @@
 .verification-help {
   margin-top: 30px;
   padding: 20px;
-  background: #f8f9fa;
   border-radius: 12px;
-  border-left: 4px solid #6ba84f;
   animation: fadeInUp 0.6s ease-out 0.7s both;
 }
 
@@ -1840,11 +1838,6 @@
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-right: 0.5rem;
-}
-
-.verification-sent .form-control:focus-visible {
-  outline: 2px solid #6ba84f;
-  outline-offset: 2px;
 }
 
 .secondary-btn:focus-visible,
