@@ -166,7 +166,11 @@ const startServer = () => {
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "https://peerfusion-frontend.onrender.com",
+    origin: [
+    'https://peerfusionskillshare.com',
+    'https://www.peerfusionskillshare.com',
+    'https://peerfusion-frontend.onrender.com'
+  ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'],
     allowedHeaders: ['Content-Type', 'Authorization']

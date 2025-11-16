@@ -1037,7 +1037,7 @@ router.post('/change-email', authenticateToken, async (req, res) => {
     // Send verification email to the new email address
     try {
       const mailOptions = {
-        from: '"PeerFusion" <onboarding@resend.dev>',
+        from: '"PeerFusion" <account@peerfusionskillshare.com>',
         to: newEmail,
         subject: 'Verify Your New Email Address - PeerFusion',
         html: `
@@ -1174,7 +1174,7 @@ router.post('/verify-email-change', authenticateToken, async (req, res) => {
     // Send confirmation email
     try {
       const welcomeMailOptions = {
-        from: '"PeerFusion" <onboarding@resend.dev>',
+        from: '"PeerFusion" <account@peerfusionskillshare.com>',
         to: user.email, // This is now the new email
         subject: 'Email Changed Successfully - PeerFusion',
         html: `
@@ -1278,7 +1278,7 @@ router.post('/cancel-email-change', authenticateToken, async (req, res) => {
       const [currentUser] = await db.query(currentUserSql, [userId]);
       
       const cancelMailOptions = {
-        from: '"PeerFusion" <onboarding@resend.dev>',
+        from: '"PeerFusion" <support@peerfusionskillshare.com>',
         to: originalEmail,
         subject: 'Email Change Cancelled - PeerFusion',
         html: `
@@ -1376,7 +1376,7 @@ router.post('/resend-email-change-code', authenticateToken, async (req, res) => 
     // Resend verification email to the PENDING email (user.email contains the new email)
     try {
       const mailOptions = {
-        from: '"PeerFusion" <onboarding@resend.dev>',
+        from: '"PeerFusion" <account@peerfusionskillshare.com>',
         to: user.email, // This is the pending new email address
         subject: 'New Verification Code - PeerFusion',
         html: `

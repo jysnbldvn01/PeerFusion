@@ -41,7 +41,7 @@ router.post('/register', async (req, res) => {
     
     // Send verification email
     const mailOptions = {
-      from: '"PeerFusion" <onboarding@resend.dev>',
+      from: '"PeerFusion" <noreply@peerfusionskillshare.com>',
       to: email,
       subject: 'Verify Your Email - PeerFusion',
       html: `
@@ -173,7 +173,7 @@ router.post('/resend-verification', async (req, res) => {
 
     // Send verification email
     const mailOptions = {
-      from: '"PeerFusion" <onboarding@resend.dev>',
+      from: '"PeerFusion" <verify@peerfusionskillshare.com>',
       to: email,
       subject: 'New Verification Code - PeerFusion',
       html: `
@@ -587,7 +587,7 @@ router.post('/forgot-password', async (req, res) => {
     const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password/${token}`;
 
     const mailOptions = {
-      from: '"PeerFusion" <onboarding@resend.dev>',
+      from: '"PeerFusion" <support@peerfusionskillshare.com>',
       to: user.email,
       subject: 'Reset Your Password - PeerFusion',
       html: `
@@ -703,7 +703,7 @@ router.post('/admin-forgot-password', async (req, res) => {
 
     // Send email with reset code
     const mailOptions = {
-      from: '"PeerFusion Admin" <onboarding@resend.dev>',
+      from: '"PeerFusion Admin" <verify@peerfusionskillshare.com>',
       to: user.email,
       subject: 'Admin Password Reset Code - PeerFusion',
       html: `

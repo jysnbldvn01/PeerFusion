@@ -789,7 +789,7 @@ router.post('/users/:id/reset-password', authenticateToken, requireAdmin, async 
     // Send email with temporary password
     try {
       const mailOptions = {
-        from: '"PeerFusion Admin" <onboarding@resend.dev>',
+        from: '"PeerFusion Admin" <support@peerfusionskillshare.com>',
         to: user.email,
         subject: 'Your Password Has Been Reset - PeerFusion',
         html: `

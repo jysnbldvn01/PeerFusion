@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["https://peerfusion-frontend.onrender.com"],
+    "origin": ["https://peerfusionskillshare.com"],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
     "responseHeader": ["Content-Type", "x-goog-meta-*", "x-goog-resumable", "Authorization"],
     "maxAgeSeconds": 3600
