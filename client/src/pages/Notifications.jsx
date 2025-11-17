@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import '../css/notification.css';
 import { useNavigate } from "react-router-dom";
@@ -162,8 +162,8 @@ const Notification = () => {
     }
   };
 
-  // FIXED: Simplified fetchNotifications function
-  const fetchNotifications = async () => {
+  // FIXED: Use the same pattern as your oldest working code
+  const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('token');
     const url =
       activeTab === 'archived'
@@ -174,7 +174,7 @@ const Notification = () => {
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Fetched notifications for tab:', activeTab, res.data);
+      console.log('Fetched notifications:', res.data);
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -182,7 +182,7 @@ const Notification = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab]); // Keep activeTab as dependency like in oldest code
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -214,14 +214,15 @@ const Notification = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [fetchNotifications]); // Keep fetchNotifications as dependency
 
-  // FIXED: Refetch when activeTab changes
-  useEffect(() => {
-    fetchNotifications();
-  }, [activeTab]);
+  // FIXED: Remove the problematic useEffect that was causing double fetching
+  // Remove this entire useEffect:
+  // useEffect(() => {
+  //   fetchNotifications(activeTab);
+  // }, [activeTab, fetchNotifications]);
 
-  // FIXED: Action handlers - use current activeTab state
+  // Action handlers - keep them simple like in oldest code
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
@@ -233,6 +234,7 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      // Just call fetchNotifications without parameters like in oldest code
       fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
@@ -419,6 +421,7 @@ const Notification = () => {
     }
   };
 
+  // Rest of your helper functions remain the same...
   const getDisplayName = (notification) => {
     console.log('Processing notification:', {
       id: notification.id,
