@@ -32,17 +32,6 @@ const SkeletonMainContent = () => (
         ))}
       </div>
     </div>
-    <div className="peerfusion-skeleton-section">
-      <div className="peerfusion-skeleton peerfusion-skeleton-section-title"></div>
-      <div className="peerfusion-skeleton-grid">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="peerfusion-skeleton-item">
-            <div className="peerfusion-skeleton peerfusion-skeleton-label"></div>
-            <div className="peerfusion-skeleton peerfusion-skeleton-value"></div>
-          </div>
-        ))}
-      </div>
-    </div>
   </div>
 );
 
@@ -132,10 +121,6 @@ const AccountDeactivationModal = ({ isOpen, onClose, onDeactivate }) => {
                 <span className="feature-icon lock-icon"></span>
                 <span className="feature-text">Login to reactivate anytime</span>
               </div>
-              <div className="feature-item">
-                <span className="feature-icon logout-icon"></span>
-                <span className="feature-text">Immediate logout</span>
-              </div>
             </div>
 
             <div className="account-action-buttons deactivation-buttons">
@@ -172,7 +157,6 @@ const AccountDeactivationModal = ({ isOpen, onClose, onDeactivate }) => {
     </div>
   );
 };
-
 
 // Account Deletion Modal Component
 const AccountDeletionModal = ({ isOpen, onClose, onDelete }) => {
@@ -249,30 +233,6 @@ const AccountDeletionModal = ({ isOpen, onClose, onDelete }) => {
               />
             </div>
 
-            <div className="deletion-timeline">
-              <div className="timeline-item">
-                <div className="timeline-marker immediate">Now</div>
-                <div className="timeline-content">
-                  <strong>Immediate Changes</strong>
-                  <p>Account scheduled for removal, profile hidden</p>
-                </div>
-              </div>
-              <div className="timeline-item">
-                <div className="timeline-marker grace-period">30 Days</div>
-                <div className="timeline-content">
-                  <strong>Grace Period</strong>
-                  <p>You can cancel removal anytime during this period</p>
-                </div>
-              </div>
-              <div className="timeline-item">
-                <div className="timeline-marker permanent">After 30 Days</div>
-                <div className="timeline-content">
-                  <strong>Permanent Removal</strong>
-                  <p>All data permanently deleted, cannot be recovered</p>
-                </div>
-              </div>
-            </div>
-
             <div className="deletion-warning-alert">
               <div className="warning-icon">⚠️</div>
               <div className="warning-content">
@@ -316,7 +276,7 @@ const AccountDeletionModal = ({ isOpen, onClose, onDelete }) => {
   );
 };
 
-// Updated AccountStatusModal Component
+// AccountStatusModal Component
 const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCancelDeletion }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -407,18 +367,6 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
           actionText: 'Submit Appeal',
           actionHandler: handleAppealRedirect
         };
-      case 'warning':
-        return {
-          badgeClass: 'account-warning',
-          badgeText: 'Under Review',
-          statusColor: '#eab308',
-          messageType: 'warning',
-          message: 'Your account is under review. You may submit an appeal if you believe this is a mistake.',
-          showAction: true,
-          actionType: 'appeal',
-          actionText: 'Submit Appeal',
-          actionHandler: handleAppealRedirect
-        };
       default:
         return {
           badgeClass: 'account-active',
@@ -432,20 +380,6 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
   };
 
   const statusConfig = getStatusConfig();
-  const statusValueClass = `peerfusion-status-value-${accountStatus.status}`;
-
-  const getActionButtonClass = () => {
-    switch(statusConfig.actionType) {
-      case 'reactivate':
-        return 'reactivate-btn';
-      case 'cancelDeletion':
-        return 'cancel-deletion-btn';
-      case 'appeal':
-        return 'peerfusion-appeal-btn';
-      default:
-        return 'peerfusion-status-action-btn';
-    }
-  };
 
   return (
     <div className="account-action-overlay" onClick={onClose}>
@@ -463,31 +397,24 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
         <div className="account-action-content">
           <div className="peerfusion-status-dashboard">
             <div className="peerfusion-status-card">
-              
               <div className="peerfusion-status-details">
                 <div className="peerfusion-status-item">
-                  <span className="peerfusion-status-label">
-                    Account State:
-                  </span>
-                  <span className={statusValueClass} style={{ color: statusConfig.statusColor }}>
+                  <span className="peerfusion-status-label">Account State:</span>
+                  <span className={`peerfusion-status-value-${accountStatus.status}`} style={{ color: statusConfig.statusColor }}>
                     {accountStatus.status.charAt(0).toUpperCase() + accountStatus.status.slice(1).replace('_', ' ')}
                   </span>
                 </div>
 
                 {accountStatus.strike_count > 0 && (
                   <div className="peerfusion-status-item">
-                    <span className="peerfusion-status-label">
-                      Community Strikes:
-                    </span>
+                    <span className="peerfusion-status-label">Community Strikes:</span>
                     <span className="peerfusion-status-value-warning">{accountStatus.strike_count}</span>
                   </div>
                 )}
 
                 {accountStatus.suspended_until && (
                   <div className="peerfusion-status-item">
-                    <span className="peerfusion-status-label">
-                      Restriction Ends:
-                    </span>
+                    <span className="peerfusion-status-label">Restriction Ends:</span>
                     <span className="peerfusion-status-value">
                       {new Date(accountStatus.suspended_until).toLocaleDateString()}
                     </span>
@@ -497,17 +424,13 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
                 {accountStatus.is_pending_deletion && (
                   <>
                     <div className="peerfusion-status-item">
-                      <span className="peerfusion-status-label">
-                        Removal Date:
-                      </span>
+                      <span className="peerfusion-status-label">Removal Date:</span>
                       <span className="peerfusion-status-value-deletion-date">
                         {new Date(accountStatus.scheduled_for_deletion_at).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="peerfusion-status-item">
-                      <span className="peerfusion-status-label">
-                        Time Remaining:
-                      </span>
+                      <span className="peerfusion-status-label">Time Remaining:</span>
                       <span className="peerfusion-status-value-deletion-countdown">
                         {accountStatus.days_until_deletion} days
                       </span>
@@ -517,20 +440,21 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
               </div>
             </div>
 
-            {/* Status Message - Contains all the descriptive text */}
             <div className={`peerfusion-status-message peerfusion-status-message-${statusConfig.messageType}`}>
-              <div className="peerfusion-message-icon"></div>
               <div className="peerfusion-message-content">
                 <h4>{statusConfig.badgeText}</h4>
                 <p>{statusConfig.message}</p>
               </div>
             </div>
 
-            {/* Action Button - Only the button, no duplicate text */}
             {statusConfig.showAction && (
               <div className="peerfusion-status-actions">
                 <button 
-                  className={`peerfusion-status-action-btn ${getActionButtonClass()}`}
+                  className={`peerfusion-status-action-btn ${
+                    statusConfig.actionType === 'reactivate' ? 'reactivate-btn' :
+                    statusConfig.actionType === 'cancelDeletion' ? 'cancel-deletion-btn' :
+                    'peerfusion-appeal-btn'
+                  }`}
                   onClick={statusConfig.actionHandler}
                   disabled={isLoading}
                 >
@@ -558,7 +482,6 @@ const AccountStatusModal = ({ isOpen, onClose, accountStatus, onReactivate, onCa
   );
 };
 
-
 // Change Email Modal Component
 const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   const [emailForm, setEmailForm] = useState({
@@ -574,14 +497,12 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   const [hasPendingChange, setHasPendingChange] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Check for pending email change when modal opens
   useEffect(() => {
     if (isOpen) {
       checkPendingEmailChange();
     }
   }, [isOpen]);
 
-  // Add useEffect for resend cooldown timer
   useEffect(() => {
     let interval;
     if (resendCooldown > 0) {
@@ -654,14 +575,6 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
 
     setIsLoading(true);
     try {
-      console.log('=== EMAIL CHANGE DEBUG INFO ===');
-      console.log('API Base URL:', API_BASE_URL);
-      console.log('Full endpoint:', `${API_BASE_URL}/api/profile/change-email`);
-      console.log('Request data:', {
-        newEmail: emailForm.newEmail,
-        currentPasswordLength: emailForm.currentPassword?.length
-      });
-
       const response = await axios.post(
         `${API_BASE_URL}/api/profile/change-email`,
         {
@@ -677,16 +590,13 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
         }
       );
 
-      console.log('Email change successful:', response.data);
-
       if (response.data.success) {
         if (response.data.requiresVerification) {
           setPendingEmail(emailForm.newEmail);
           setVerificationStep(true);
           setHasPendingChange(true);
           setEmailErrors({});
-          // Start cooldown timer when verification code is sent
-          setResendCooldown(60); // 60 seconds cooldown
+          setResendCooldown(60);
           alert('Verification code sent to your new email address!');
         } else {
           alert('Email changed successfully!');
@@ -694,18 +604,9 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
         }
       }
     } catch (err) {
-      console.error('❌ Email change failed:', {
-        message: err.message,
-        code: err.code,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        headers: err.response?.headers
-      });
+      console.error('Email change failed:', err);
       
-      // More specific error handling
       if (err.response?.status === 500) {
-        console.error('500 Internal Server Error Details:', err.response?.data);
         setEmailErrors({ 
           general: 'Server error. Our team has been notified. Please try again in a few minutes.' 
         });
@@ -761,7 +662,7 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
   };
 
   const handleResendCode = async () => {
-    if (resendCooldown > 0) return; // Prevent resend during cooldown
+    if (resendCooldown > 0) return;
     
     setIsLoading(true);
     try {
@@ -779,8 +680,7 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
       if (response.data.success) {
         alert('New verification code sent to your email.');
         setEmailErrors({});
-        // Start cooldown timer
-        setResendCooldown(60); // 60 seconds cooldown
+        setResendCooldown(60);
       }
     } catch (err) {
       console.error('Resend error:', err);
@@ -798,21 +698,6 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
 
     setIsLoading(true);
     try {
-      const checkResponse = await axios.get(
-        `${API_BASE_URL}/api/profile/pending-email-change`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      if (!checkResponse.data.hasPendingChange) {
-        alert('No pending email change to cancel.');
-        setIsLoading(false);
-        return;
-      }
-
       const response = await axios.post(
         `${API_BASE_URL}/api/profile/cancel-email-change`,
         {},
@@ -832,7 +717,6 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
       console.error('Cancel error:', err);
       const errorMessage = err.response?.data?.error || 'Failed to cancel email change';
       
-      // Handle specific error cases
       if (err.response?.status === 400) {
         alert('No pending email change request found. It may have already been cancelled or expired.');
       } else {
@@ -854,7 +738,7 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
     setVerificationCode('');
     setPendingEmail('');
     setHasPendingChange(false);
-    setResendCooldown(0); // Reset cooldown on close
+    setResendCooldown(0);
     onClose();
   };
 
@@ -930,15 +814,6 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
                   </div>
                 )}
 
-                <div className="peerfusion-email-notice">
-                  <p className="peerfusion-email-notice-title">Important Note</p>
-                  <ul className="peerfusion-email-notice-list">
-                    <li className="peerfusion-email-notice-item">You will need to verify your new email address</li>
-                    <li className="peerfusion-email-notice-item">Your login credentials will be updated immediately</li>
-                    <li className="peerfusion-email-notice-item">All future communications will be sent to the new email</li>
-                  </ul>
-                </div>
-
                 <div className="peerfusion-email-actions">
                   <button 
                     type="button" 
@@ -1011,15 +886,9 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
                         Sending...
                       </>
                     ) : resendCooldown > 0 ? (
-                      <>
-                        <span className="peerfusion-email-resend-icon"></span>
-                        Resend Code ({resendCooldown}s)
-                      </>
+                      `Resend Code (${resendCooldown}s)`
                     ) : (
-                      <>
-                        <span className="peerfusion-email-resend-icon"></span>
-                        Resend Code
-                      </>
+                      'Resend Code'
                     )}
                   </button>
                   
@@ -1039,14 +908,6 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
                   </button>
                 </div>
                 
-                {/* Resend counter display */}
-                {resendCooldown > 0 && (
-                  <div className="peerfusion-resend-counter cooldown">
-                    You can request a new code in {resendCooldown} seconds
-                  </div>
-                )}
-                
-                {/* Cancel and Back buttons */}
                 {hasPendingChange && (
                   <div className="peerfusion-email-actions">
                     <button 
@@ -1056,15 +917,6 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
                       disabled={isLoading}
                     >
                       Cancel Email Change
-                    </button>
-                    <button 
-                      type="button" 
-                      className="peerfusion-email-back"
-                      onClick={() => setVerificationStep(false)}
-                      disabled={isLoading}
-                    >
-                      <span className="peerfusion-email-back-icon"></span>
-                      Back to Email Form
                     </button>
                   </div>
                 )}
@@ -1219,16 +1071,6 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChange }) => {
               )}
             </div>
 
-            <div className="peerfusion-password-requirements">
-              <p className="peerfusion-password-requirements-title">Password Requirements</p>
-              <ul className="peerfusion-password-requirements-list">
-                <li className="peerfusion-password-requirement-item">At least 8 characters long</li>
-                <li className="peerfusion-password-requirement-item">Contains at least one uppercase letter</li>
-                <li className="peerfusion-password-requirement-item">Contains at least one number</li>
-                <li className="peerfusion-password-requirement-item">Contains at least one special character</li>
-              </ul>
-            </div>
-
             <div className="peerfusion-password-actions">
               <button 
                 type="button" 
@@ -1270,13 +1112,6 @@ const SettingsDropdown = ({
   setShowDeactivation,
   setShowDeletion,
   setShowAccountStatus,
-  profile, 
-  form, 
-  selectedSubjects, 
-  setSelectedSubjects, 
-  availability, 
-  handleSave, 
-  resetForm,
   accountStatus
 }) => {
   const [showSettings, setShowSettings] = useState(false);
@@ -1360,7 +1195,6 @@ const SettingsDropdown = ({
             View As Public
           </button>
 
-          {/* Account Control Section */}
           <div className="peerfusion-settings-divider"></div>
           
           {!accountStatus?.is_deactivated && !accountStatus?.is_pending_deletion && (
@@ -1399,33 +1233,6 @@ const SettingsDropdown = ({
               <span className="peerfusion-delete-icon"></span>
               Delete Account
             </button>
-          )}
-
-          {editMode && (
-            <>
-              <div className="peerfusion-settings-divider"></div>
-              <button 
-                className="peerfusion-settings-item"
-                onClick={() => {
-                  handleSave(new Event('click'));
-                  setShowSettings(false);
-                }}
-              >
-                <span className="peerfusion-save-icon"></span>
-                Save Changes
-              </button>
-              <button 
-                className="peerfusion-settings-item"
-                onClick={() => {
-                  resetForm();
-                  setEditMode(false);
-                  setShowSettings(false);
-                }}
-              >
-                <span className="peerfusion-cancel-icon"></span>
-                Cancel Edit
-              </button>
-            </>
           )}
         </div>
       )}
@@ -1646,50 +1453,49 @@ const Profile = () => {
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    const resetForm = () => {
-      if (profile) {
-        setForm({
-          username: profile.username || '',
-          bio: profile.bio || '',
-          birthday: profile.birthday || '',
-          gender: profile.gender || '',
-          social_links: profile.social_links || '',
-          contact_number: profile.contact_number || '',
-          role: profile.role || 'Skill Learner',
-          year_level: profile.year_level || ''
-        });
+  const resetForm = () => {
+    if (profile) {
+      setForm({
+        username: profile.username || '',
+        bio: profile.bio || '',
+        birthday: profile.birthday || '',
+        gender: profile.gender || '',
+        social_links: profile.social_links || '',
+        contact_number: profile.contact_number || '',
+        role: profile.role || 'Skill Learner',
+        year_level: profile.year_level || ''
+      });
+    
+      const initialSubjects = profile.subject ? profile.subject.split(',') : [];
+      setSelectedSubjects(initialSubjects);
       
-    const initialSubjects = profile.subject ? profile.subject.split(',') : [];
-    setSelectedSubjects(initialSubjects);
-      
-      // Reset availability
- if (profile.availability) {
-      try {
-        let parsedAvailability = [];
-        if (typeof profile.availability === 'string') {
-          parsedAvailability = JSON.parse(profile.availability);
-        } else {
-          parsedAvailability = profile.availability;
+      if (profile.availability) {
+        try {
+          let parsedAvailability = [];
+          if (typeof profile.availability === 'string') {
+            parsedAvailability = JSON.parse(profile.availability);
+          } else {
+            parsedAvailability = profile.availability;
+          }
+          setAvailability(parsedAvailability);
+        } catch (err) {
+          console.error('Error parsing availability:', err);
+          setAvailability([]);
         }
-        setAvailability(parsedAvailability);
-      } catch (err) {
-        console.error('Error parsing availability:', err);
+      } else {
         setAvailability([]);
       }
-    } else {
-      setAvailability([]);
-    }
       
-      // Reset avatar preview
-    if (profile.avatar) {
-      setAvatarPreview(`${API_BASE_URL}/api/uploads/${profile.avatar}`);
-    } else {
-      setAvatarPreview('');
+      if (profile.avatar) {
+        setAvatarPreview(`${API_BASE_URL}/api/uploads/${profile.avatar}`);
+      } else {
+        setAvatarPreview('');
+      }
+      setAvatarFile(null);
     }
-    setAvatarFile(null);
-  }
-};
- useEffect(() => {
+  };
+
+  useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
@@ -1950,7 +1756,6 @@ const Profile = () => {
       if (response.data.success) {
         alert('Email changed successfully! Please check your new email for verification.');
         
-        // Update the profile state with new email
         setProfile(prev => ({
           ...prev,
           email: newEmail
@@ -1988,7 +1793,6 @@ const Profile = () => {
 
       if (response.data.success) {
         alert(response.data.message);
-        // Log user out after deactivation
         localStorage.removeItem('token');
         window.location.href = '/login';
         return true;
@@ -2018,7 +1822,6 @@ const Profile = () => {
       if (response.data.success) {
         alert(response.data.message);
         setShowDeletion(false);
-        // Refresh account status
         const statusResponse = await axios.get(`${API_BASE_URL}/api/profile/account-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -2071,6 +1874,7 @@ const Profile = () => {
       return false;
     }
   };
+
   const handleCancelDeletion = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -2088,7 +1892,6 @@ const Profile = () => {
       if (response.data.success) {
         alert(response.data.message);
         setShowAccountStatus(false);
-        // Refresh account status
         const statusResponse = await axios.get(`${API_BASE_URL}/api/profile/account-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -2103,7 +1906,7 @@ const Profile = () => {
     }
   };
 
- return (
+  return (
     <div className="peerfusion-profile-container">
       {/* Header */}
       <div className="peerfusion-profile-header">
@@ -2118,13 +1921,6 @@ const Profile = () => {
             setShowDeactivation={setShowDeactivation}
             setShowDeletion={setShowDeletion}
             setShowAccountStatus={setShowAccountStatus}
-            profile={profile}
-            form={form}
-            selectedSubjects={selectedSubjects}
-            setSelectedSubjects={setSelectedSubjects}
-            availability={availability}
-            handleSave={handleSave}
-            resetForm={resetForm}
             accountStatus={accountStatus}
           />
         </div>
@@ -2310,6 +2106,27 @@ const Profile = () => {
                         ))}
                       </select>
                     </div>
+
+                    {/* Save/Cancel Buttons */}
+                    <div className="peerfusion-form-actions">
+                      <button 
+                        type="button" 
+                        className="peerfusion-cancel-btn"
+                        onClick={() => {
+                          resetForm();
+                          setEditMode(false);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="button" 
+                        className="peerfusion-save-btn"
+                        onClick={handleSave}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="peerfusion-info-grid">
@@ -2446,7 +2263,7 @@ const Profile = () => {
         </div>
       </div>
 
-        {/* View As Public Modal */}
+      {/* View As Public Modal */}
       {viewAs && profile && (
         <div className="peerfusion-modal-overlay" onClick={() => setViewAs(false)}>
           <div className="peerfusion-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -2529,13 +2346,6 @@ const Profile = () => {
                     </a>
                   ) : 'Not provided'}
                 </p>
-              </div>
-
-              <div className="peerfusion-modal-actions">
-                <button className="peerfusion-schedule-btn">
-                  <span className="peerfusion-calendar-icon"></span>
-                  Request Session
-                </button>
               </div>
             </div>
           </div>

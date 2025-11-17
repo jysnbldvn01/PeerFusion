@@ -13,14 +13,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   padding: 1rem 0;
   border-bottom: 1px solid #e8efe5;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .peerfusion-profile-title {
   color: #2d5a27;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
   background: linear-gradient(135deg, #2d5a27 0%, #4a7c3a 100%);
@@ -31,7 +33,6 @@
 .peerfusion-header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
   position: relative;
 }
 
@@ -49,11 +50,12 @@
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(45, 90, 39, 0.08);
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .peerfusion-settings-button:hover {
@@ -119,47 +121,68 @@
   margin: 8px 0;
 }
 
-.peerfusion-account-status-badge {
-  background: #ef4444;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+.peerfusion-strike-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 0.7rem;
   margin-left: auto;
+}
+
+.peerfusion-settings-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.peerfusion-settings-disabled:hover {
+  background: none !important;
 }
 
 /* Profile Content */
 .peerfusion-profile-content {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-profile-content {
+    grid-template-columns: 300px 1fr;
+  }
 }
 
 /* Profile Sidebar */
 .peerfusion-profile-sidebar {
   background: #ffffff;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   border: 1px solid #f0f7ed;
   height: fit-content;
-  top: 2rem;
 }
 
 .peerfusion-avatar-section {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .peerfusion-avatar-wrapper {
   position: relative;
-  width: 160px;
-  height: 160px;
-  margin: 0 auto 1.5rem;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1rem;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-avatar-wrapper {
+    width: 160px;
+    height: 160px;
+  }
 }
 
 .peerfusion-avatar-wrapper:hover {
@@ -185,17 +208,23 @@
   justify-content: center;
   color: white;
   border: 4px solid #e8efe5;
-  font-size: 3rem;
+  font-size: 2rem;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-avatar-placeholder {
+    font-size: 3rem;
+  }
 }
 
 .peerfusion-avatar-edit {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  bottom: 5px;
+  right: 5px;
   background: #4a7c3a;
   color: white;
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -216,6 +245,7 @@
   gap: 0.75rem;
   justify-content: center;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .peerfusion-avatar-btn {
@@ -255,21 +285,27 @@
 
 .peerfusion-username {
   color: #2d5a27;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
 }
 
+@media (min-width: 768px) {
+  .peerfusion-username {
+    font-size: 1.5rem;
+  }
+}
+
 .peerfusion-user-bio {
   color: #5a7c55;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.5;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1rem 0;
 }
 
 .peerfusion-user-email {
   color: #5a7c55;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,14 +317,14 @@
 .peerfusion-profile-main {
   background: #ffffff;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   border: 1px solid #f0f7ed;
 }
 
 .peerfusion-profile-section {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid #e8efe5;
 }
 
@@ -300,31 +336,36 @@
 
 .peerfusion-section-title {
   color: #2d5a27;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.peerfusion-section-title::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: #4a7c3a;
-  border-radius: 50%;
+@media (min-width: 768px) {
+  .peerfusion-section-title {
+    font-size: 1.3rem;
+  }
 }
 
 /* Form Styles */
 .peerfusion-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
 }
 
 .peerfusion-form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .peerfusion-form-label {
@@ -338,8 +379,8 @@
 .peerfusion-form-input,
 .peerfusion-form-select,
 .peerfusion-form-textarea {
-  width: 90%;
-  padding: 0.875rem 1rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
   border: 2px solid #e8efe5;
   border-radius: 8px;
   font-size: 1rem;
@@ -361,15 +402,51 @@
   resize: vertical;
 }
 
+.peerfusion-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.peerfusion-save-btn {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+}
+
+.peerfusion-cancel-btn {
+  background: #e8efe5;
+  color: #5a7c55;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+}
+
 /* Info Display Styles */
 .peerfusion-info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
 }
 
 .peerfusion-info-item {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .peerfusion-info-label {
@@ -389,7 +466,7 @@
 /* Subject Tags */
 .peerfusion-subject-select {
   width: 100%;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   border: 2px solid #e8efe5;
   border-radius: 8px;
   font-size: 1rem;
@@ -408,16 +485,23 @@
 .peerfusion-subject-tag {
   background: linear-gradient(135deg, #4a7c3a, #6ba84f);
   color: white;
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
   transition: all 0.3s ease;
-  margin: 0 0.5rem 0.5rem 0;
+  margin: 0 0.3rem 0.3rem 0;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-subject-tag {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
 }
 
 .peerfusion-remove-subject {
@@ -428,8 +512,8 @@
   font-size: 1rem;
   line-height: 1;
   padding: 0;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -454,6 +538,7 @@
   padding: 0.5rem 0;
   transition: all 0.2s ease;
   word-break: break-all;
+  font-size: 0.9rem;
 }
 
 .peerfusion-social-link:hover {
@@ -474,7 +559,7 @@
 }
 
 .peerfusion-email-note {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #5a7c55;
   font-style: italic;
 }
@@ -495,9 +580,15 @@
 .peerfusion-day-availability-editor {
   border: 1px solid #e8efe5;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   background: #f8faf7;
   transition: all 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-day-availability-editor {
+    padding: 1.5rem;
+  }
 }
 
 .peerfusion-day-availability-editor.enabled {
@@ -537,12 +628,19 @@
 .peerfusion-time-slot-edit {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.5rem;
   background: white;
   border-radius: 8px;
   border: 1px solid #e8efe5;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 480px) {
+  .peerfusion-time-slot-edit {
+    flex-wrap: nowrap;
+  }
 }
 
 .peerfusion-time-select {
@@ -552,6 +650,7 @@
   font-size: 0.875rem;
   background: white;
   min-width: 120px;
+  flex: 1;
 }
 
 .peerfusion-time-separator {
@@ -573,6 +672,7 @@
   width: 32px;
   height: 32px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .peerfusion-remove-time-btn:hover {
@@ -590,6 +690,10 @@
   font-weight: 500;
   margin-top: 0.5rem;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
 }
 
 .peerfusion-add-time-btn:hover {
@@ -605,16 +709,24 @@
 
 .peerfusion-availability-day {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 1rem;
   border-radius: 8px;
 }
 
+@media (min-width: 480px) {
+  .peerfusion-availability-day {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
 .peerfusion-day-label {
-  min-width: 100px;
   color: #2d5a27;
   font-weight: 600;
+  min-width: 80px;
 }
 
 .peerfusion-time-slots-display {
@@ -626,9 +738,9 @@
 .peerfusion-time-slot-badge {
   background: linear-gradient(135deg, #4a7c3a, #6ba84f);
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
 }
@@ -647,6 +759,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
@@ -657,10 +770,10 @@
 
 .peerfusion-modal-content {
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   width: 100%;
   max-width: 500px;
-  max-height: 85vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -677,15 +790,15 @@
 
 .peerfusion-close-modal {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 15px;
+  right: 15px;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
   color: #5a7c55;
   display: flex;
@@ -704,7 +817,7 @@
 /* View As Public Modal */
 .peerfusion-modal-avatar-container {
   text-align: center;
-  padding: 2.5rem 2rem 1.5rem;
+  padding: 2rem 1.5rem 1rem;
   background: linear-gradient(135deg, #f8faf7 0%, #e8efe5 100%);
   position: relative;
   display: flex;
@@ -714,20 +827,27 @@
 }
 
 .peerfusion-modal-avatar {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
   border-radius: 50%;
   border: 4px solid white;
   box-shadow: 0 8px 25px rgba(45, 90, 39, 0.2);
 }
 
+@media (min-width: 768px) {
+  .peerfusion-modal-avatar {
+    width: 120px;
+    height: 120px;
+  }
+}
+
 .peerfusion-modal-rating {
   background: white;
   color: #f39c12;
-  padding: 0.5rem 1.2rem;
+  padding: 0.5rem 1rem;
   border-radius: 25px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   margin-top: 1rem;
   display: inline-flex;
@@ -737,23 +857,29 @@
 }
 
 .peerfusion-modal-main {
-  padding: 2rem;
+  padding: 1.5rem;
   overflow-y: auto;
   max-height: 60vh;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-modal-main {
+    padding: 2rem;
+  }
 }
 
 .peerfusion-modal-title {
   margin: 0 0 0.5rem;
   text-align: center;
   color: #2d5a27;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .peerfusion-modal-role {
   text-align: center;
   color: #5a7c55;
-  margin: 0 0 2rem;
+  margin: 0 0 1.5rem;
   font-size: 1rem;
   font-weight: 500;
 }
@@ -761,13 +887,13 @@
 .peerfusion-modal-bio {
   text-align: center;
   color: #5a7c55;
-  margin: 0 0 2rem;
+  margin: 0 0 1.5rem;
   line-height: 1.6;
 }
 
 .peerfusion-modal-section {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid #f0f7ed;
 }
 
@@ -777,44 +903,36 @@
 
 .peerfusion-modal-section-title {
   color: #2d5a27;
-  margin: 0 0 1rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.peerfusion-modal-section-title::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: #4a7c3a;
-  border-radius: 50%;
-}
-
 .peerfusion-modal-subject-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 0.8rem;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .peerfusion-modal-social-links {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .peerfusion-modal-social-link {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.5rem;
   color: #4a7c3a;
   text-decoration: none;
-  font-size: 0.9rem;
-  padding: 0.8rem;
-  border-radius: 10px;
+  font-size: 0.85rem;
+  padding: 0.6rem;
+  border-radius: 8px;
   background: #f8faf7;
   transition: all 0.2s ease;
   border: 1px solid #e8efe5;
@@ -823,7 +941,6 @@
 .peerfusion-modal-social-link:hover {
   background: #4a7c3a;
   color: white;
-  transform: translateX(5px);
 }
 
 .peerfusion-contact-info {
@@ -851,37 +968,6 @@
   text-decoration: none;
 }
 
-.peerfusion-modal-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #f0f7ed;
-}
-
-.peerfusion-schedule-btn {
-  flex: 1;
-  padding: 1rem 1.5rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  color: white;
-  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
-}
-
-.peerfusion-schedule-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
-}
-
 /* Skeleton Loading Styles */
 .peerfusion-skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -898,70 +984,76 @@
 .peerfusion-skeleton-sidebar {
   background: #ffffff;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   border: 1px solid #f0f7ed;
   height: fit-content;
 }
 
 .peerfusion-skeleton-avatar {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1rem;
 }
 
 .peerfusion-skeleton-username {
   width: 120px;
-  height: 24px;
+  height: 20px;
   margin: 0 auto 1rem;
 }
 
 .peerfusion-skeleton-bio {
-  width: 200px;
-  height: 16px;
-  margin: 0 auto 1.5rem;
+  width: 160px;
+  height: 14px;
+  margin: 0 auto 1rem;
 }
 
 .peerfusion-skeleton-main {
   background: #ffffff;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   border: 1px solid #f0f7ed;
 }
 
 .peerfusion-skeleton-section {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid #e8efe5;
 }
 
 .peerfusion-skeleton-section-title {
-  width: 180px;
-  height: 24px;
-  margin-bottom: 1.5rem;
+  width: 150px;
+  height: 20px;
+  margin-bottom: 1rem;
 }
 
 .peerfusion-skeleton-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .peerfusion-skeleton-item {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .peerfusion-skeleton-label {
   width: 80px;
-  height: 16px;
+  height: 14px;
   margin-bottom: 0.5rem;
 }
 
 .peerfusion-skeleton-value {
   width: 100%;
-  height: 20px;
+  height: 16px;
 }
 
 /* Icons */
@@ -1017,12 +1109,6 @@
   width: 16px;
   height: 16px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E") no-repeat center;
-}
-
-.peerfusion-calendar-icon {
-  width: 18px;
-  height: 18px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z'/%3E%3C/svg%3E") no-repeat center;
 }
 
 .peerfusion-add-icon {
@@ -1096,7 +1182,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 15, 15, 0.589);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
@@ -1107,13 +1193,13 @@
 
 .account-action-modal {
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   position: relative;
   animation: accountActionFadeIn 0.3s ease-out;
-  box-shadow: 0 24px 48px rgba(45, 90, 39, 0.2);
+  box-shadow: 0 20px 60px rgba(45, 90, 39, 0.2);
   overflow: hidden;
   border: 1px solid #e8efe5;
   display: flex;
@@ -1133,16 +1219,22 @@
 
 .account-action-header {
   text-align: center;
-  padding: 2.5rem 2rem 1.5rem;
+  padding: 2rem 1.5rem 1rem;
   border-bottom: 1px solid #f0f7ed;
   background: linear-gradient(135deg, #f8faf7 0%, #ffffff 100%);
   flex-shrink: 0;
 }
 
+@media (min-width: 768px) {
+  .account-action-header {
+    padding: 2.5rem 2rem 1.5rem;
+  }
+}
+
 .account-action-icon {
   margin: 0 auto 1rem;
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1151,26 +1243,45 @@
   border: 2px solid #e8efe5;
 }
 
+@media (min-width: 768px) {
+  .account-action-icon {
+    width: 80px;
+    height: 80px;
+  }
+}
+
 .account-action-title {
   color: #2d5a27;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
   font-family: 'Inter', sans-serif;
 }
 
+@media (min-width: 768px) {
+  .account-action-title {
+    font-size: 1.5rem;
+  }
+}
+
 .account-action-subtitle {
   color: #5a7c55;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   font-weight: 400;
 }
 
 .account-action-content {
-  padding: 2rem;
+  padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+}
+
+@media (min-width: 768px) {
+  .account-action-content {
+    padding: 2rem;
+  }
 }
 
 .account-action-field {
@@ -1188,10 +1299,10 @@
 
 .account-action-textarea,
 .account-action-input {
-  width: 90%;
-  padding: 1rem 1.2rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
   border: 2px solid #e8efe5;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 1rem;
   background: #ffffff;
   transition: all 0.3s ease;
@@ -1204,7 +1315,6 @@
 .account-action-input:focus {
   border-color: #4a7c3a;
   box-shadow: 0 4px 16px rgba(74, 124, 58, 0.15);
-  transform: translateY(-1px);
 }
 
 .account-action-textarea {
@@ -1213,15 +1323,11 @@
   line-height: 1.5;
 }
 
-.account-action-input {
-  letter-spacing: 0.5px;
-}
-
 .account-action-features {
   border: 1px solid #e8efe5;
   border-radius: 12px;
   padding: 1.5rem;
-  margin: 2rem 0;
+  margin: 1.5rem 0;
 }
 
 .feature-item {
@@ -1246,11 +1352,18 @@
 
 .account-action-buttons {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #f0f7ed;
   flex-shrink: 0;
+}
+
+@media (min-width: 480px) {
+  .account-action-buttons {
+    flex-direction: row;
+  }
 }
 
 .account-action-secondary {
@@ -1272,8 +1385,6 @@
   background: #f8faf7;
   border-color: #4a7c3a;
   color: #4a7c3a;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.1);
 }
 
 .account-action-primary {
@@ -1298,10 +1409,6 @@
   box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
 }
 
-.account-action-primary:active:not(:disabled) {
-  transform: translateY(0);
-}
-
 .account-action-primary:disabled {
   background: #a0b39c;
   cursor: not-allowed;
@@ -1311,15 +1418,15 @@
 
 .account-action-close {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 15px;
+  right: 15px;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
   color: #5a7c55;
   display: flex;
@@ -1334,7 +1441,6 @@
   background: #4a7c3a;
   color: white;
   transform: rotate(90deg);
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.2);
 }
 
 .action-loading {
@@ -1353,127 +1459,13 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Deletion Timeline - FIXED */
-.deletion-timeline {
-  margin: 2rem 0;
-  margin-left: 2rem;
-  padding-left: 0;
-  position: relative;
-}
-
-.timeline-item {
-  margin-bottom: 1rem;
-  position: relative;
-  min-height: 80px;
-  display: flex;
-  align-items: flex-start;
-}
-
-.timeline-item:last-child {
-  margin-bottom: 0;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -3.1rem;
-  top: 1.3rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: white;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-  z-index: 2;
-  border: 3px solid white;
-  text-align: center;
-  line-height: 1;
-  padding: 0.2rem;
-  background: none !important;
-}
-
-.timeline-marker.immediate {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-}
-
-.timeline-marker.grace-period {
-  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-}
-
-.timeline-marker.permanent {
-  background: linear-gradient(135deg, #6b7280, #4b5563) !important;
-  font-size: 0.6rem;
-  line-height: 1.1;
-}
-
-.timeline-content {
-  padding-left: 1rem;
-  flex: 1;
-  min-width: 0;
-  background: #f8faf7;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  border: 1px solid #e8efe5;
-  margin-left: 0.5rem;
-}
-
-.timeline-content strong {
-  color: #2d5a27;
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
-  line-height: 1.3;
-  font-weight: 600;
-}
-
-.timeline-content p {
-  color: #5a7c55;
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 480px) {
-  .deletion-timeline {
-    margin-left: 1.5rem;
-    padding-left: 0;
-  }
-  
-  .timeline-marker {
-    left: -2.6rem;
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.6rem;
-  }
-  
-  .timeline-marker.permanent {
-    font-size: 0.5rem;
-  }
-  
-  .timeline-content {
-    padding: 0.75rem 1rem;
-    margin-left: 0.25rem;
-  }
-  
-  .timeline-content strong {
-    font-size: 0.9rem;
-  }
-  
-  .timeline-content p {
-    font-size: 0.8rem;
-  }
-}
 /* Warning Alert */
 .deletion-warning-alert {
   background: #fef3f3;
   border: 1px solid #fecaca;
   border-radius: 12px;
   padding: 1.5rem;
-  margin: 2rem 0;
+  margin: 1.5rem 0;
   display: flex;
   gap: 1rem;
   align-items: flex-start;
@@ -1483,6 +1475,7 @@
   width: 24px;
   height: 24px;
   flex-shrink: 0;
+  font-size: 1.5rem;
 }
 
 .warning-content strong {
@@ -1514,43 +1507,6 @@
   box-shadow: 0 2px 12px rgba(45, 90, 39, 0.08);
 }
 
-.peerfusion-status-badges {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 25px;
-  color: white;
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.peerfusion-status-badges.account-active {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.peerfusion-status-badges.account-deactivated {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-}
-
-.peerfusion-status-badges.account-deletion_pending {
-  background: linear-gradient(135deg, #f97316, #ea580c);
-}
-
-.peerfusion-status-badges.account-suspended {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-.peerfusion-status-badges.account-banned {
-  background: linear-gradient(135deg, #6b7280, #4b5563);
-}
-
-.peerfusion-status-badges.account-warning {
-  background: linear-gradient(135deg, #eab308, #ca8a04);
-}
-
 .peerfusion-status-details {
   display: flex;
   flex-direction: column;
@@ -1563,6 +1519,8 @@
   align-items: center;
   padding: 0.75rem 0;
   border-bottom: 1px solid #e8efe5;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .peerfusion-status-item:last-child {
@@ -1647,12 +1605,6 @@
   border: 1px solid #bae6fd;
 }
 
-.peerfusion-message-icon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
 .peerfusion-message-content h4 {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
@@ -1669,8 +1621,7 @@
 
 .peerfusion-status-actions {
   text-align: center;
-  padding: 1.5rem;
-  border-radius: 16px; 
+  padding: 1rem;
 }
 
 .peerfusion-status-action-btn {
@@ -1687,6 +1638,14 @@
   margin-bottom: 1rem;
   font-family: 'Inter', sans-serif;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 480px) {
+  .peerfusion-status-action-btn {
+    width: auto;
+  }
 }
 
 .peerfusion-appeal-btn {
@@ -1719,35 +1678,6 @@
   box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
 }
 
-.status-help {
-  color: #5a7c55;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Appeal Link */
-.peerfusion-appeal-link {
-  color: #4a7c3a;
-  text-decoration: none;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  background: #f8faf7;
-  border: 1px solid #e8efe5;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-appeal-link:hover {
-  background: #4a7c3a;
-  color: white;
-  text-decoration: none;
-  transform: translateY(-1px);
-}
-
 /* Professional Icons */
 .feature-icon.user-icon {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E") no-repeat center;
@@ -1759,10 +1689,6 @@
 
 .feature-icon.lock-icon {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM12 17c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM15.1 8H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E") no-repeat center;
-}
-
-.feature-icon.logout-icon {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z'/%3E%3C/svg%3E") no-repeat center;
 }
 
 .deactivation-icon .main-icon {
@@ -1792,38 +1718,59 @@
 .peerfusion-password-header,
 .peerfusion-email-header {
   text-align: center;
-  padding: 2.5rem 2rem 1.5rem;
+  padding: 2rem 1.5rem 1rem;
   background: linear-gradient(135deg, #f8faf7 0%, #e8efe5 100%);
   border-bottom: 1px solid #e8efe5;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-password-header,
+  .peerfusion-email-header {
+    padding: 2.5rem 2rem 1.5rem;
+  }
 }
 
 .peerfusion-password-title,
 .peerfusion-email-title {
   color: #2d5a27;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
+}
+
+@media (min-width: 768px) {
+  .peerfusion-password-title,
+  .peerfusion-email-title {
+    font-size: 1.5rem;
+  }
 }
 
 .peerfusion-password-subtitle,
 .peerfusion-email-subtitle {
   color: #5a7c55;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
 .peerfusion-password-form,
 .peerfusion-email-form {
-  padding: 2rem;
+  padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
 }
 
+@media (min-width: 768px) {
+  .peerfusion-password-form,
+  .peerfusion-email-form {
+    padding: 2rem;
+  }
+}
+
 .peerfusion-password-input,
 .peerfusion-email-input {
-  width: 90%;
-  padding: 1rem 1.2rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
   border: 2px solid #e8efe5;
   border-radius: 10px;
   font-size: 1rem;
@@ -1838,7 +1785,6 @@
 .peerfusion-email-input:focus {
   border-color: #4a7c3a;
   box-shadow: 0 4px 12px rgba(74, 124, 58, 0.15);
-  transform: translateY(-1px);
 }
 
 .peerfusion-password-input-error,
@@ -1857,53 +1803,21 @@
   display: block;
 }
 
-.peerfusion-password-requirements,
-.peerfusion-email-notice {
-  background: #f8faf7;
-  border: 1px solid #e8efe5;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 2rem 0 1.5rem 0;
-  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
-}
-
-.peerfusion-password-requirements-title,
-.peerfusion-email-notice-title {
-  font-weight: 700;
-  color: #2d5a27;
-  margin: 0 0 1rem 0;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-password-requirements-list,
-.peerfusion-email-notice-list {
-  margin: 0;
-  padding-left: 0;
-  color: #5a7c55;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  list-style: none;
-}
-
-.peerfusion-password-requirement-item,
-.peerfusion-email-notice-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  padding: 0.3rem 0;
-}
-
 .peerfusion-password-actions,
 .peerfusion-email-actions {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #f0f7ed;
+}
+
+@media (min-width: 480px) {
+  .peerfusion-password-actions,
+  .peerfusion-email-actions {
+    flex-direction: row;
+  }
 }
 
 .peerfusion-password-cancel,
@@ -1926,8 +1840,6 @@
   background: #f8faf7;
   border-color: #4a7c3a;
   color: #4a7c3a;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.1);
 }
 
 .peerfusion-password-submit,
@@ -1970,159 +1882,21 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .account-action-modal,
-  .peerfusion-modal-content {
-    margin: 1rem;
-    max-width: calc(100% - 2rem);
-  }
-  
-  .account-action-header,
-  .peerfusion-password-header,
-  .peerfusion-email-header {
-    padding: 2rem 1.5rem 1rem;
-  }
-  
-  .account-action-content,
-  .peerfusion-password-form,
-  .peerfusion-email-form {
-    padding: 1.5rem;
-  }
-  
-  .account-action-buttons,
-  .peerfusion-password-actions,
-  .peerfusion-email-actions {
-    flex-direction: column;
-  }
-  
-  .deletion-timeline {
-    margin-left: 0.5rem;
-    padding-left: 1.5rem;
-  }
-  
-  .timeline-marker {
-    left: -2.8rem;
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.7rem;
-  }
-  
-  .peerfusion-status-actions {
-    padding: 1rem;
-  }
-  
-  .peerfusion-password-input,
-  .peerfusion-email-input {
-    width: 90%;
-  }
-  
-  .peerfusion-profile-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .peerfusion-form-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .peerfusion-info-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .account-action-overlay,
-  .peerfusion-modal-overlay {
-    padding: 0.5rem;
-  }
-  
-  .account-action-header,
-  .peerfusion-password-header,
-  .peerfusion-email-header {
-    padding: 1.5rem 1rem 1rem;
-  }
-  
-  .account-action-content,
-  .peerfusion-password-form,
-  .peerfusion-email-form {
-    padding: 1rem;
-  }
-  
-  .account-action-icon {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .deletion-warning-alert {
-    padding: 1rem;
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .peerfusion-status-message {
-    padding: 1rem;
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .peerfusion-status-action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .feature-item {
-    font-size: 0.85rem;
-  }
-  
-  .peerfusion-password-requirements,
-  .peerfusion-email-notice {
-    padding: 1rem;
-  }
-}
-/* Strike badge in settings */
-.peerfusion-strike-badge {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  margin-left: 8px;
-  font-weight: 600;
-}
-
-/* Disabled settings items */
-.peerfusion-settings-disabled {
-  opacity: 0.5;
-  cursor: not-allowed !important;
-}
-
-.peerfusion-settings-disabled:hover {
-  background: none !important;
-}
-
-/* Status value for warnings */
-.peerfusion-status-value-warning {
-  color: #eab308 !important;
-  font-weight: 600;
-}
-
-.peerfusion-status-value-deletion-date {
-  color: #f97316 !important;
-  font-weight: 600;
-}
-
-.peerfusion-status-value-deletion-countdown {
-  color: #dc2626 !important;
-  font-weight: 600;
-}
 /* Email Verification Actions */
 .peerfusion-email-actions-verification {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  margin: 2rem 0 1.5rem 0;
+  margin: 1.5rem 0 1rem 0;
   padding: 1.5rem 0;
   border-top: 1px solid #f0f7ed;
   border-bottom: 1px solid #f0f7ed;
+}
+
+@media (min-width: 480px) {
+  .peerfusion-email-actions-verification {
+    flex-direction: row;
+  }
 }
 
 .peerfusion-email-secondary {
@@ -2149,12 +1923,6 @@
   background: #f8faf7;
   border-color: #4a7c3a;
   color: #4a7c3a;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.1);
-}
-
-.peerfusion-email-secondary:active:not(:disabled) {
-  transform: translateY(0);
 }
 
 .peerfusion-email-secondary:disabled {
@@ -2162,52 +1930,8 @@
   border-color: #e0e0e0;
   color: #a0a0a0;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-.peerfusion-email-back {
-  flex: 1;
-  padding: 1rem 1.5rem;
-  border: 2px solid #e8efe5;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-  color: #5a7c55;
-  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.peerfusion-email-back:hover:not(:disabled) {
-  background: #f8faf7;
-  border-color: #4a7c3a;
-  color: #4a7c3a;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.1);
-}
-
-.peerfusion-email-back:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.peerfusion-email-back:disabled {
-  background: #f0f0f0;
-  border-color: #e0e0e0;
-  color: #a0a0a0;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Resend Code Button Specific Styles */
 .peerfusion-email-resend {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
@@ -2219,15 +1943,8 @@
   background: linear-gradient(135deg, #d97706, #b45309);
   border-color: transparent;
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
 }
 
-.peerfusion-email-resend:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* Loading state for resend button */
 .peerfusion-email-resend-loading {
   display: inline-block;
   width: 16px;
@@ -2244,142 +1961,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Success state for resend button */
-.peerfusion-email-resend-success {
-  background: linear-gradient(135deg, #10b981, #059669);
-  border: none;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-}
-
-.peerfusion-email-resend-success:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-/* Cooldown state for resend button */
-.peerfusion-email-resend-cooldown {
-  background: linear-gradient(135deg, #6b7280, #4b5563);
-  border: none;
-  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
-  cursor: not-allowed;
-}
-
-.peerfusion-email-resend-cooldown:hover {
-  transform: none;
-  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
-}
-
-/* Resend counter display */
-.peerfusion-resend-counter {
-  font-size: 0.8rem;
-  color: #5a7c55;
-  text-align: center;
-  margin-top: 0.5rem;
-  font-weight: 500;
-}
-
-.peerfusion-resend-counter.cooldown {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.peerfusion-resend-counter.ready {
-  color: #10b981;
-  font-weight: 600;
-}
-
-/* Email verification specific styles */
-.peerfusion-email-verification-section {
-  background: #f8faf7;
-  border: 1px solid #e8efe5;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1.5rem 0;
-  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
-}
-
-.peerfusion-email-verification-title {
-  color: #2d5a27;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0 0 1rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-email-verification-subtitle {
-  color: #5a7c55;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0 0 1.5rem 0;
-}
-
-.peerfusion-email-verification-code {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 1rem 0;
-}
-
-.peerfusion-email-verification-input {
-  width: 50px;
-  height: 60px;
-  border: 2px solid #e8efe5;
-  border-radius: 10px;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-align: center;
-  background: white;
-  color: #2d5a27;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
-}
-
-.peerfusion-email-verification-input:focus {
-  border-color: #4a7c3a;
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.15);
-  transform: translateY(-2px);
-}
-
-.peerfusion-email-verification-input.error {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
-}
-
-.peerfusion-email-verification-success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  text-align: center;
-}
-
-.peerfusion-email-verification-success-icon {
-  width: 48px;
-  height: 48px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") no-repeat center;
-  margin: 0 auto 1rem;
-}
-
-.peerfusion-email-verification-success-title {
-  color: #10b981;
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-}
-
-.peerfusion-email-verification-success-message {
-  color: #065f46;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
 /* Email error states */
 .peerfusion-email-error-general {
   background: #fef2f2;
@@ -2393,76 +1974,75 @@
   text-align: center;
 }
 
-.peerfusion-email-pending-notice {
-  background: #fffbeb;
-  border: 1px solid #fed7aa;
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  margin: 1rem 0;
-  color: #92400e;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-/* Responsive design for email verification */
-@media (max-width: 768px) {
-  .peerfusion-email-actions-verification {
-    flex-direction: column;
-  }
-  
-  .peerfusion-email-verification-code {
-    gap: 0.3rem;
-  }
-  
-  .peerfusion-email-verification-input {
-    width: 45px;
-    height: 55px;
-    font-size: 1.3rem;
-  }
-  
-  .peerfusion-email-actions {
-    flex-direction: column;
-  }
-}
-
+/* Responsive Design */
 @media (max-width: 480px) {
-  .peerfusion-email-verification-input {
-    width: 40px;
-    height: 50px;
-    font-size: 1.2rem;
+  .peerfusion-profile-container {
+    padding: 0.5rem;
   }
   
-  .peerfusion-email-verification-section {
+  .peerfusion-profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .peerfusion-profile-title {
+    font-size: 1.25rem;
+  }
+  
+  .peerfusion-profile-sidebar,
+  .peerfusion-profile-main {
     padding: 1rem;
   }
   
-  .peerfusion-email-actions-verification {
-    margin: 1.5rem 0 1rem 0;
-    padding: 1rem 0;
+  .peerfusion-settings-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .account-action-overlay {
+    padding: 0.5rem;
+  }
+  
+  .account-action-header {
+    padding: 1.5rem 1rem 1rem;
+  }
+  
+  .account-action-content {
+    padding: 1rem;
+  }
+  
+  .account-action-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .deletion-warning-alert {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .peerfusion-status-message {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .feature-item {
+    font-size: 0.85rem;
   }
 }
 
-/* Icons for the new buttons */
-.peerfusion-email-resend-icon {
-  width: 16px;
-  height: 16px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z'/%3E%3C/svg%3E") no-repeat center;
-}
-
-.peerfusion-email-back-icon {
-  width: 16px;
-  height: 16px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a7c55'%3E%3Cpath d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/%3E%3C/svg%3E") no-repeat center;
-}
-
-.peerfusion-email-secondary:hover .peerfusion-email-back-icon {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/%3E%3C/svg%3E") no-repeat center;
-}
-
-/* Success check icon */
-.peerfusion-email-success-icon {
-  width: 16px;
-  height: 16px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
+/* Landscape mode optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .peerfusion-modal-content,
+  .account-action-modal {
+    max-height: 80vh;
+  }
+  
+  .peerfusion-modal-main,
+  .account-action-content {
+    max-height: 50vh;
+  }
 }
