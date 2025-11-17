@@ -242,84 +242,79 @@ const SetupAccount = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Validate ALL steps before submitting
+  let allValid = true;
+  let firstInvalidStep = 1;
+  
+  for (let step = 1; step <= steps.length; step++) {
+    if (!validateStep(step)) {
+      allValid = false;
+      firstInvalidStep = step;
+      break;
+    }
+  }
+
+  if (!allValid) {
+    setCurrentStep(firstInvalidStep);
+    alert(`Please complete all required fields in step ${firstInvalidStep} before submitting.`);
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Please log in again.');
+    navigate('/login');
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const formData = new FormData();
     
-    console.log('Complete Profile Setup clicked - validating all steps');
+    // Ensure role value matches what home page expects
+    const formWithSubjects = {
+      ...form,
+      subject: selectedSubjects.join(','),
+      availability: form.role !== 'Skill Learner' ? JSON.stringify(availability) : '[]'
+    };
     
-    // Validate ALL steps before submitting
-    let allValid = true;
-    let firstInvalidStep = 1;
-    
-    for (let step = 1; step <= steps.length; step++) {
-      if (!validateStep(step)) {
-        allValid = false;
-        firstInvalidStep = step;
-        break;
+    for (const key in formWithSubjects) {
+      if (formWithSubjects[key] !== null && formWithSubjects[key] !== undefined) {
+        formData.append(key, formWithSubjects[key]);
       }
     }
-
-    if (!allValid) {
-      console.log('Validation failed at step:', firstInvalidStep);
-      setCurrentStep(firstInvalidStep);
-      alert(`Please complete all required fields in step ${firstInvalidStep} before submitting.`);
-      return;
+    
+    if (avatarFile) {
+      formData.append('avatar', avatarFile);
     }
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Please log in again.');
+    const response = await axios.post(`${API_BASE_URL}/api/profile/setup`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    if (response.status === 200 || response.status === 201) {
+      console.log('Profile setup successful!');
+      navigate('/profile');
+    }
+  } catch (err) {
+    console.error('Setup error:', err);
+    if (err.response?.status === 401) {
+      localStorage.removeItem('token');
       navigate('/login');
-      return;
+    } else {
+      alert('Failed to save setup info: ' + (err.response?.data?.message || 'Please try again'));
     }
-
-    setIsLoading(true);
-
-    try {
-      const formData = new FormData();
-      const formWithSubjects = {
-        ...form,
-        subject: selectedSubjects.join(','),
-        availability: form.role !== 'Skill Learner' ? JSON.stringify(availability) : '[]'
-      };
-      
-      console.log('Submitting form data:', formWithSubjects);
-      
-      for (const key in formWithSubjects) {
-        if (formWithSubjects[key] !== null && formWithSubjects[key] !== undefined) {
-          formData.append(key, formWithSubjects[key]);
-        }
-      }
-      
-      if (avatarFile) {
-        formData.append('avatar', avatarFile);
-      }
-
-      const response = await axios.post(`${API_BASE_URL}/api/profile/setup`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      console.log('Setup response:', response);
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('Profile setup successful, redirecting to /profile');
-        navigate('/profile');
-      }
-    } catch (err) {
-      console.error('Setup error:', err);
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-      } else {
-        alert('Failed to save setup info: ' + (err.response?.data?.message || 'Please try again'));
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Loading state while checking profile
   if (!hasCheckedProfile) {
@@ -431,7 +426,7 @@ const SetupAccount = () => {
                   <select name="role" value={form.role} onChange={handleChange} className={`form-select ${errors.role ? 'error' : ''}`}>
                     <option value="Skill Learner">Skill Learner</option>
                     <option value="Skill Sharer">Skill Sharer</option>
-                    <option value="Skill Sharer & Learner">Skill Sharer & Learner</option>
+                    <option value="Skill Learner & Sharer">Skill Learner & Sharer</option>
                   </select>
                   {errors.role && <span className="error-message">{errors.role}</span>}
                 </div>

@@ -2264,7 +2264,7 @@ const Profile = () => {
                       >
                         <option value="Skill Learner">Skill Learner</option>
                         <option value="Skill Sharer">Skill Sharer</option>
-                        <option value="Skill Sharer & Learner">Skill Sharer & Learner</option>
+                        <option value="Skill Learner & Sharer">Skill Learner & Sharer</option>
                       </select>
                     </div>
 
