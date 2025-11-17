@@ -29,10 +29,10 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashed = await bcrypt.hash(password, 10);
     
-    // Generate verification code
+    // Generate verification code - 15 minutes
     const verificationCode = generateSixDigitCode();
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
-    const codeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Create user with verification token (not verified yet)
     const insertSql = 'INSERT INTO users (name, email, password, verification_token, verification_expires, is_verified, status) VALUES (?, ?, ?, ?, ?, false, "active")';
@@ -71,7 +71,7 @@ router.post('/register', async (req, res) => {
                 </div>
               </div>
               <p style="text-align: center; color: #666; font-size: 14px;">
-                This code will expire in <strong>24 hours</strong>.
+                This code will expire in <strong>15 minutes</strong>.
               </p>
               <p>If you didn't create an account with PeerFusion, please ignore this email.</p>
               <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
@@ -141,7 +141,6 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
-
 //-------------------------- Resend Verification Code --------------------------//
 router.post('/resend-verification', async (req, res) => {
   const { email } = req.body;
@@ -160,10 +159,10 @@ router.post('/resend-verification', async (req, res) => {
 
     const user = users[0];
     
-    // Generate new verification code
+    // Generate new verification code - 15 minutes
     const verificationCode = generateSixDigitCode();
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
-    const codeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Update verification token
     await db.query(
@@ -203,7 +202,7 @@ router.post('/resend-verification', async (req, res) => {
                 </div>
               </div>
               <p style="text-align: center; color: #666; font-size: 14px;">
-                This code will expire in <strong>24 hours</strong>.
+                This code will expire in <strong>15 minutes</strong>.
               </p>
               <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
             </td>
@@ -562,6 +561,7 @@ router.post('/google-login', async (req, res) => {
     });
   }
 });
+
 //-------------------------- Forgot Password --------------------------//
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
@@ -589,12 +589,12 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = users[0];
     
-    // Generate reset token
+    // Generate reset token - 15 minutes
     const token = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     
-    // Set expiration to 2 hours from now - ensure proper datetime format
-    const tokenExpires = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    // Set expiration to 15 minutes from now
+    const tokenExpires = new Date(Date.now() + 15 * 60 * 1000);
     
     console.log('Setting reset token for user:', user.email);
     console.log('Token expires at:', tokenExpires);
@@ -645,7 +645,7 @@ router.post('/forgot-password', async (req, res) => {
                 Reset Password
               </a>
             </div>
-            <p>This link will expire in <strong>2 hours</strong>. If you didn't request this, you can safely ignore this email.</p>
+            <p>This link will expire in <strong>15 minutes</strong>. If you didn't request this, you can safely ignore this email.</p>
             <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
           </div>
           <div class="footer">
@@ -670,6 +670,7 @@ router.post('/forgot-password', async (req, res) => {
     });
   }
 });
+
 //-------------------------- Reset Password --------------------------//
 router.post('/reset-password/:token', async (req, res) => {
   const { password } = req.body;
@@ -681,7 +682,7 @@ router.post('/reset-password/:token', async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    // Fix: Use proper datetime comparison
+    // Find valid token
     const findTokenSql = 'SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires > NOW()';
     const [users] = await db.query(findTokenSql, [hashedToken]);
 
@@ -689,7 +690,7 @@ router.post('/reset-password/:token', async (req, res) => {
     console.log('Found users with token:', users.length);
 
     if (users.length === 0) {
-      // Let's check if the token exists but is expired for better debugging
+      // Check if the token exists but is expired for better debugging
       const checkExpiredSql = 'SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires <= NOW()';
       const [expiredUsers] = await db.query(checkExpiredSql, [hashedToken]);
       
@@ -854,7 +855,7 @@ router.post('/verify-reset-code', async (req, res) => {
     const [users] = await db.query(findUserSql, [email, hashedCode]);
 
     if (users.length === 0) {
-      // Check if code exists but is expired
+      // Check if code exists but is expired for better debugging
       const checkExpiredSql = 'SELECT * FROM users WHERE email = ? AND resetPasswordToken = ? AND role IN ("admin", "moderator")';
       const [expiredUsers] = await db.query(checkExpiredSql, [email, hashedCode]);
       
@@ -878,8 +879,8 @@ router.post('/verify-reset-code', async (req, res) => {
     const tempToken = crypto.randomBytes(32).toString('hex');
     const hashedTempToken = crypto.createHash('sha256').update(tempToken).digest('hex');
     
-    // Store temporary token (valid for 10 minutes)
-    const newExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    // Store temporary token (valid for 15 minutes)
+    const newExpiry = new Date(Date.now() + 15 * 60 * 1000);
     await db.query(
       'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?',
       [hashedTempToken, newExpiry, user.id]
@@ -901,7 +902,6 @@ router.post('/verify-reset-code', async (req, res) => {
     });
   }
 });
-
 
 // -------------------------- Reset Password with Token -------------------------- //
 router.post('/admin-reset-password', async (req, res) => {
@@ -1011,6 +1011,5 @@ router.post('/admin-reset-password', async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
