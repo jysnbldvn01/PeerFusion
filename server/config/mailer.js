@@ -1,26 +1,33 @@
 // config/mailer.js
+const { Resend } = require('resend');
 
-const nodemailer = require('nodemailer');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: process.env.RESEND_EMAIL_HOST || 'smtp.resend.com',
-  port: process.env.RESEND_EMAIL_PORT || 465,
-  secure: false,
-  auth: {
-    user: 'resend',
-    pass: process.env.RESEND_API_KEY, 
+const transporter = {
+  sendMail: async function(mailOptions) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Resend API error:', error);
+      throw error;
+    }
   },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-});
-
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('SMTP Connection failed:', error);
-  } else {
-    console.log('SMTP Server is ready to send emails');
+  
+  verify: function(callback) {
+    console.log('Resend API is ready');
+    callback(null, true);
   }
-});
+};
 
 module.exports = transporter;
