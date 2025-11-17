@@ -31,10 +31,8 @@
 .peerfusion-header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  position: relative;
+  margin-left: auto;
 }
-
 /* Settings Dropdown */
 .peerfusion-settings-dropdown {
   position: relative;
@@ -43,7 +41,7 @@
 .peerfusion-settings-menu {
   position: absolute;
   top: 100%;
-  right: 0; /* Changed from left: 0 to right: 0 */
+  right: 0;
   background: white;
   border: 1px solid #e8efe5;
   border-radius: 12px;
@@ -2474,12 +2472,12 @@
   }
   
   .peerfusion-profile-content {
-    grid-template-columns: 1fr; /* Single column on mobile */
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
   
   .peerfusion-profile-sidebar {
-    position: static; /* Remove sticky on mobile */
+    position: static;
     padding: 1.5rem;
   }
   
@@ -2488,22 +2486,33 @@
   }
   
   .peerfusion-profile-header {
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     gap: 1rem;
-    align-items: stretch;
   }
   
   .peerfusion-header-actions {
-    display: flex;
-    justify-content: center;
+    margin-left: 0;
+  }
+  
+  .peerfusion-profile-title {
+    font-size: 1.5rem;
+    text-align: left;
   }
   
   .peerfusion-form-grid {
-    grid-template-columns: 1fr; /* Single column forms on mobile */
+    grid-template-columns: 1fr;
   }
   
   .peerfusion-info-grid {
-    grid-template-columns: 1fr; /* Single column info on mobile */
+    grid-template-columns: 1fr;
+  }
+  
+  .peerfusion-settings-menu {
+    right: 0;
+    left: auto;
+    min-width: 180px;
   }
 }
 
