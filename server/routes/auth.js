@@ -9,16 +9,28 @@ const transporter = require('../config/mailer');
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const temporaryRegistrations = new Map();
+
 function generateSixDigitCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function cleanupExpiredRegistrations() {
+  const now = Date.now();
+  for (const [email, data] of temporaryRegistrations.entries()) {
+    if (data.expiresAt < now) {
+      temporaryRegistrations.delete(email);
+    }
+  }
+}
+
+setInterval(cleanupExpiredRegistrations, 5 * 60 * 1000);
 //-------------------------- Register --------------------------//
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if email exists
+    // Check if email exists in database (permanent users)
     const checkEmailSql = 'SELECT email FROM users WHERE email = ?';
     const [existingUsers] = await db.query(checkEmailSql, [email]);
 
@@ -26,20 +38,34 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Email already registered', code: 'EMAIL_EXISTS' });
     }
 
-    // Hash password
-    const hashed = await bcrypt.hash(password, 10);
-    
+    // Check if there's a pending registration for this email
+    if (temporaryRegistrations.has(email)) {
+      const existingReg = temporaryRegistrations.get(email);
+      if (existingReg.expiresAt > Date.now()) {
+        // Remove existing temporary registration to create new one
+        temporaryRegistrations.delete(email);
+      }
+    }
+
     // Generate verification code - 15 minutes
     const verificationCode = generateSixDigitCode();
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
     const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    // Create user with verification token (not verified yet)
-    const insertSql = 'INSERT INTO users (name, email, password, verification_token, verification_expires, is_verified, status) VALUES (?, ?, ?, ?, ?, false, "active")';
-    
-    const [result] = await db.query(insertSql, [name, email, hashed, hashedCode, codeExpires]);
-    
-    // Send verification email - UPDATED DESIGN
+    // Store in temporary registration (not in database yet)
+    const tempRegistration = {
+      name,
+      email,
+      password: await bcrypt.hash(password, 10),
+      verificationToken: hashedCode,
+      verificationExpires: codeExpires,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes total
+    };
+
+    temporaryRegistrations.set(email, tempRegistration);
+
+    // Send verification email
     const mailOptions = {
       from: '"PeerFusion" <noreply@peerfusionskillshare.com>',
       to: email,
@@ -94,15 +120,14 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({ 
       message: 'Registration successful! Please check your email to verify your account.',
-      userId: result.insertId,
-      email: email
+      email: email,
+      tempRegistration: true
     });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration process failed', details: error.message });
   }
 });
-
 //-------------------------- Verify Email --------------------------//
 router.post('/verify-email', async (req, res) => {
   const { email, code } = req.body;
@@ -110,7 +135,34 @@ router.post('/verify-email', async (req, res) => {
   try {
     const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
 
-    // Find user with valid verification code
+    // Check temporary registrations first
+    if (temporaryRegistrations.has(email)) {
+      const tempReg = temporaryRegistrations.get(email);
+      
+      // Check if verification code matches and is not expired
+      if (tempReg.verificationToken === hashedCode && new Date(tempReg.verificationExpires) > new Date()) {
+        
+        // Create permanent user in database
+        const insertSql = 'INSERT INTO users (name, email, password, is_verified, status, role, created_at) VALUES (?, ?, ?, true, "active", "user", NOW())';
+        const [result] = await db.query(insertSql, [tempReg.name, tempReg.email, tempReg.password]);
+        
+        // Remove from temporary storage
+        temporaryRegistrations.delete(email);
+        
+        return res.status(200).json({ 
+          success: true,
+          message: 'Email verified successfully! You can now login to your account.',
+          userId: result.insertId
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Invalid or expired verification code.' 
+        });
+      }
+    }
+
+    // Fallback: Check database for existing users (for backward compatibility)
     const findUserSql = 'SELECT * FROM users WHERE email = ? AND verification_token = ? AND verification_expires > NOW()';
     const [users] = await db.query(findUserSql, [email, hashedCode]);
 
@@ -149,7 +201,79 @@ router.post('/resend-verification', async (req, res) => {
   const { email } = req.body;
 
   try {
-    // Check if user exists and is not verified
+    // Check temporary registrations first
+    if (temporaryRegistrations.has(email)) {
+      const tempReg = temporaryRegistrations.get(email);
+      
+      // Generate new verification code
+      const verificationCode = generateSixDigitCode();
+      const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+      const codeExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+      // Update temporary registration
+      tempReg.verificationToken = hashedCode;
+      tempReg.verificationExpires = codeExpires;
+      temporaryRegistrations.set(email, tempReg);
+
+      // Send new verification email
+      const mailOptions = {
+        from: '"PeerFusion" <verify@peerfusionskillshare.com>',
+        to: email,
+        subject: 'New Verification Code - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Verification Code</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+            .content { padding: 30px; font-size: 16px; }
+            .code { background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
+            .code-text { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130d; }
+            .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+            .center { text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
+            </div>
+            <div class="content">
+              <h2 style="margin-top: 0; color: #0ea050; text-align:center;">New Verification Code</h2>
+              <p>Hello ${tempReg.name},</p>
+              <p>Here is your new verification code for PeerFusion:</p>
+              <div class="center">
+                <div class="code">
+                  <span class="code-text">${verificationCode}</span>
+                </div>
+              </div>
+              <p class="center" style="color: #666; font-size: 14px;">
+                This code will expire in <strong>15 minutes</strong>.
+              </p>
+              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+            </div>
+            <div class="footer">
+              &copy; 2025 PeerFusion. All rights reserved.
+            </div>
+          </div>
+        </body>
+        </html>`
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return res.status(200).json({ 
+        success: true,
+        message: 'New verification code sent to your email.'
+      });
+    }
+
+    // Fallback for existing database users
     const findUserSql = 'SELECT * FROM users WHERE email = ? AND is_verified = false';
     const [users] = await db.query(findUserSql, [email]);
 
@@ -165,15 +289,15 @@ router.post('/resend-verification', async (req, res) => {
     // Generate new verification code - 15 minutes
     const verificationCode = generateSixDigitCode();
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
-    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Update verification token
+    // Update verification token in database
     await db.query(
       'UPDATE users SET verification_token = ?, verification_expires = ? WHERE id = ?',
       [hashedCode, codeExpires, user.id]
     );
 
-    // Send verification email - UPDATED DESIGN
+    // Send verification email
     const mailOptions = {
       from: '"PeerFusion" <verify@peerfusionskillshare.com>',
       to: email,
@@ -238,6 +362,7 @@ router.post('/resend-verification', async (req, res) => {
     });
   }
 });
+
 
 //-------------------------- Login --------------------------//
 router.post('/login', async (req, res) => {

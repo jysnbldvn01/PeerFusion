@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import '../css/auth.css';
@@ -75,7 +75,23 @@ export default function Register() {
   const [verificationCode, setVerificationCode] = useState('');
   const [verifying, setVerifying] = useState(false);
 
- const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+  // Auto-clear registration when leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (verificationSent && userEmail) {
+        // Registration data will automatically expire in 15 minutes on backend
+        console.log('Registration cancelled due to page exit');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [verificationSent, userEmail]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -155,7 +171,7 @@ export default function Register() {
     }
   };
 
-   const handleVerifyEmail = async (e) => {
+  const handleVerifyEmail = async (e) => {
     e.preventDefault();
     
     if (!verificationCode) {
@@ -200,6 +216,22 @@ export default function Register() {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to resend verification code.');
     }
+  };
+
+  const handleStartOver = () => {
+    // Clear everything and go back to registration form
+    setVerificationSent(false);
+    setUserEmail('');
+    setVerificationCode('');
+    setForm({ 
+      name: '', 
+      email: '', 
+      password: '', 
+      confirmPassword: '',
+      acceptTerms: false 
+    });
+    setError('');
+    setSuccess('');
   };
 
   const scrollToSection = (sectionId) => {
@@ -363,7 +395,7 @@ export default function Register() {
                 and grow together in our collaborative community.
               </p><br></br>
               <p>
-                “The beautiful thing about learning is nobody can take it away from you.” — B.B. King
+                "The beautiful thing about learning is nobody can take it away from you." — B.B. King
               </p>
             </div>
           </div>
@@ -578,7 +610,7 @@ export default function Register() {
                         className="form-control"
                         placeholder="Enter 6-digit code"
                         value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value)}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         maxLength="6"
                         pattern="[0-9]{6}"
                       />
@@ -620,6 +652,15 @@ export default function Register() {
                         disabled={verifying}
                       >
                         Resend Code
+                      </button>
+                      
+                      <button 
+                        type="button" 
+                        className="text-btn"
+                        onClick={handleStartOver}
+                        disabled={verifying}
+                      >
+                        Use Different Email
                       </button>
                     </div>
                   </form>
