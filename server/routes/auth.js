@@ -566,83 +566,102 @@ router.post('/google-login', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
+  // Validate email
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ 
+      message: 'Please provide a valid email address.' 
+    });
+  }
+
   try {
     const findUserSql = 'SELECT * FROM users WHERE email = ?';
     const [users] = await db.query(findUserSql, [email]);
 
+    // Always return the same message for security
+    const responseMessage = 'If an account with that email exists, a reset link has been sent.';
+
     if (users.length === 0) {
       return res.status(200).json({ 
-        message: 'If an account with that email exists, a reset link has been sent.' 
+        message: responseMessage 
       });
     }
 
     const user = users[0];
+    
+    // Generate reset token - extended to 2 hours for better UX
     const token = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const tokenExpires = new Date(Date.now() + 3600000); // 1 hour
+    const tokenExpires = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
 
+    // Update user with reset token
     const updateUserSql = 'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?';
     await db.query(updateUserSql, [hashedToken, tokenExpires, user.id]);
 
+    // Create reset link
     const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password/${token}`;
 
+    // Send email
     const mailOptions = {
-      from: '"PeerFusion" <support@peerfusionskillshare.com>',
+      from: '"PeerFusion" <noreply@peerfusionskillshare.com>',
       to: user.email,
       subject: 'Reset Your Password - PeerFusion',
       html: `
       <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <html>
       <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Password Reset</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+          .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+          .content { padding: 30px; font-size: 16px; }
+          .button { background-color: #0ea050; color: #ffffff; padding: 12px 20px; text-decoration: none; font-size: 16px; border-radius: 5px; display: inline-block; }
+          .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+          .center { text-align: center; }
+        </style>
       </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Reset Your Password</h2>
-              <p>Hello ${user.name || ''},</p>
-              <p>We received a request to reset your password. Click the button below to create a new one:</p>
-              <div style="text-align:center; margin: 30px 0;">
-                <a href="${resetLink}" 
-                   style="background-color:#1a73e8; color:#ffffff; padding:12px 20px; text-decoration:none; font-size:16px; border-radius:5px; display:inline-block;">
-                  Reset Password
-                </a>
-              </div>
-              <p>This link will expire in <strong>1 hour</strong>. If you didn’t request this, you can safely ignore this email.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
+      <body>
+        <div class="container">
+          <div class="header">
+            <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
+          </div>
+          <div class="content">
+            <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Reset Your Password</h2>
+            <p>Hello ${user.name || 'there'},</p>
+            <p>We received a request to reset your password. Click the button below to create a new one:</p>
+            <div class="center" style="margin: 30px 0;">
+              <a href="${resetLink}" class="button">
+                Reset Password
+              </a>
+            </div>
+            <p>This link will expire in <strong>2 hours</strong>. If you didn't request this, you can safely ignore this email.</p>
+            <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+          </div>
+          <div class="footer">
+            &copy; 2025 PeerFusion. All rights reserved.
+          </div>
+        </div>
       </body>
-      </html>`
+      </html>`,
+      text: `Reset Your Password - PeerFusion\n\nHello ${user.name || 'there'},\n\nWe received a request to reset your password. Click the link below to create a new one:\n\n${resetLink}\n\nThis link will expire in 2 hours. If you didn't request this, you can safely ignore this email.\n\nThank you,\nPeerFusion Team`
     };
 
     await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to: ${user.email}`);
 
     res.status(200).json({ 
-      message: 'If an account with that email exists, a reset link has been sent.' 
+      message: responseMessage 
     });
 
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Server error during password reset process.' });
+    res.status(500).json({ 
+      message: 'Server error during password reset process.' 
+    });
   }
 });
-
 //-------------------------- Reset Password --------------------------//
 router.post('/reset-password/:token', async (req, res) => {
   const { password } = req.body;
@@ -659,8 +678,14 @@ router.post('/reset-password/:token', async (req, res) => {
         message: 'Password reset link is invalid or has expired.' 
       });
     }
-
     const user = users[0];
+    
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 8 characters long.' 
+      });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const updatePasswordSql = 'UPDATE users SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE id = ?';
@@ -708,45 +733,49 @@ router.post('/admin-forgot-password', async (req, res) => {
       subject: 'Admin Password Reset Code - PeerFusion',
       html: `
       <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <html>
       <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Admin Password Reset</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+          .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+          .content { padding: 30px; font-size: 16px; }
+          .code { background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
+          .code-text { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130d; }
+          .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+          .center { text-align: center; }
+        </style>
       </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Admin Password Reset</h2>
-              <p>Hello ${user.name || user.email},</p>
-              <p>You requested to reset your password. Use the following 6-digit verification code:</p>
-              <div style="text-align:center; margin: 30px 0;">
-                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
-                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${resetCode}</span>
-                </div>
+      <body>
+        <div class="container">
+          <div class="header">
+            <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
+          </div>
+          <div class="content">
+            <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Admin Password Reset</h2>
+            <p>Hello ${user.name || user.email},</p>
+            <p>You requested to reset your password. Use the following 6-digit verification code:</p>
+            <div class="center">
+              <div class="code">
+                <span class="code-text">${resetCode}</span>
               </div>
-              <p style="text-align: center; color: #666; font-size: 14px;">
-                This code will expire in <strong>15 minutes</strong>.
-              </p>
-              <p>If you didn't request this reset, please ignore this email or contact support if you have concerns.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Admin Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
+            </div>
+            <p class="center" style="color: #666; font-size: 14px;">
+              This code will expire in <strong>15 minutes</strong>.
+            </p>
+            <p>If you didn't request this reset, please ignore this email or contact support if you have concerns.</p>
+            <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Admin Team</strong></p>
+          </div>
+          <div class="footer">
+            &copy; 2025 PeerFusion. All rights reserved.
+          </div>
+        </div>
       </body>
-      </html>`
+      </html>`,
+      text: `Admin Password Reset Code - PeerFusion\n\nHello ${user.name || user.email},\n\nYou requested to reset your password. Use this 6-digit verification code: ${resetCode}\n\nThis code will expire in 15 minutes.\n\nIf you didn't request this reset, please ignore this email.\n\nThank you,\nPeerFusion Admin Team`
     };
 
     await transporter.sendMail(mailOptions);
@@ -818,6 +847,14 @@ router.post('/admin-reset-password', async (req, res) => {
     }
 
     const user = users[0];
+    
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 8 characters long.' 
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update password and clear reset fields
