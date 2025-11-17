@@ -39,50 +39,53 @@ router.post('/register', async (req, res) => {
     
     const [result] = await db.query(insertSql, [name, email, hashed, hashedCode, codeExpires]);
     
-    // Send verification email
+    // Send verification email - UPDATED DESIGN
     const mailOptions = {
       from: '"PeerFusion" <noreply@peerfusionskillshare.com>',
       to: email,
       subject: 'Verify Your Email - PeerFusion',
       html: `
       <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <html lang="en">
       <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Email Verification</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+          .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+          .content { padding: 30px; font-size: 16px; }
+          .code { background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
+          .code-text { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130d; }
+          .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+          .center { text-align: center; }
+        </style>
       </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">Verify Your Email Address</h2>
-              <p>Hello ${name},</p>
-              <p>Welcome to PeerFusion! To complete your registration and start learning with our community, please verify your email address using the code below:</p>
-              <div style="text-align:center; margin: 30px 0;">
-                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
-                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
-                </div>
+      <body>
+        <div class="container">
+          <div class="header">
+            <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
+          </div>
+          <div class="content">
+            <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Verify Your Email Address</h2>
+            <p>Hello ${name},</p>
+            <p>Welcome to PeerFusion! To complete your registration and start learning with our community, please verify your email address using the code below:</p>
+            <div class="center">
+              <div class="code">
+                <span class="code-text">${verificationCode}</span>
               </div>
-              <p style="text-align: center; color: #666; font-size: 14px;">
-                This code will expire in <strong>15 minutes</strong>.
-              </p>
-              <p>If you didn't create an account with PeerFusion, please ignore this email.</p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
+            </div>
+            <p class="center" style="color: #666; font-size: 14px;">
+              This code will expire in <strong>15 minutes</strong>.
+            </p>
+            <p>If you didn't create an account with PeerFusion, please ignore this email.</p>
+            <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+          </div>
+          <div class="footer">
+            &copy; 2025 PeerFusion. All rights reserved.
+          </div>
+        </div>
       </body>
       </html>`
     };
@@ -170,49 +173,52 @@ router.post('/resend-verification', async (req, res) => {
       [hashedCode, codeExpires, user.id]
     );
 
-    // Send verification email
+    // Send verification email - UPDATED DESIGN
     const mailOptions = {
       from: '"PeerFusion" <verify@peerfusionskillshare.com>',
       to: email,
       subject: 'New Verification Code - PeerFusion',
       html: `
       <!DOCTYPE html>
-      <html lang="en" style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
+      <html lang="en">
       <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>New Verification Code</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+          .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+          .content { padding: 30px; font-size: 16px; }
+          .code { background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
+          .code-text { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130d; }
+          .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+          .center { text-align: center; }
+        </style>
       </head>
-      <body style="background-color: #f5f5f5; padding: 40px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" 
-               style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <tr>
-            <td style="text-align: center; padding: 30px 0; background-color: #0d130dff;">
-              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; font-size: 16px; color: #333333;">
-              <h2 style="margin-top: 0; color: #0ea050ff; text-align:center;">New Verification Code</h2>
-              <p>Hello ${user.name},</p>
-              <p>Here is your new verification code for PeerFusion:</p>
-              <div style="text-align:center; margin: 30px 0;">
-                <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block;">
-                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130dff;">${verificationCode}</span>
-                </div>
+      <body>
+        <div class="container">
+          <div class="header">
+            <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
+          </div>
+          <div class="content">
+            <h2 style="margin-top: 0; color: #0ea050; text-align:center;">New Verification Code</h2>
+            <p>Hello ${user.name},</p>
+            <p>Here is your new verification code for PeerFusion:</p>
+            <div class="center">
+              <div class="code">
+                <span class="code-text">${verificationCode}</span>
               </div>
-              <p style="text-align: center; color: #666; font-size: 14px;">
-                This code will expire in <strong>15 minutes</strong>.
-              </p>
-              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
-              &copy; 2025 PeerFusion. All rights reserved.
-            </td>
-          </tr>
-        </table>
+            </div>
+            <p class="center" style="color: #666; font-size: 14px;">
+              This code will expire in <strong>15 minutes</strong>.
+            </p>
+            <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+          </div>
+          <div class="footer">
+            &copy; 2025 PeerFusion. All rights reserved.
+          </div>
+        </div>
       </body>
       </html>`
     };
@@ -595,6 +601,7 @@ router.post('/forgot-password', async (req, res) => {
 
     const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password/${token}`;
 
+    // Send password reset email - UPDATED DESIGN
     const mailOptions = {
       from: '"PeerFusion" <noreply@peerfusionskillshare.com>',
       to: user.email,
@@ -606,6 +613,15 @@ router.post('/forgot-password', async (req, res) => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Password Reset</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+          .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+          .content { padding: 30px; font-size: 16px; }
+          .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+          .center { text-align: center; }
+          .button { background-color: #0ea050; color: #ffffff; padding: 12px 20px; text-decoration: none; font-size: 16px; border-radius: 5px; display: inline-block; }
+        </style>
       </head>
       <body>
         <div class="container">
@@ -616,13 +632,16 @@ router.post('/forgot-password', async (req, res) => {
             <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Reset Your Password</h2>
             <p>Hello ${user.name || 'there'},</p>
             <p>We received a request to reset your password. Click the button below to create a new one:</p>
-            <div style="text-align:center; margin: 30px 0;">
-              <a href="${resetLink}" style="background-color: #0ea050; color: #ffffff; padding: 12px 20px; text-decoration: none; font-size: 16px; border-radius: 5px; display: inline-block;">
+            <div class="center" style="margin: 30px 0;">
+              <a href="${resetLink}" class="button">
                 Reset Password
               </a>
             </div>
             <p>This link will expire in <strong>15 minutes</strong>.</p>
             <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Team</strong></p>
+          </div>
+          <div class="footer">
+            &copy; 2025 PeerFusion. All rights reserved.
           </div>
         </div>
       </body>
@@ -740,7 +759,7 @@ router.post('/admin-forgot-password', async (req, res) => {
     const updateUserSql = 'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?';
     await db.query(updateUserSql, [hashedCode, codeExpires, user.id]);
 
-    // Send email with reset code using Resend
+    // Send email with reset code using Resend - UPDATED DESIGN
     try {
       const mailOptions = {
         from: '"PeerFusion Admin" <noreply@peerfusionskillshare.com>',
