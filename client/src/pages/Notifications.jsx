@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import '../css/notification.css';
 import { useNavigate } from "react-router-dom";
@@ -162,11 +162,11 @@ const Notification = () => {
     }
   };
 
-  // Fixed fetchNotifications function
-  const fetchNotifications = useCallback(async (tab = activeTab) => {
+  // FIXED: Simplified fetchNotifications function
+  const fetchNotifications = async () => {
     const token = localStorage.getItem('token');
     const url =
-      tab === 'archived'
+      activeTab === 'archived'
         ? `${API_BASE_URL}/api/profile/notifications/archived`
         : `${API_BASE_URL}/api/profile/notifications`;
 
@@ -174,7 +174,7 @@ const Notification = () => {
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Fetched notifications for tab:', tab, res.data);
+      console.log('Fetched notifications for tab:', activeTab, res.data);
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -182,7 +182,7 @@ const Notification = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]); // Add activeTab as dependency
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -214,9 +214,14 @@ const Notification = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [fetchNotifications]);
+  }, []);
 
-  // Fixed action handlers
+  // FIXED: Refetch when activeTab changes
+  useEffect(() => {
+    fetchNotifications();
+  }, [activeTab]);
+
+  // FIXED: Action handlers - use current activeTab state
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
@@ -228,8 +233,7 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // Pass current activeTab to ensure we fetch the correct notifications
-      fetchNotifications(activeTab);
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -249,7 +253,7 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications(activeTab);
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -269,7 +273,7 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications(activeTab);
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -289,7 +293,7 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications(activeTab);
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -316,7 +320,7 @@ const Notification = () => {
           )
         )
       );
-      await fetchNotifications(activeTab);
+      await fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       window.pfToast?.success?.('All notifications marked as read');
     } catch (err) {
@@ -335,7 +339,7 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications(activeTab);
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
@@ -385,7 +389,7 @@ const Notification = () => {
         window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
       } else {
-        fetchNotifications(activeTab);
+        fetchNotifications();
         window.pfToast?.info?.('Session accepted');
       }
     } catch (err) {
@@ -415,12 +419,6 @@ const Notification = () => {
     }
   };
 
-  // Add useEffect to refetch when activeTab changes
-  useEffect(() => {
-    fetchNotifications(activeTab);
-  }, [activeTab, fetchNotifications]);
-
-  // Rest of your component remains the same...
   const getDisplayName = (notification) => {
     console.log('Processing notification:', {
       id: notification.id,

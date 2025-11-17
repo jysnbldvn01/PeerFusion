@@ -452,7 +452,7 @@ const handleSubmit = async (e) => {
             <h2 className="step-title">Subjects & Skills</h2>
             <p className="step-description">
               {form.role === 'Skill Learner' 
-                ? "Select subjects you're interested in learning"
+                ? "You can skip this if you're a Skill Learner"
                 : "Select subjects you can teach or share knowledge about"
               }
             </p>
