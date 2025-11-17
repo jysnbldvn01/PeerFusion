@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import '../css/auth.css';
 
-
 const LockIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M15 7.5V6.25C15 4.17893 13.3211 2.5 11.25 2.5H8.75C6.67893 2.5 5 4.17893 5 6.25V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -32,18 +31,54 @@ const ResetPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState([false, false, false]);
   
   const API_BASE_URL = process.env.REACT_APP_API_URL;
   
   const { token } = useParams();
   const navigate = useNavigate();
 
+  const handlePasswordChange = (value) => {
+    setPassword(value);
+    setError('');
+    
+    // Update password strength indicator
+    const strength = [
+      value.length >= 6,
+      /[A-Z]/.test(value),
+      /[0-9!@#$%^&*]/.test(value)
+    ];
+    setPasswordStrength(strength);
+  };
+
+  const validatePassword = () => {
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least one uppercase letter');
+      return false;
+    }
+    if (!/[0-9!@#$%^&*]/.test(password)) {
+      setError('Password must contain at least one number or symbol');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
+
+    if (!validatePassword()) {
+      return;
+    }
+
     setError('');
     setMessage('');
     setLoading(true);
@@ -190,7 +225,7 @@ const ResetPassword = () => {
                       className="form-control"
                       placeholder="Enter your new password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => handlePasswordChange(e.target.value)}
                       required
                       disabled={loading}
                     />
@@ -201,6 +236,38 @@ const ResetPassword = () => {
                     >
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
+                  </div>
+                  
+                  {/* Password Strength Indicator - Same as register */}
+                  <div className="password-strength">
+                    {passwordStrength.map((strong, index) => (
+                      <div 
+                        key={index} 
+                        className="strength-bar" 
+                        style={{ 
+                          background: strong ? 
+                            (index === 0 ? '#4cd964' : index === 1 ? '#5ac8fa' : '#ffcc00') 
+                            : '#e0e0e0'
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                  
+                  {/* Password Hints - Same as register */}
+                  <div className="password-hints">
+                    {password.length > 0 && (
+                      <ul>
+                        <li style={{ color: passwordStrength[0] ? '#4cd964' : '#666' }}>
+                          At least 6 characters
+                        </li>
+                        <li style={{ color: passwordStrength[1] ? '#4cd964' : '#666' }}>
+                          Contains uppercase letter
+                        </li>
+                        <li style={{ color: passwordStrength[2] ? '#4cd964' : '#666' }}>
+                          Contains number or symbol
+                        </li>
+                      </ul>
+                    )}
                   </div>
                 </div>
 
@@ -226,6 +293,22 @@ const ResetPassword = () => {
                       {showConfirmPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
+                  
+                  {/* Show confirmation status - Same as register */}
+                  {confirmPassword && (
+                    <div className="password-hints">
+                      <ul>
+                        <li style={{ 
+                          color: password === confirmPassword ? '#4cd964' : '#ff3b30' 
+                        }}>
+                          {password === confirmPassword 
+                            ? '✓ Passwords match' 
+                            : '✗ Passwords do not match'
+                          }
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Messages */}
