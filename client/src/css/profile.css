@@ -11,45 +11,37 @@
 /* Header Section */
 .peerfusion-profile-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
   padding: 1rem 0;
   border-bottom: 1px solid #e8efe5;
 }
 
 .peerfusion-profile-title {
   color: #2d5a27;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
   background: linear-gradient(135deg, #2d5a27 0%, #4a7c3a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-align: center;
 }
 
 .peerfusion-header-actions {
   display: flex;
-  align-items: center;
-  margin-left: auto;
+  justify-content: center;
+  position: relative;
+  width: 100%;
 }
+
 /* Settings Dropdown */
 .peerfusion-settings-dropdown {
   position: relative;
-}
-
-.peerfusion-settings-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: white;
-  border: 1px solid #e8efe5;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(45, 90, 39, 0.12);
-  z-index: 1000;
-  min-width: 200px;
-  margin-top: 0.5rem;
-  overflow: hidden;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .peerfusion-settings-button {
@@ -66,7 +58,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  white-space: nowrap;
+  width: auto;
+  min-width: 120px;
+  justify-content: center;
 }
 
 .peerfusion-settings-button:hover {
@@ -78,6 +72,7 @@
   position: absolute;
   top: 100%;
   right: 0;
+  left: 0;
   background: white;
   border: 1px solid #e8efe5;
   border-radius: 12px;
@@ -86,6 +81,18 @@
   min-width: 200px;
   margin-top: 0.5rem;
   overflow: hidden;
+  max-width: 100vw;
+}
+
+@media (max-width: 320px) {
+  .peerfusion-settings-menu {
+    left: 0;
+    right: 0;
+    min-width: unset;
+    width: calc(100vw - 2rem);
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 .peerfusion-settings-item {
@@ -143,22 +150,21 @@
 
 /* Profile Content */
 .peerfusion-profile-content {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   margin-top: 1rem;
 }
+
 
 /* Profile Sidebar */
 .peerfusion-profile-sidebar {
   background: #ffffff;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   border: 1px solid #f0f7ed;
-  height: fit-content;
-  position: sticky;
-  top: 2rem;
+  order: 1;
 }
 
 .peerfusion-avatar-section {
@@ -295,11 +301,11 @@
 .peerfusion-profile-main {
   background: #ffffff;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   border: 1px solid #f0f7ed;
+  order: 2;
 }
-
 .peerfusion-profile-section {
   margin-bottom: 2.5rem;
   padding-bottom: 2rem;
@@ -332,13 +338,14 @@
 
 /* Form Styles */
 .peerfusion-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .peerfusion-form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
 }
 
 .peerfusion-form-label {
@@ -352,7 +359,7 @@
 .peerfusion-form-input,
 .peerfusion-form-select,
 .peerfusion-form-textarea {
-  width: 90%;
+  width: 100%;
   padding: 0.875rem 1rem;
   border: 2px solid #e8efe5;
   border-radius: 8px;
@@ -361,6 +368,7 @@
   transition: all 0.3s ease;
   outline: none;
   box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
+  box-sizing: border-box;
 }
 
 .peerfusion-form-input:focus,
@@ -377,13 +385,15 @@
 
 /* Info Display Styles */
 .peerfusion-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
+
 .peerfusion-info-item {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
 }
 
 .peerfusion-info-label {
@@ -661,7 +671,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
@@ -683,7 +692,6 @@
   box-shadow: 0 20px 60px rgba(45, 90, 39, 0.3);
   overflow: hidden;
   border: 1px solid #e8efe5;
-  margin: 1rem;
 }
 
 @keyframes peerfusion-modalFadeIn {
@@ -986,6 +994,7 @@
   height: 16px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/%3E%3C/svg%3E") no-repeat center;
 }
+
 .peerfusion-edit-icon {
   width: 16px;
   height: 16px;
@@ -2481,67 +2490,128 @@
   height: 16px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
 }
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .peerfusion-profile-container {
-    padding: 0.5rem;
-  }
-  
-  .peerfusion-profile-content {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .peerfusion-profile-sidebar {
-    position: static;
-    padding: 1.5rem;
-  }
-  
-  .peerfusion-profile-main {
-    padding: 1.5rem;
-  }
-  
+
+@media (min-width: 768px) {
   .peerfusion-profile-header {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-  }
-  
-  .peerfusion-header-actions {
-    margin-left: 0;
   }
   
   .peerfusion-profile-title {
-    font-size: 1.5rem;
     text-align: left;
+    font-size: 2rem;
+  }
+  
+  .peerfusion-header-actions {
+    justify-content: flex-end;
+    width: auto;
+  }
+  
+  .peerfusion-settings-dropdown {
+    width: auto;
+  }
+  
+  .peerfusion-profile-content {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+  }
+  
+  .peerfusion-profile-sidebar {
+    order: 0;
+    padding: 2rem;
+  }
+  
+  .peerfusion-profile-main {
+    order: 0;
+    padding: 2rem;
   }
   
   .peerfusion-form-grid {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
   
   .peerfusion-info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .peerfusion-settings-menu {
-    right: 0;
-    left: auto;
-    min-width: 180px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 }
 
-/* Very small screens */
-@media (max-width: 480px) {
+@media (min-width: 1024px) {
+  .peerfusion-profile-container {
+    padding: 2rem;
+  }
+}
+
+/* Very small screens (under 375px) */
+@media (max-width: 375px) {
+  .peerfusion-profile-container {
+    padding: 0.5rem;
+  }
+  
   .peerfusion-profile-sidebar,
   .peerfusion-profile-main {
     padding: 1rem;
+    border-radius: 12px;
   }
   
-  .peerfusion-settings-menu {
-    right: 0;
-    left: auto; /* Ensure it stays on right */
-    min-width: 180px;
+  .peerfusion-settings-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    min-width: 110px;
   }
+  
+  .peerfusion-avatar-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Landscape mode optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .peerfusion-profile-sidebar {
+    padding: 1rem;
+  }
+  
+  .peerfusion-avatar-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .peerfusion-username {
+    font-size: 1.2rem;
+  }
+}
+
+/* Fix for modal overlays on mobile */
+@media (max-width: 768px) {
+  .account-action-overlay,
+  .peerfusion-modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+  
+  .account-action-modal,
+  .peerfusion-modal-content {
+    margin: 1rem 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+.peerfusion-settings-menu {
+  max-width: calc(100vw - 2rem);
+}
+
+.peerfusion-profile-container {
+  overflow-x: hidden;
+}
+
+.peerfusion-profile-content {
+  max-width: 100%;
 }
