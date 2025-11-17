@@ -581,6 +581,7 @@ router.post('/forgot-password', async (req, res) => {
     const responseMessage = 'If an account with that email exists, a reset link has been sent.';
 
     if (users.length === 0) {
+      console.log('Forgot password: No user found with email:', email);
       return res.status(200).json({ 
         message: responseMessage 
       });
@@ -588,17 +589,25 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = users[0];
     
-    // Generate reset token - extended to 2 hours for better UX
+    // Generate reset token
     const token = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const tokenExpires = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
+    
+    // Set expiration to 2 hours from now - ensure proper datetime format
+    const tokenExpires = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    
+    console.log('Setting reset token for user:', user.email);
+    console.log('Token expires at:', tokenExpires);
 
     // Update user with reset token
     const updateUserSql = 'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?';
-    await db.query(updateUserSql, [hashedToken, tokenExpires, user.id]);
+    const [result] = await db.query(updateUserSql, [hashedToken, tokenExpires, user.id]);
+    
+    console.log('Update result:', result);
 
     // Create reset link
     const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password/${token}`;
+    console.log('Reset link created:', resetLink);
 
     // Send email
     const mailOptions = {
@@ -644,8 +653,7 @@ router.post('/forgot-password', async (req, res) => {
           </div>
         </div>
       </body>
-      </html>`,
-      text: `Reset Your Password - PeerFusion\n\nHello ${user.name || 'there'},\n\nWe received a request to reset your password. Click the link below to create a new one:\n\n${resetLink}\n\nThis link will expire in 2 hours. If you didn't request this, you can safely ignore this email.\n\nThank you,\nPeerFusion Team`
+      </html>`
     };
 
     await transporter.sendMail(mailOptions);
@@ -667,29 +675,54 @@ router.post('/reset-password/:token', async (req, res) => {
   const { password } = req.body;
   const { token } = req.params;
 
+  // Debug log
+  console.log('Reset password attempt with token:', token);
+
   try {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
+    // Fix: Use proper datetime comparison
     const findTokenSql = 'SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires > NOW()';
     const [users] = await db.query(findTokenSql, [hashedToken]);
 
+    // Debug log
+    console.log('Found users with token:', users.length);
+
     if (users.length === 0) {
+      // Let's check if the token exists but is expired for better debugging
+      const checkExpiredSql = 'SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires <= NOW()';
+      const [expiredUsers] = await db.query(checkExpiredSql, [hashedToken]);
+      
+      if (expiredUsers.length > 0) {
+        console.log('Token found but expired for user:', expiredUsers[0].email);
+        return res.status(400).json({ 
+          message: 'Password reset link has expired. Please request a new one.' 
+        });
+      }
+      
       return res.status(400).json({ 
-        message: 'Password reset link is invalid or has expired.' 
+        message: 'Password reset link is invalid.' 
       });
     }
+
     const user = users[0];
+    console.log('Valid token found for user:', user.email);
     
-    // Validate password strength
-    if (password.length < 8) {
+    // Validate password
+    if (!password || password.length < 8) {
       return res.status(400).json({ 
         message: 'Password must be at least 8 characters long.' 
       });
     }
+
+    // Hash new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Update password and clear reset token fields
     const updatePasswordSql = 'UPDATE users SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE id = ?';
     await db.query(updatePasswordSql, [hashedPassword, user.id]);
+    
+    console.log(`Password successfully reset for user: ${user.email}`);
     
     res.status(200).json({ 
       message: 'Your password has been updated successfully.' 
@@ -697,7 +730,10 @@ router.post('/reset-password/:token', async (req, res) => {
 
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ message: 'Error resetting password.' });
+    res.status(500).json({ 
+      message: 'Error resetting password.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -710,10 +746,13 @@ router.post('/admin-forgot-password', async (req, res) => {
     const findUserSql = 'SELECT * FROM users WHERE email = ? AND role IN ("admin", "moderator")';
     const [users] = await db.query(findUserSql, [email]);
 
+    // Always return the same message for security
+    const responseMessage = 'If an admin/moderator account with that email exists, a reset code has been sent.';
+
     if (users.length === 0) {
-      // Return same message for security
+      console.log('Admin forgot password: No admin/moderator found with email:', email);
       return res.status(200).json({ 
-        message: 'If an admin/moderator account with that email exists, a reset code has been sent.' 
+        message: responseMessage 
       });
     }
 
@@ -722,72 +761,83 @@ router.post('/admin-forgot-password', async (req, res) => {
     const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
     const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+    console.log(`Admin reset code for ${user.email}: ${resetCode}, expires: ${codeExpires}`);
+
     // Store the hashed reset code and expiration
     const updateUserSql = 'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?';
     await db.query(updateUserSql, [hashedCode, codeExpires, user.id]);
 
-    // Send email with reset code
-    const mailOptions = {
-      from: '"PeerFusion Admin" <verify@peerfusionskillshare.com>',
-      to: user.email,
-      subject: 'Admin Password Reset Code - PeerFusion',
-      html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Admin Password Reset</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
-          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-          .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
-          .content { padding: 30px; font-size: 16px; }
-          .code { background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
-          .code-text { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130d; }
-          .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
-          .center { text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
-          </div>
-          <div class="content">
-            <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Admin Password Reset</h2>
-            <p>Hello ${user.name || user.email},</p>
-            <p>You requested to reset your password. Use the following 6-digit verification code:</p>
-            <div class="center">
-              <div class="code">
-                <span class="code-text">${resetCode}</span>
-              </div>
+    // Send email with reset code using Resend
+    try {
+      const mailOptions = {
+        from: '"PeerFusion Admin" <noreply@peerfusionskillshare.com>',
+        to: user.email,
+        subject: 'Admin Password Reset Code - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Admin Password Reset</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+            .content { padding: 30px; font-size: 16px; }
+            .code { background-color: #f8f9fa; border: 2px dashed #dee2e6; padding: 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
+            .code-text { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d130d; }
+            .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+            .center { text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
             </div>
-            <p class="center" style="color: #666; font-size: 14px;">
-              This code will expire in <strong>15 minutes</strong>.
-            </p>
-            <p>If you didn't request this reset, please ignore this email or contact support if you have concerns.</p>
-            <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Admin Team</strong></p>
+            <div class="content">
+              <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Admin Password Reset</h2>
+              <p>Hello ${user.name || user.email},</p>
+              <p>You requested to reset your password. Use the following 6-digit verification code:</p>
+              <div class="center">
+                <div class="code">
+                  <span class="code-text">${resetCode}</span>
+                </div>
+              </div>
+              <p class="center" style="color: #666; font-size: 14px;">
+                This code will expire in <strong>15 minutes</strong>.
+              </p>
+              <p>If you didn't request this reset, please ignore this email or contact support if you have concerns.</p>
+              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Admin Team</strong></p>
+            </div>
+            <div class="footer">
+              &copy; 2025 PeerFusion. All rights reserved.
+            </div>
           </div>
-          <div class="footer">
-            &copy; 2025 PeerFusion. All rights reserved.
-          </div>
-        </div>
-      </body>
-      </html>`,
-      text: `Admin Password Reset Code - PeerFusion\n\nHello ${user.name || user.email},\n\nYou requested to reset your password. Use this 6-digit verification code: ${resetCode}\n\nThis code will expire in 15 minutes.\n\nIf you didn't request this reset, please ignore this email.\n\nThank you,\nPeerFusion Admin Team`
-    };
+        </body>
+        </html>`
+      };
 
-    await transporter.sendMail(mailOptions);
+      await transporter.sendMail(mailOptions);
+      console.log(`Admin reset code email sent successfully to: ${user.email}`);
+
+    } catch (emailError) {
+      console.error('Failed to send admin reset email:', emailError);
+      // Don't fail the request if email fails, but log it
+    }
 
     res.status(200).json({ 
-      message: 'If an admin/moderator account with that email exists, a reset code has been sent.',
+      message: responseMessage,
       email: email // Return email for frontend to use in next step
     });
 
   } catch (error) {
     console.error('Admin forgot password error:', error);
-    res.status(500).json({ message: 'Server error during password reset process.' });
+    res.status(500).json({ 
+      message: 'Server error during password reset process.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -798,37 +848,60 @@ router.post('/verify-reset-code', async (req, res) => {
   try {
     const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
 
+    console.log(`Verifying reset code for: ${email}, code: ${code}, hashed: ${hashedCode}`);
+
     const findUserSql = 'SELECT * FROM users WHERE email = ? AND resetPasswordToken = ? AND resetPasswordExpires > NOW() AND role IN ("admin", "moderator")';
     const [users] = await db.query(findUserSql, [email, hashedCode]);
 
     if (users.length === 0) {
+      // Check if code exists but is expired
+      const checkExpiredSql = 'SELECT * FROM users WHERE email = ? AND resetPasswordToken = ? AND role IN ("admin", "moderator")';
+      const [expiredUsers] = await db.query(checkExpiredSql, [email, hashedCode]);
+      
+      if (expiredUsers.length > 0) {
+        console.log('Reset code found but expired for:', email);
+        return res.status(400).json({ 
+          message: 'Reset code has expired. Please request a new one.' 
+        });
+      }
+      
+      console.log('Invalid reset code for:', email);
       return res.status(400).json({ 
-        message: 'Invalid or expired reset code.' 
+        message: 'Invalid reset code.' 
       });
     }
 
-    // Code is valid - generate a temporary token for password reset
     const user = users[0];
+    console.log('Reset code verified successfully for:', email);
+
+    // Code is valid - generate a temporary token for password reset
     const tempToken = crypto.randomBytes(32).toString('hex');
     const hashedTempToken = crypto.createHash('sha256').update(tempToken).digest('hex');
     
     // Store temporary token (valid for 10 minutes)
+    const newExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await db.query(
-      'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE id = ?',
-      [hashedTempToken, user.id]
+      'UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?',
+      [hashedTempToken, newExpiry, user.id]
     );
+
+    console.log('Generated temp token for password reset:', tempToken);
 
     res.status(200).json({ 
       message: 'Code verified successfully.',
-      tempToken,
-      email
+      tempToken: tempToken,
+      email: email
     });
 
   } catch (error) {
     console.error('Verify reset code error:', error);
-    res.status(500).json({ message: 'Error verifying reset code.' });
+    res.status(500).json({ 
+      message: 'Error verifying reset code.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
+
 
 // -------------------------- Reset Password with Token -------------------------- //
 router.post('/admin-reset-password', async (req, res) => {
@@ -837,19 +910,33 @@ router.post('/admin-reset-password', async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(tempToken).digest('hex');
 
+    console.log(`Admin reset password attempt for: ${email}, tempToken: ${tempToken}`);
+
     const findUserSql = 'SELECT * FROM users WHERE email = ? AND resetPasswordToken = ? AND resetPasswordExpires > NOW() AND role IN ("admin", "moderator")';
     const [users] = await db.query(findUserSql, [email, hashedToken]);
 
     if (users.length === 0) {
+      // Check if token exists but is expired
+      const checkExpiredSql = 'SELECT * FROM users WHERE email = ? AND resetPasswordToken = ? AND role IN ("admin", "moderator")';
+      const [expiredUsers] = await db.query(checkExpiredSql, [email, hashedToken]);
+      
+      if (expiredUsers.length > 0) {
+        console.log('Temp token found but expired for:', email);
+        return res.status(400).json({ 
+          message: 'Reset session has expired. Please start over.' 
+        });
+      }
+      
+      console.log('Invalid temp token for:', email);
       return res.status(400).json({ 
-        message: 'Invalid or expired reset token.' 
+        message: 'Invalid reset session.' 
       });
     }
 
     const user = users[0];
     
     // Validate password strength
-    if (password.length < 8) {
+    if (!password || password.length < 8) {
       return res.status(400).json({ 
         message: 'Password must be at least 8 characters long.' 
       });
@@ -861,13 +948,67 @@ router.post('/admin-reset-password', async (req, res) => {
     const updatePasswordSql = 'UPDATE users SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE id = ?';
     await db.query(updatePasswordSql, [hashedPassword, user.id]);
     
+    console.log(`Password successfully reset for admin/moderator: ${user.email}`);
+    
+    // Send confirmation email
+    try {
+      const mailOptions = {
+        from: '"PeerFusion Admin" <noreply@peerfusionskillshare.com>',
+        to: user.email,
+        subject: 'Password Successfully Reset - PeerFusion',
+        html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Password Reset Confirmation</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { text-align: center; padding: 30px 0; background-color: #0d130d; }
+            .content { padding: 30px; font-size: 16px; }
+            .success { color: #0ea050; font-weight: bold; }
+            .footer { background: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="https://i.imghippo.com/files/nfyb3992ADQ.png" alt="PeerFusion Logo" width="140" style="display:block; margin: 0 auto;">
+            </div>
+            <div class="content">
+              <h2 style="margin-top: 0; color: #0ea050; text-align:center;">Password Reset Successful</h2>
+              <p>Hello ${user.name || user.email},</p>
+              <p class="success">Your PeerFusion admin/moderator password has been successfully reset.</p>
+              <p>If you did not make this change, please contact the system administrator immediately.</p>
+              <p style="margin-top: 30px;">Thank you,<br><strong>PeerFusion Admin Team</strong></p>
+            </div>
+            <div class="footer">
+              &copy; 2025 PeerFusion. All rights reserved.
+            </div>
+          </div>
+        </body>
+        </html>`
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`Password reset confirmation email sent to: ${user.email}`);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Continue even if confirmation email fails
+    }
+    
     res.status(200).json({ 
       message: 'Password has been reset successfully.' 
     });
 
   } catch (error) {
     console.error('Admin reset password error:', error);
-    res.status(500).json({ message: 'Error resetting password.' });
+    res.status(500).json({ 
+      message: 'Error resetting password.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
