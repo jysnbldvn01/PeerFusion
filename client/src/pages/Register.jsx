@@ -152,7 +152,6 @@ export default function Register() {
       if (response.status === 201) {
         setUserEmail(form.email);
         setVerificationSent(true);
-        setSuccess('Registration successful! Please check your email to verify your account.');
       }
     } catch (err) {
       if (err.response) {

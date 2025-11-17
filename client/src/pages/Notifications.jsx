@@ -67,27 +67,17 @@ const Notification = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const menuRefs = useRef({});
   const unreadCount = notifications.filter(n => !n.is_read).length;
   
   const navigate = useNavigate();
 
-  // Skeleton Loading Component
-  const SkeletonNotification = () => (
-    <div className="peerfusion-skeleton-notification">
-      <div className="peerfusion-skeleton peerfusion-skeleton-avatar"></div>
-      <div className="peerfusion-skeleton-content">
-        <div className="peerfusion-skeleton-header">
-          <div className="peerfusion-skeleton peerfusion-skeleton-username"></div>
-          <div className="peerfusion-skeleton peerfusion-skeleton-time"></div>
-        </div>
-        <div className="peerfusion-skeleton peerfusion-skeleton-message"></div>
-        <div className="peerfusion-skeleton peerfusion-skeleton-message-short"></div>
-        <div className="peerfusion-skeleton peerfusion-skeleton-badge"></div>
-      </div>
-    </div>
-  );
+  // Add debug logging
+  useEffect(() => {
+    console.log('Current notifications:', notifications);
+    console.log('Filtered notifications:', filteredNotifications);
+  }, [notifications]);
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
@@ -107,19 +97,7 @@ const Notification = () => {
     return formattedMessage;
   };
 
-  useEffect(() => {
-    const handleNotificationsUpdated = () => {
-      console.log('📢 Notifications updated event received, refreshing...');
-      fetchNotifications();
-    };
-
-    window.addEventListener('notificationsUpdated', handleNotificationsUpdated);
-    
-    return () => {
-      window.removeEventListener('notificationsUpdated', handleNotificationsUpdated);
-    };
-  }, []);
-
+  // Handle link clicks
   useEffect(() => {
     const handleLinkClick = (event) => {
       if (event.target.classList.contains('notification-link')) {
@@ -140,12 +118,10 @@ const Notification = () => {
     };
 
     document.addEventListener('click', handleLinkClick);
-    
-    return () => {
-      document.removeEventListener('click', handleLinkClick);
-    };
+    return () => document.removeEventListener('click', handleLinkClick);
   }, [navigate]);
 
+  // Handle modal message clicks specifically
   const handleModalMessageClick = (event) => {
     if (event.target.classList.contains('notification-link')) {
       event.preventDefault();
@@ -162,7 +138,7 @@ const Notification = () => {
     }
   };
 
-  // FIXED: Use the same pattern as your oldest working code
+  // EXACT SAME PATTERN AS OLDEST CODE
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('token');
     const url =
@@ -179,11 +155,10 @@ const Notification = () => {
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
-    } finally {
-      setIsLoading(false);
     }
-  }, [activeTab]); // Keep activeTab as dependency like in oldest code
+  }, [activeTab]);
 
+  // EXACT SAME PATTERN AS OLDEST CODE
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
@@ -214,15 +189,100 @@ const Notification = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [fetchNotifications]); // Keep fetchNotifications as dependency
+  }, [fetchNotifications]);
 
-  // FIXED: Remove the problematic useEffect that was causing double fetching
-  // Remove this entire useEffect:
-  // useEffect(() => {
-  //   fetchNotifications(activeTab);
-  // }, [activeTab, fetchNotifications]);
+  // Enhanced helper functions to determine display name and avatar
+  const getDisplayName = (notification) => {
+    console.log('Processing notification:', {
+      id: notification.id,
+      type: notification.type,
+      sender_id: notification.sender_id,
+      sender_name: notification.sender_name,
+      message: notification.message?.substring(0, 100)
+    });
 
-  // Action handlers - keep them simple like in oldest code
+    // ALWAYS show PeerFusion Team for penalty type (from report.js and user management)
+    if (notification.type === 'penalty') {
+      return 'PeerFusion Team';
+    }
+    
+    // Also show PeerFusion Team for NULL sender_id or system sender
+    if (notification.sender_id === null || notification.sender_id === 0) {
+      return 'PeerFusion Team';
+    }
+    
+    // Show PeerFusion Team for specific notification types
+    if (notification.type === 'warning' || 
+        notification.type === 'suspension' || 
+        notification.type === 'ban' || 
+        notification.type === 'appeal_approved' ||
+        notification.type === 'appeal_rejected' ||
+        notification.type === 'account_reactivated' ||
+        notification.type === 'strikes_adjusted' ||
+        notification.type === 'account_status') {
+      return 'PeerFusion Team';
+    }
+
+    // For feedback from admin/moderator, show as PeerFusion Team
+    if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
+      return 'PeerFusion Team';
+    }
+    
+    return notification.sender_name || 'System';
+  };
+
+  const getDisplayAvatar = (notification) => {
+    // No avatar for PeerFusion Team notifications
+    if (notification.type === 'penalty' || 
+        notification.sender_id === null || 
+        notification.sender_id === 0 ||
+        notification.type === 'warning' || 
+        notification.type === 'suspension' || 
+        notification.type === 'ban' || 
+        notification.type === 'appeal_approved' ||
+        notification.type === 'appeal_rejected' ||
+        notification.type === 'account_reactivated' ||
+        notification.type === 'strikes_adjusted' ||
+        notification.type === 'account_status') {
+      return null;
+    }
+    
+    // No avatar for admin/moderator feedback
+    if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
+      return null;
+    }
+    
+    return notification.sender_avatar;
+  };
+
+  const getAvatarPlaceholder = (notification) => {
+    const displayName = getDisplayName(notification);
+    if (displayName === 'PeerFusion Team') {
+      return <InternetIcons.Team />;
+    }
+    return displayName.charAt(0) || 'U';
+  };
+
+  const fetchFeedbackDetails = async (notificationId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/api/profile/notification-feedback/${notificationId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res.data.success) {
+        setFeedbackDetails(res.data.feedback);
+      }
+    } catch (err) {
+      console.error('Failed to fetch feedback details:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch feedback details');
+    }
+  };
+
+  // EXACT SAME ACTION HANDLERS AS OLDEST CODE
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
@@ -234,7 +294,6 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // Just call fetchNotifications without parameters like in oldest code
       fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
@@ -304,6 +363,7 @@ const Notification = () => {
     }
   };
 
+  // Mark all notifications as read
   const markAllAsRead = async () => {
     if (!notifications || notifications.length === 0) return;
     const token = localStorage.getItem('token');
@@ -372,6 +432,7 @@ const Notification = () => {
     setFeedbackDetails(null);
   };
 
+  // Accept session request
   const handleAccept = async (notification) => {
     const token = localStorage.getItem("token");
     try {
@@ -400,6 +461,7 @@ const Notification = () => {
     }
   };
 
+  // Decline session request
   const handleDecline = async (notification) => {
     const token = localStorage.getItem("token");
     try {
@@ -418,91 +480,6 @@ const Notification = () => {
     } catch (err) {
       console.error("❌ Failed to reject session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error rejecting session request');
-    }
-  };
-
-  // Rest of your helper functions remain the same...
-  const getDisplayName = (notification) => {
-    console.log('Processing notification:', {
-      id: notification.id,
-      type: notification.type,
-      sender_id: notification.sender_id,
-      sender_name: notification.sender_name,
-      message: notification.message?.substring(0, 100)
-    });
-
-    if (notification.type === 'penalty') {
-      return 'PeerFusion Team';
-    }
-    
-    if (notification.sender_id === null || notification.sender_id === 0) {
-      return 'PeerFusion Team';
-    }
-    
-    if (notification.type === 'warning' || 
-        notification.type === 'suspension' || 
-        notification.type === 'ban' || 
-        notification.type === 'appeal_approved' ||
-        notification.type === 'appeal_rejected' ||
-        notification.type === 'account_reactivated' ||
-        notification.type === 'strikes_adjusted' ||
-        notification.type === 'account_status') {
-      return 'PeerFusion Team';
-    }
-
-    if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
-      return 'PeerFusion Team';
-    }
-    
-    return notification.sender_name || 'System';
-  };
-
-  const getDisplayAvatar = (notification) => {
-    if (notification.type === 'penalty' || 
-        notification.sender_id === null || 
-        notification.sender_id === 0 ||
-        notification.type === 'warning' || 
-        notification.type === 'suspension' || 
-        notification.type === 'ban' || 
-        notification.type === 'appeal_approved' ||
-        notification.type === 'appeal_rejected' ||
-        notification.type === 'account_reactivated' ||
-        notification.type === 'strikes_adjusted' ||
-        notification.type === 'account_status') {
-      return null;
-    }
-    
-    if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
-      return null;
-    }
-    
-    return notification.sender_avatar;
-  };
-
-  const getAvatarPlaceholder = (notification) => {
-    const displayName = getDisplayName(notification);
-    if (displayName === 'PeerFusion Team') {
-      return <InternetIcons.Team />;
-    }
-    return displayName.charAt(0) || 'U';
-  };
-
-  const fetchFeedbackDetails = async (notificationId) => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/api/profile/notification-feedback/${notificationId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (res.data.success) {
-        setFeedbackDetails(res.data.feedback);
-      }
-    } catch (err) {
-      console.error('Failed to fetch feedback details:', err);
-      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch feedback details');
     }
   };
 
@@ -684,12 +661,7 @@ const Notification = () => {
 
       {/* Single Row Notifications List */}
       <div className="peerfusion-notification-list">
-        {isLoading ? (
-          // Skeleton loading state
-          Array.from({ length: 5 }).map((_, index) => (
-            <SkeletonNotification key={index} />
-          ))
-        ) : filteredNotifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <div className="peerfusion-notification-empty">
             <div className="peerfusion-notification-empty-icon">📭</div>
             <h3>No notifications found</h3>
