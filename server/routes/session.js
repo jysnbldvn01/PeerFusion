@@ -159,6 +159,20 @@ router.post("/accept", async (req, res) => {
       [requestId]
     );
 
+    // Create notification for the requester that their request was accepted (include acceptor name)
+    await db.query(
+      `INSERT INTO notifications 
+       (sender_id, receiver_id, request_id, session_request_id, message, type, status) 
+       VALUES (?, ?, ?, ?, ?, 'session_accept', 'accepted')`,
+      [
+        receiver_id, // sender is the acceptor
+        requester_id, // receiver is the original requester
+        requestId,
+        requestId,
+        `✅ ${userInfoMap[String(receiver_id)].username} accepted your session request`,
+      ]
+    );
+
     res.json({ success: true, conversationId });
   } catch (err) {
     console.error("❌ Error accepting request:", err);

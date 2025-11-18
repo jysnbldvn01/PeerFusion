@@ -21,15 +21,33 @@ router.post("/schedule", async (req, res) => {
     );
     const meetingId = result.insertId;
 
+    // Build name map for participants to personalize notifications
+    let nameMap = {};
+    try {
+      const [nameRows] = await db.query(
+        `SELECT id, name FROM users WHERE id IN (${participants.map(() => '?').join(',')})`,
+        participants
+      );
+      nameRows.forEach(r => { nameMap[String(r.id)] = r.name; });
+    } catch (_) {}
+
+    const scheduledLabel = new Date(scheduledAt).toLocaleString();
+
     // Notify participants and emit socket
     for (const participantId of participants) {
+      const others = participants.filter(p => p !== participantId);
+      const otherNames = others.map(id => nameMap[String(id)] || `User ${id}`).join(', ');
+      const message = otherNames
+        ? `📅 Meeting with ${otherNames} at ${scheduledLabel} has been scheduled.`
+        : `📅 A new meeting has been scheduled for ${scheduledLabel}.`;
+
       await db.query(
         `INSERT INTO notifications (sender_id, receiver_id, message, type, is_read)
          VALUES (?, ?, ?, 'meeting', 0)`,
         [
           participants[0], // first = creator
           participantId,
-          "📅 A new meeting has been scheduled.",
+          message,
         ]
       );
 
@@ -44,18 +62,31 @@ router.post("/schedule", async (req, res) => {
       }
     }
 
-    // Schedule reminder (5 mins before)
-    const reminderTime = new Date(new Date(scheduledAt).getTime() - 5 * 60000);
+    // Schedule reminder (15 mins before)
+    const reminderTime = new Date(new Date(scheduledAt).getTime() - 15 * 60000);
     if (reminderTime > new Date()) {
       schedule.scheduleJob(reminderTime, async () => {
-        console.log(`🔔 Reminder: meeting ${meetingId} is starting soon`);
+        console.log(`🔔 Reminder: meeting ${meetingId} starts in 15 minutes`);
         for (const participantId of participants) {
+          // Insert a notification record for each participant (copying style used above)
+          try {
+            await db.query(
+              `INSERT INTO notifications (sender_id, receiver_id, message, type, is_read)
+               VALUES (?, ?, ?, 'meeting_reminder', 0)`,
+              [
+                participants[0], // creator as sender
+                participantId,
+                "⏰ Your meeting starts in 15 minutes.",
+              ]
+            );
+          } catch (_) {}
+
           if (emitToUser) {
             emitToUser(participantId, "meetingReminder", {
               meetingId,
               conversationId,
               scheduledAt,
-              timeLeft: "5 minutes",
+              timeLeft: "15 minutes",
             });
           }
         }

@@ -54,7 +54,28 @@ router.post('/accept/:id', authenticateToken, async (req, res) => {
     emitToUser(peerId, "sessionAccepted", { conversationId });
     emitToUser(userId, "sessionAccepted", { conversationId });
 
-    // 5. Respond to frontend
+    // 5. Create a notification to inform the original requester that their request was accepted (include acceptor name)
+    let acceptorName = 'Someone';
+    try {
+      const [nameRows] = await db.query(
+        `SELECT name FROM users WHERE id = ? LIMIT 1`,
+        [userId]
+      );
+      if (nameRows && nameRows.length) acceptorName = nameRows[0].name || acceptorName;
+    } catch (_) {}
+
+    await db.query(
+      `INSERT INTO notifications 
+       (sender_id, receiver_id, message, type, status) 
+       VALUES (?, ?, ?, 'session_accept', 'accepted')`,
+      [
+        userId,      // acceptor
+        peerId,      // original requester
+        `✅ ${acceptorName} accepted your session request`,
+      ]
+    );
+
+    // 6. Respond to frontend
     return res.json({
       success: true,
       message: 'Session request accepted',
