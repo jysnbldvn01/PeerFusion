@@ -18,7 +18,7 @@ import { socket, identifySocket } from "../../utils/socket";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // Icon components for ChatWindow
 const AttachmentIcon = () => (
@@ -98,6 +98,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [unsendMessage, setUnsendMessage] = useState(null);
   const [showCancelMeetingModal, setShowCancelMeetingModal] = useState(false);
   const [cancellingMeeting, setCancellingMeeting] = useState(false);
+  const [tooltipActive, setTooltipActive] = useState(false);
   const menuBtnRefs = useRef({});
   const scrollRef = useRef();
   const enableTimerRef = useRef(null);
@@ -105,7 +106,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const fileInputRef = useRef(null);
   const scheduleButtonRef = useRef(null);
   const isAuthenticated = !!localStorage.getItem('token');
-
+  
   // Get authentication token safely
   const getAuthToken = () => {
     try {
@@ -148,6 +149,22 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       throw error;
     }
   };
+
+  useEffect(() => {
+  const handleDocumentClick = () => {
+    if (tooltipActive) {
+      setTooltipActive(false);
+    }
+  };
+
+  if (tooltipActive) {
+    document.addEventListener('click', handleDocumentClick);
+  }
+
+  return () => {
+    document.removeEventListener('click', handleDocumentClick);
+  };
+}, [tooltipActive]);
 
   // Seed otherUser immediately from parent to avoid placeholder-only flash
   useEffect(() => {
@@ -792,20 +809,19 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const handleScheduleClick = () => {
     if (canSchedule) {
       setShowMeetingModal(true);
-    } else {
-      setShowScheduleTooltip(true);
-      setTimeout(() => {
-        setShowScheduleTooltip(false);
-      }, 3000);
     }
   };
 
-  const openReportMessage = (message) => {
-    setReportTarget({ type: 'message', message });
-    setReportReason("");
-    setReportOffense('Harassment');
-    setShowReportModal(true);
-  };
+const openReportMessage = (message) => {
+  if (message.unsentForEveryone) {
+    window.pfToast?.info?.('This message has been unsent and cannot be reported.');
+    return;
+  }
+  setReportTarget({ type: 'message', message });
+  setReportReason("");
+  setReportOffense('Harassment');
+  setShowReportModal(true);
+};
 
   // Enhanced report submission
   const handleSubmitReport = async () => {
@@ -1059,7 +1075,16 @@ const handleUnsendForEveryone = async (message) => {
         </div>
 
         <div className="peerfusion-chat-actions">
-          <div className="peerfusion-chat-schedule-button-wrapper" ref={scheduleButtonRef}>
+          <div 
+              className={`peerfusion-chat-schedule-button-wrapper ${tooltipActive ? 'tooltip-active' : ''}`}
+              ref={scheduleButtonRef}
+              onClick={(e) => {
+                if (!canSchedule && isMobile) {
+                  e.stopPropagation();
+                  setTooltipActive(!tooltipActive);
+                }
+              }}
+            >
             <button
               className={`peerfusion-chat-meeting-btn ${!canSchedule ? 'disabled' : ''}`}
               onClick={handleScheduleClick}
@@ -1067,12 +1092,16 @@ const handleUnsendForEveryone = async (message) => {
             >
               <CalendarIcon />
             </button>
-            {showScheduleTooltip && !canSchedule && (
-              <div className="peerfusion-chat-schedule-tooltip">
+            
+            {/* Permanent tooltip that shows on hover/touch for disabled schedule button */}
+            {!canSchedule && (
+              <div className="peerfusion-chat-schedule-tooltip peerfusion-chat-schedule-tooltip-permanent">
+                <div className="peerfusion-chat-tooltip-arrow"></div>
                 Only the person who accepted your session can schedule meetings
               </div>
             )}
           </div>
+          
           {isMobile && (
             <button 
               className="peerfusion-chat-info-btn"
@@ -1231,7 +1260,7 @@ const handleUnsendForEveryone = async (message) => {
                           </button>
                           
                           {/* Report option for other people's messages */}
-                          {!sentByMe && (
+                          {!sentByMe && !m.unsentForEveryone && (
                             <button
                               className="peerfusion-chat-message-menu-item"
                               onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
@@ -1535,84 +1564,94 @@ const handleUnsendForEveryone = async (message) => {
           </div>
         </div>
       )}
-      {/* Report Modal */}
-      {showReportModal && (
-        <div className="peerfusion-chat-modal-overlay" onClick={() => setShowReportModal(false)}>
-          <div className="peerfusion-chat-modal-content peerfusion-chat-report-modal" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
-            <button className="peerfusion-close-modal" onClick={() => setShowReportModal(false)}>
-              <CloseIcon />
-            </button>
-            <div className="peerfusion-chat-modal-header">
-              <h3 className="peerfusion-chat-modal-title">
-                Report Message
-              </h3>
-            </div>
-            <div className="peerfusion-chat-modal-body">
-              <div className="peerfusion-chat-form-group">
-                <label className="peerfusion-chat-form-label">Message Content</label>
-                <div className="peerfusion-chat-form-input" style={{minHeight: '60px', maxHeight: '120px', overflowY: 'auto'}}>
-                  {reportTarget?.message?.fileType === 'image' ? 
-                    '[Image]' : 
-                    reportTarget?.message?.fileType === 'pdf' || reportTarget?.message?.fileType === 'doc' ?
-                    `${reportTarget?.message?.fileName || 'File'} (${(reportTarget?.message?.fileType || '').toUpperCase()})` :
-                    reportTarget?.message?.content || '(no content)'
-                  }
+        {/* Report Modal */}
+        {showReportModal && (
+          <div className="peerfusion-chat-modal-overlay" onClick={() => setShowReportModal(false)}>
+            <div className="peerfusion-chat-modal-content peerfusion-chat-report-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="peerfusion-close-modal" onClick={() => setShowReportModal(false)}>
+                <CloseIcon />
+              </button>
+              <div className="peerfusion-chat-modal-header">
+                <h3 className="peerfusion-chat-modal-title">
+                  Report Message
+                </h3>
+              </div>
+              <div className="peerfusion-chat-modal-body">
+                {/* Only show message content if it's not unsent */}
+                {!reportTarget?.message?.unsentForEveryone ? (
+                  <div className="peerfusion-chat-form-group">
+                    <label className="peerfusion-chat-form-label">Message Content</label>
+                    <div className="peerfusion-chat-form-input peerfusion-chat-report-message-preview">
+                      {reportTarget?.message?.fileType === 'image' ? 
+                        '[Image]' : 
+                        reportTarget?.message?.fileType === 'pdf' || reportTarget?.message?.fileType === 'doc' ?
+                        `${reportTarget?.message?.fileName || 'File'} (${(reportTarget?.message?.fileType || '').toUpperCase()})` :
+                        reportTarget?.message?.content || '(no content)'
+                      }
+                    </div>
+                  </div>
+                ) : (
+                  <div className="peerfusion-chat-form-group">
+                    <div className="peerfusion-chat-report-unsent-notice">
+                      <InfoIcon />
+                      <span>This message has been unsent by the sender.</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="peerfusion-chat-form-group">
+                  <label className="peerfusion-chat-form-label">Report Type</label>
+                  <select
+                    className="peerfusion-chat-form-input"
+                    value={reportOffense}
+                    onChange={(e) => setReportOffense(e.target.value)}
+                  >
+                    <option>Harassment</option>
+                    <option>Hate Speech</option>
+                    <option>Spam</option>
+                    <option>Scam or Fraud</option>
+                    <option>Sexual Content</option>
+                    <option>Violence or Threats</option>
+                    <option>Self-harm</option>
+                    <option>Other</option>
+                  </select>
                 </div>
-              </div>
 
-              <div className="peerfusion-chat-form-group">
-                <label className="peerfusion-chat-form-label">Report Type</label>
-                <select
-                  className="peerfusion-chat-form-input"
-                  value={reportOffense}
-                  onChange={(e) => setReportOffense(e.target.value)}
-                >
-                  <option>Harassment</option>
-                  <option>Hate Speech</option>
-                  <option>Spam</option>
-                  <option>Scam or Fraud</option>
-                  <option>Sexual Content</option>
-                  <option>Violence or Threats</option>
-                  <option>Self-harm</option>
-                  <option>Other</option>
-                </select>
-              </div>
-
-              <div className="peerfusion-chat-form-group">
-                <label className="peerfusion-chat-form-label">Reason</label>
-                <textarea
-                  className="peerfusion-chat-form-textarea"
-                  placeholder="Describe why you are reporting this message"
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  rows={4}
-                />
-                <div className="peerfusion-chat-form-help">
-                  Your report will be reviewed by our moderation team.
+                <div className="peerfusion-chat-form-group">
+                  <label className="peerfusion-chat-form-label">Reason</label>
+                  <textarea
+                    className="peerfusion-chat-form-textarea"
+                    placeholder="Describe why you are reporting this message"
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    rows={4}
+                  />
+                  <div className="peerfusion-chat-form-help">
+                    Your report will be reviewed by our moderation team.
+                  </div>
                 </div>
-              </div>
 
-              <div className="peerfusion-chat-modal-actions">
-                <button
-                  onClick={handleSubmitReport}
-                  className="peerfusion-chat-primary-btn peerfusion-chat-report-submit-btn"
-                  disabled={reportSubmitting || !otherUser?.id || !reportTarget}
-                >
-                  {reportSubmitting ? (
-                    <>
-                      <div className="peerfusion-chat-loading-spinner-small"></div>
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit Report'
-                  )}
-                </button>
-                <button onClick={() => setShowReportModal(false)} className="peerfusion-chat-secondary-btn">Cancel</button>
+                <div className="peerfusion-chat-modal-actions">
+                  <button
+                    onClick={handleSubmitReport}
+                    className="peerfusion-chat-primary-btn peerfusion-chat-report-submit-btn"
+                    disabled={reportSubmitting || !otherUser?.id || !reportTarget}
+                  >
+                    {reportSubmitting ? (
+                      <>
+                        <div className="peerfusion-chat-loading-spinner-small"></div>
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit Report'
+                    )}
+                  </button>
+                  <button onClick={() => setShowReportModal(false)} className="peerfusion-chat-secondary-btn">Cancel</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Schedule Meeting Modal */}
       {showMeetingModal && (
