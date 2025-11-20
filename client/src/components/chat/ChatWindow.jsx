@@ -94,7 +94,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [showScheduleTooltip, setShowScheduleTooltip] = useState(false);
   const [avatarErrors, setAvatarErrors] = useState(new Set());
   const [showUnsendModal, setShowUnsendModal] = useState(false);
-  const [unsendAction, setUnsendAction] = useState(null);
+  const [unsendAction, setUnsendAction] = useState(null); // 'forMe' or 'forEveryone'
   const [unsendMessage, setUnsendMessage] = useState(null);
   const [showCancelMeetingModal, setShowCancelMeetingModal] = useState(false);
   const [cancellingMeeting, setCancellingMeeting] = useState(false);
@@ -1206,33 +1206,65 @@ const handleUnsendForEveryone = async (message) => {
                 })();
                 const actionsMenu = (
                   <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: sentByMe ? 0 : 4, marginRight: sentByMe ? 4 : 0 }}>
-                      <button
-                        className="peerfusion-chat-message-report-btn"
-                        title="Message actions"
-                        aria-label="Message actions"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuMessageId(menuMessageId === m.id ? null : m.id);
-                        }}
-                        style={{
-                          display: isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) ? 'inline-flex' : 'none'
-                        }}
-                      >
-                        <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
-                      </button>
+                    <button
+                      className="peerfusion-chat-message-report-btn"
+                      title="Message actions"
+                      aria-label="Message actions"
+                      ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
+                      onClick={() => {
+                        const next = menuMessageId === m.id ? null : m.id;
+                        if (next) {
+                          const btn = menuBtnRefs.current[m.id];
+                          try {
+                            const rect = btn?.getBoundingClientRect();
+                            const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
+                            setMenuAbove(spaceBelow < 150);
+                          } catch (_) {
+                            setMenuAbove(false);
+                          }
+                        }
+                        setMenuMessageId(next);
+                      }}
+                      style={{
+                        display: isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
+                      }}
+                    >
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
+                    </button>
                       {menuMessageId === m.id && (
-                        <div className="peerfusion-chat-message-menu">
-                          {/* Menu items remain the same */}
+                        <div
+                          className="peerfusion-chat-message-menu"
+                          style={{ 
+                            top: menuAbove ? 'auto' : 'calc(100% + 6px)',
+                            bottom: menuAbove ? 'calc(100% + 6px)' : 'auto',
+                            left: sentByMe ? 'auto' : 0,
+                            right: sentByMe ? 0 : 'auto',
+                          }}
+                        >
+                          {/* Only show "Unsend for everyone" for own messages */}
                           {sentByMe && !m.unsentForEveryone && (
-                            <button className="peerfusion-chat-message-menu-item" onClick={() => handleUnsendForEveryone(m)}>
+                            <button
+                              className="peerfusion-chat-message-menu-item"
+                              onClick={() => handleUnsendForEveryone(m)}
+                            >
                               Unsend for everyone
                             </button>
                           )}
-                          <button className="peerfusion-chat-message-menu-item" onClick={() => handleUnsendForYou(m)}>
+                          
+                          {/* Always show "Remove for you" for any message */}
+                          <button
+                            className="peerfusion-chat-message-menu-item"
+                            onClick={() => handleUnsendForYou(m)}
+                          >
                             Remove for you
                           </button>
+                          
+                          {/* Report option for other people's messages */}
                           {!sentByMe && !m.unsentForEveryone && (
-                            <button className="peerfusion-chat-message-menu-item" onClick={() => { setMenuMessageId(null); openReportMessage(m); }}>
+                            <button
+                              className="peerfusion-chat-message-menu-item"
+                              onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
+                            >
                               <FlagIcon />
                               Report
                             </button>
