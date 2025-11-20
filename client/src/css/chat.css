@@ -2502,6 +2502,7 @@ body {
   z-index: 1000;
   min-width: 180px;
   padding: 4px;
+  animation: peerfusion-chat-fadeIn 0.2s ease-in;
 }
 
 .peerfusion-chat-message-menu-item {
@@ -2519,8 +2520,6 @@ body {
   border-radius: 4px;
   transition: all 0.2s ease;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .peerfusion-chat-message-menu-item:hover {
@@ -2713,9 +2712,7 @@ body {
   
   .peerfusion-chat-message-menu {
     min-width: 160px;
-    max-width: min(180px, 85vw);
-    left: 0 !important;
-    right: auto !important;
+    max-width: 200px;
   }
     .peerfusion-chat-message-menu.sent-menu {
     left: auto !important;
@@ -2728,13 +2725,31 @@ body {
     line-height: 1.3;
     min-height: 44px;
   }
-  .peerfusion-chat-row.sent .peerfusion-chat-message-menu {
-    left: auto !important;
-    right: 0 !important;
+  .peerfusion-chat-row.sent .peerfusion-chat-message-menu.menu-flip-left {
+    right: auto;
+    left: 0;
   }
+  .peerfusion-chat-row.sent .peerfusion-chat-message-menu {
+    right: 0;
+    left: auto;
+  }
+
   .peerfusion-chat-row.received .peerfusion-chat-message-menu {
-    left: 0 !important;
-    right: auto !important;
+    left: 0;
+    right: auto;
+  }
+
+  .peerfusion-chat-row.received .peerfusion-chat-message-menu.menu-flip-right {
+    left: auto;
+    right: 0;
+  }
+    .peerfusion-chat-message-menu-item {
+    padding: 12px 14px;
+    font-size: 15px;
+    min-height: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
 }
@@ -2742,18 +2757,39 @@ body {
 @media (max-width: 480px) {
   .peerfusion-chat-message-menu {
     min-width: 150px;
-    max-width: min(160px, 80vw);
+    max-width: 180px;
   }
-  
-  .peerfusion-chat-message-menu-item {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-  
+
+  /* Force visible positioning on very small screens */
   .peerfusion-chat-message-menu {
-    transform: none !important;
+    transform: translateX(0) !important;
     margin: 4px 0;
   }
+
+  /* Ensure menu stays within viewport */
+  .peerfusion-chat-row.sent .peerfusion-chat-message-menu {
+    right: 0;
+    left: auto;
+    max-width: min(180px, calc(100vw - 20px));
+  }
+
+  .peerfusion-chat-row.received .peerfusion-chat-message-menu {
+    left: 0;
+    right: auto;
+    max-width: min(180px, calc(100vw - 20px));
+  }
+}
+
+/* Emergency viewport protection */
+.peerfusion-chat-message-menu {
+  /* Never let menu go outside viewport */
+  max-width: calc(100vw - 40px) !important;
+}
+
+/* Animation */
+@keyframes peerfusion-chat-fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .peerfusion-chat-messages-container {
