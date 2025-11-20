@@ -59,43 +59,4 @@ router.get("/:conversationId", async (req, res) => {
   }
 });
 
-router.post("/delete", async (req, res) => {
-  try {
-    const db = req.app.get("db");
-    const { conversationId, forEveryone, userId, firestoreConversationId } = req.body;
-
-    if (!conversationId || !userId) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Verify the user has permission to delete this conversation
-    const [conversationRows] = await db.query(
-      "SELECT * FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)",
-      [conversationId, userId, userId]
-    );
-
-    if (conversationRows.length === 0) {
-      return res.status(403).json({ error: "You don't have permission to delete this conversation" });
-    }
-
-    if (forEveryone) {
-      // Delete conversation for everyone from MySQL
-      await db.query("DELETE FROM conversations WHERE id = ?", [conversationId]);
-      
-      // Also delete related meetings
-      await db.query("UPDATE meetings SET status = 'cancelled' WHERE conversation_id = ?", [conversationId]);
-      
-      console.log(`Should delete Firestore conversation: ${firestoreConversationId}`);
-    }
-
-    res.json({ 
-      success: true, 
-      message: "Conversation deleted successfully" 
-    });
-  } catch (err) {
-    console.error("❌ Error deleting conversation:", err);
-    res.status(500).json({ error: "Failed to delete conversation" });
-  }
-});
-
 module.exports = router;

@@ -2300,250 +2300,226 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
-/* Cancel Meeting Button */
-.peerfusion-chat-cancel-meeting-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+/* Enhanced Meeting Banner */
+.peerfusion-chat-meeting-banner {
+  background: linear-gradient(135deg, #2d5a27, #4a7c3a);
   color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  white-space: nowrap;
+  padding: 1rem 1.5rem;
+  margin: 0 1.5rem 1rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(45, 90, 39, 0.2);
+  animation: peerfusion-chat-fadeIn 0.5s ease-out;
   flex-shrink: 0;
+  border-left: 4px solid #6ba84f;
 }
 
-.peerfusion-chat-cancel-meeting-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-/* Delete Conversation Styles */
-.peerfusion-chat-delete-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.peerfusion-chat-delete-btn {
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.peerfusion-chat-delete-btn:hover {
-  background: rgba(255, 0, 0, 0.1);
-  color: #d32f2f;
-  transform: scale(1.1);
-}
-
-.peerfusion-chat-delete-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  min-width: 200px;
-  padding: 8px 0;
-  animation: peerfusion-chat-fadeIn 0.2s ease-out;
-}
-
-.peerfusion-chat-delete-menu-item {
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #333;
-}
-
-.peerfusion-chat-delete-menu-item:hover {
-  background-color: #f5f5f5;
-}
-
-.peerfusion-chat-delete-menu-item-danger {
-  color: #d32f2f;
-  border-top: 1px solid #f0f0f0;
-}
-
-.peerfusion-chat-delete-menu-item-danger:hover {
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-/* Message Menu Styles */
-.peerfusion-chat-message-menu {
-  position: absolute;
-  right: 0;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  min-width: 200px;
-  padding: 8px 0;
-  animation: peerfusion-chat-fadeIn 0.2s ease-out;
-}
-
-.peerfusion-chat-message-menu-item {
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #333;
-}
-
-.peerfusion-chat-message-menu-item:hover {
-  background-color: #f5f5f5;
-}
-
-.peerfusion-chat-menu-item-danger {
-  color: #d32f2f;
-  border-top: 1px solid #f0f0f0;
-}
-
-.peerfusion-chat-menu-item-danger:hover {
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-.peerfusion-chat-menu-item-report {
-  color: #ff6b35;
-}
-
-.peerfusion-chat-menu-item-report:hover {
-  background-color: #fff3e0;
-  color: #e65100;
-}
-
-/* Meeting Banner Responsive Layout */
-.peerfusion-chat-meeting-body {
+.peerfusion-chat-meeting-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
+  width: 100%;
+}
+
+.peerfusion-chat-meeting-reminder {
+  flex: 1;
+}
+
+.peerfusion-chat-meeting-reminder strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.3rem;
+  opacity: 0.9;
+}
+
+.peerfusion-chat-meeting-time {
+  font-size: 0.9rem;
+  opacity: 0.95;
 }
 
 .peerfusion-chat-meeting-actions {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
-/* Enhanced Confirmation Dialog Styles */
-.peerfusion-confirm-dialog {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  padding: 1rem;
-}
-
-.peerfusion-confirm-content {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: peerfusion-chat-modalSlideIn 0.3s ease-out;
-}
-
-.peerfusion-confirm-title {
-  font-size: 1.3rem;
+.peerfusion-chat-join-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
   font-weight: 600;
-  color: #2d5a27;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.peerfusion-chat-join-button.enabled {
+  background: rgba(255, 255, 255, 0.9);
+  color: #4a7c3a;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.peerfusion-chat-join-button.enabled:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.peerfusion-chat-cancel-session-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.peerfusion-chat-cancel-session-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.peerfusion-chat-cancel-session-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Enhanced Confirmation Modals */
+.peerfusion-chat-confirm-modal {
+  max-width: 480px;
+}
+
+.peerfusion-chat-warning-icon {
+  text-align: center;
   margin-bottom: 1rem;
 }
 
-.peerfusion-confirm-message {
-  color: #666;
-  line-height: 1.5;
+.peerfusion-chat-confirm-message {
+  text-align: center;
   margin-bottom: 2rem;
-  white-space: pre-line;
 }
 
-.peerfusion-confirm-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
+.peerfusion-chat-confirm-message p {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #2d5a27;
+  font-weight: 500;
 }
 
-.peerfusion-confirm-btn {
-  padding: 0.8rem 1.5rem;
-  border: none;
+.peerfusion-chat-meeting-details {
+  background: #f8faf7;
+  padding: 1rem;
   border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 3px solid #4a7c3a;
+}
+
+.peerfusion-chat-message-preview {
+  background: #f8faf7;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 1px solid #e8efe5;
+}
+
+.peerfusion-chat-preview-content {
+  margin-top: 0.5rem;
+  padding: 0.8rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e8efe5;
+  font-style: italic;
+  color: #5a7c55;
+}
+
+.peerfusion-chat-warning-note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.peerfusion-chat-info-note {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Enhanced Button Styles */
+.peerfusion-chat-danger-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  color: white;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+  justify-content: center;
 }
 
-.peerfusion-confirm-cancel {
-  background: #f5f5f5;
-  color: #666;
+.peerfusion-chat-danger-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
 }
 
-.peerfusion-confirm-cancel:hover {
-  background: #e0e0e0;
-}
-
-.peerfusion-confirm-danger {
-  background: #d32f2f;
+.peerfusion-chat-warning-btn {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: none;
+  padding: 0.8rem 1.5rem;
   color: white;
-}
-
-.peerfusion-confirm-danger:hover {
-  background: #c62828;
-  transform: translateY(-1px);
-}
-
-/* Unsent Message Style */
-.peerfusion-chat-unsent-message {
-  font-style: italic;
-  color: #999;
-  background: #f5f5f5;
-  border: 1px dashed #ddd;
-  padding: 0.8rem 1rem;
   border-radius: 12px;
-  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+  justify-content: center;
 }
 
-/* Mobile Responsive Adjustments */
+.peerfusion-chat-warning-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(243, 156, 18, 0.3);
+}
+
+/* Mobile Responsive Enhancements */
 @media (max-width: 768px) {
-  .peerfusion-chat-meeting-body {
+  .peerfusion-chat-meeting-info {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
@@ -2551,80 +2527,33 @@ body {
   
   .peerfusion-chat-meeting-actions {
     justify-content: center;
+    flex-wrap: wrap;
   }
   
-  .peerfusion-chat-delete-menu {
-    right: -50px;
-    min-width: 180px;
+  .peerfusion-chat-join-button,
+  .peerfusion-chat-cancel-session-btn {
+    min-width: 140px;
+    flex: 1;
   }
   
-  .peerfusion-chat-message-menu {
-    right: -50px;
-    min-width: 180px;
-  }
-  
-  .peerfusion-confirm-content {
+  .peerfusion-chat-confirm-modal {
     margin: 1rem;
-    max-width: calc(100% - 2rem);
-  }
-  
-  .peerfusion-confirm-actions {
-    flex-direction: column;
-  }
-  
-  .peerfusion-confirm-btn {
-    width: 100%;
+    width: calc(100% - 2rem);
   }
 }
 
 @media (max-width: 480px) {
-  .peerfusion-chat-cancel-meeting-button {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+  .peerfusion-chat-meeting-banner {
+    margin: 0 0.5rem 1rem 0.5rem;
+    padding: 1rem;
   }
   
-  .peerfusion-chat-join-button {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+  .peerfusion-chat-meeting-actions {
+    flex-direction: column;
   }
   
-  .peerfusion-chat-delete-menu,
-  .peerfusion-chat-message-menu {
-    min-width: 160px;
-    right: -30px;
+  .peerfusion-chat-join-button,
+  .peerfusion-chat-cancel-session-btn {
+    width: 100%;
   }
-}
-
-/* Animation for menu appearance */
-@keyframes peerfusion-chat-fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Enhanced tooltip for delete button */
-.peerfusion-chat-delete-btn::after {
-  content: "Delete conversation";
-  position: absolute;
-  bottom: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.peerfusion-chat-delete-btn:hover::after {
-  opacity: 1;
 }
