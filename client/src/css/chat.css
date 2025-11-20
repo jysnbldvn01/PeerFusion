@@ -1291,16 +1291,25 @@
   display: inline-block;
 }
 
+/* ===== ENHANCED SCHEDULE BUTTON TOOLTIP ===== */
+/* Clean, mobile-responsive tooltip for disabled schedule button */
+
+.peerfusion-chat-schedule-button-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Permanent tooltip for disabled schedule button - POSITIONED TO THE RIGHT */
 .peerfusion-chat-schedule-tooltip-permanent {
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  margin-left: 12px;
   background: #2d3748;
   color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
   font-size: 12px;
   line-height: 1.4;
   white-space: nowrap;
@@ -1311,20 +1320,20 @@
   transition: all 0.3s ease;
   pointer-events: none;
   max-width: 200px;
-  text-align: center;
+  text-align: left;
 }
 
-/* Tooltip arrow */
+/* Tooltip arrow - POSITIONED ON THE LEFT SIDE */
 .peerfusion-chat-schedule-tooltip-permanent .peerfusion-chat-tooltip-arrow {
   position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #2d3748;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #2d3748;
 }
 
 /* Show tooltip on hover for desktop */
@@ -1352,22 +1361,40 @@
     white-space: normal;
     font-size: 11px;
     padding: 10px;
-    margin-bottom: 10px;
+    margin-left: 10px;
+    
+    top: auto;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: 0;
+    margin-bottom: 8px;
   }
   
-  /* Show tooltip on touch for mobile */
-  .peerfusion-chat-schedule-button-wrapper:active .peerfusion-chat-schedule-tooltip-permanent,
-  .peerfusion-chat-schedule-button-wrapper:focus .peerfusion-chat-schedule-tooltip-permanent,
-  .peerfusion-chat-schedule-button-wrapper:focus-within .peerfusion-chat-schedule-tooltip-permanent {
+  /* Mobile tooltip arrow */
+  .peerfusion-chat-schedule-tooltip-permanent .peerfusion-chat-tooltip-arrow {
+    top: 100%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-right: 6px solid transparent;
+    border-left: 6px solid transparent;
+    border-top: none;
+    border-bottom: 6px solid #2d3748;
+  }
+  .peerfusion-chat-schedule-button-wrapper.tooltip-active .peerfusion-chat-schedule-tooltip-permanent {
     opacity: 1;
     visibility: visible;
   }
   
-  /* Adjust tooltip position for mobile to avoid header overlap */
-  .peerfusion-chat-schedule-tooltip-permanent {
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+  .peerfusion-chat-header {
+    min-height: 70px;
+    padding: 0.8rem 1rem;
+  }
+  
+  .peerfusion-chat-actions {
+    align-items: flex-start;
+    padding-top: 4px;
   }
 }
 
@@ -1387,17 +1414,7 @@
     width: 140px;
     font-size: 10px;
     padding: 8px 10px;
-  }
-  
-  /* Ensure tooltip doesn't overlap with header on very small screens */
-  .peerfusion-chat-header {
-    min-height: 70px;
-    padding: 0.8rem 1rem;
-  }
-  
-  .peerfusion-chat-actions {
-    align-items: flex-start;
-    padding-top: 4px;
+    margin-bottom: 10px;
   }
 }
 
@@ -1411,7 +1428,6 @@
 }
 
 /* ===== ACCESSIBILITY ENHANCEMENTS ===== */
-/* Ensure tooltip is accessible for screen readers */
 .peerfusion-chat-meeting-btn.disabled {
   position: relative;
 }
@@ -1431,24 +1447,31 @@
 
 /* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
 @media (hover: none) and (pointer: coarse) {
-  /* For touch devices, show tooltip on tap and keep it visible */
   .peerfusion-chat-schedule-button-wrapper.tooltip-active .peerfusion-chat-schedule-tooltip-permanent {
     opacity: 1;
     visibility: visible;
   }
-  
-  /* Add a close mechanism for touch devices */
-  .peerfusion-chat-schedule-tooltip-permanent::after {
-    content: 'Tap anywhere to close';
-    display: block;
-    font-size: 9px;
-    opacity: 0.7;
-    margin-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    padding-top: 4px;
-  }
 }
 
+/* ===== PREVENT OVERLAPPING WITH CHATPAGE COMPONENTS ===== */
+.peerfusion-chat-header {
+  position: relative;
+  z-index: 10;
+}
+
+.peerfusion-chat-schedule-button-wrapper {
+  z-index: 20;
+}
+
+.peerfusion-chat-schedule-tooltip-permanent {
+  z-index: 1000;
+}
+
+@media (min-width: 769px) {
+  .peerfusion-chat-schedule-tooltip-permanent {
+    max-width: min(200px, calc(100vw - 100px));
+  }
+}
 .peerfusion-chat-schedule-tooltip {
   position: absolute;
   top: 100%;
@@ -1477,14 +1500,14 @@
 
 .peerfusion-chat-tooltip-arrow {
   position: absolute;
-  top: 100%;
+  top: -5px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #2d3748;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
 }
 
 .peerfusion-chat-schedule-tooltip.sidebar-tooltip .peerfusion-chat-tooltip-arrow {
