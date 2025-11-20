@@ -98,7 +98,6 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [unsendMessage, setUnsendMessage] = useState(null);
   const [showCancelMeetingModal, setShowCancelMeetingModal] = useState(false);
   const [cancellingMeeting, setCancellingMeeting] = useState(false);
-  const [tooltipActive, setTooltipActive] = useState(false);
   const menuBtnRefs = useRef({});
   const scrollRef = useRef();
   const enableTimerRef = useRef(null);
@@ -107,6 +106,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const scheduleButtonRef = useRef(null);
   const isAuthenticated = !!localStorage.getItem('token');
   
+
   // Get authentication token safely
   const getAuthToken = () => {
     try {
@@ -149,22 +149,6 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
       throw error;
     }
   };
-
-  useEffect(() => {
-  const handleDocumentClick = () => {
-    if (tooltipActive) {
-      setTooltipActive(false);
-    }
-  };
-
-  if (tooltipActive) {
-    document.addEventListener('click', handleDocumentClick);
-  }
-
-  return () => {
-    document.removeEventListener('click', handleDocumentClick);
-  };
-}, [tooltipActive]);
 
   // Seed otherUser immediately from parent to avoid placeholder-only flash
   useEffect(() => {
@@ -1075,16 +1059,7 @@ const handleUnsendForEveryone = async (message) => {
         </div>
 
         <div className="peerfusion-chat-actions">
-          <div 
-              className={`peerfusion-chat-schedule-button-wrapper ${tooltipActive ? 'tooltip-active' : ''}`}
-              ref={scheduleButtonRef}
-              onClick={(e) => {
-                if (!canSchedule && isMobile) {
-                  e.stopPropagation();
-                  setTooltipActive(!tooltipActive);
-                }
-              }}
-            >
+          <div className="peerfusion-chat-schedule-button-wrapper" ref={scheduleButtonRef}>
             <button
               className={`peerfusion-chat-meeting-btn ${!canSchedule ? 'disabled' : ''}`}
               onClick={handleScheduleClick}
@@ -1204,43 +1179,32 @@ const handleUnsendForEveryone = async (message) => {
                   }
                   return false;
                 })();
-                const actionsMenu = (
-                  <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: sentByMe ? 0 : 4, marginRight: sentByMe ? 4 : 0 }}>
-                    <button
-                      className="peerfusion-chat-message-report-btn"
-                      title="Message actions"
-                      aria-label="Message actions"
-                      ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
-                      onClick={() => {
-                        const next = menuMessageId === m.id ? null : m.id;
-                        if (next) {
-                          const btn = menuBtnRefs.current[m.id];
-                          try {
-                            const rect = btn?.getBoundingClientRect();
-                            const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
-                            setMenuAbove(spaceBelow < 150);
-                          } catch (_) {
-                            setMenuAbove(false);
+                  const actionsMenu = (
+                    <div className="peerfusion-chat-message-actions-container">
+                      <button
+                        className={`peerfusion-chat-message-report-btn ${isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) ? 'visible' : ''}`}
+                        title="Message actions"
+                        aria-label="Message actions"
+                        ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
+                        onClick={() => {
+                          const next = menuMessageId === m.id ? null : m.id;
+                          if (next) {
+                            const btn = menuBtnRefs.current[m.id];
+                            try {
+                              const rect = btn?.getBoundingClientRect();
+                              const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
+                              setMenuAbove(spaceBelow < 150);
+                            } catch (_) {
+                              setMenuAbove(false);
+                            }
                           }
-                        }
-                        setMenuMessageId(next);
-                      }}
-                      style={{
-                        display: isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
-                      }}
-                    >
-                      <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
-                    </button>
+                          setMenuMessageId(next);
+                        }}
+                      >
+                        <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
+                      </button>
                       {menuMessageId === m.id && (
-                        <div
-                          className="peerfusion-chat-message-menu"
-                          style={{ 
-                            top: menuAbove ? 'auto' : 'calc(100% + 6px)',
-                            bottom: menuAbove ? 'calc(100% + 6px)' : 'auto',
-                            left: sentByMe ? 'auto' : 0,
-                            right: sentByMe ? 0 : 'auto',
-                          }}
-                        >
+                        <div className="peerfusion-chat-message-menu">
                           {/* Only show "Unsend for everyone" for own messages */}
                           {sentByMe && !m.unsentForEveryone && (
                             <button
@@ -1271,8 +1235,8 @@ const handleUnsendForEveryone = async (message) => {
                           )}
                         </div>
                       )}
-                  </div>
-                );
+                    </div>
+                  );
                 return (
                   <div
                     key={m.id}
@@ -1306,7 +1270,7 @@ const handleUnsendForEveryone = async (message) => {
                             {otherUser?.username?.charAt(0) || 'U'}
                           </div>
                         )
-                      ) : (
+                          ) : (
                         <div className="peerfusion-chat-avatar-space" />
                       )
                     ) : (
@@ -1315,9 +1279,7 @@ const handleUnsendForEveryone = async (message) => {
 
                     {sentByMe && actionsMenu}
 
-                    <div
-                      className={`peerfusion-chat-message-bubble ${isMeGroup ? "sent" : "received"}`}
-                    >
+                    <div className={`peerfusion-chat-message-bubble ${isMeGroup ? "sent" : "received"}`}>
                       {m.unsentForEveryone ? (
                         <div className="peerfusion-chat-bubble-text" style={{ fontStyle: 'italic', opacity: 0.8 }}>
                           {(m.unsentByName || m.senderName || 'Someone')} unsent a message
