@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require("uuid");
 
-// 🟢 Create session request
+// Create session request
 router.post("/request", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -51,7 +51,7 @@ router.post("/request", async (req, res) => {
   }
 });
 
-// 🟢 Accept session request
+//  Accept session request
 router.post("/accept", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -103,7 +103,7 @@ router.post("/accept", async (req, res) => {
       }
     });
 
-    // 🔹 Check if a conversation already exists
+    // Check if a conversation already exists
     const snapshot = await firestore
       .collection("conversations")
       .where("participants", "array-contains", requester_id)
@@ -117,7 +117,7 @@ router.post("/accept", async (req, res) => {
       }
     });
 
-    // 🔹 Create new conversation if none exists
+    // Create new conversation if none exists
     let conversationId;
     if (existingConversation) {
       conversationId = existingConversation.id;
@@ -159,6 +159,20 @@ router.post("/accept", async (req, res) => {
       [requestId]
     );
 
+    // Create notification for the requester that their request was accepted (include acceptor name)
+    await db.query(
+      `INSERT INTO notifications 
+       (sender_id, receiver_id, request_id, session_request_id, message, type, status) 
+       VALUES (?, ?, ?, ?, ?, 'session_accept', 'accepted')`,
+      [
+        receiver_id, // sender is the acceptor
+        requester_id, // receiver is the original requester
+        requestId,
+        requestId,
+        `✅ ${userInfoMap[String(receiver_id)].username} accepted your session request`,
+      ]
+    );
+
     res.json({ success: true, conversationId });
   } catch (err) {
     console.error("❌ Error accepting request:", err);
@@ -166,7 +180,7 @@ router.post("/accept", async (req, res) => {
   }
 });
 
-// 🟢 Reject session request
+// Reject session request
 router.post("/reject", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -189,7 +203,7 @@ router.post("/reject", async (req, res) => {
   }
 });
 
-// 🟢 Get unique session partners count for a user
+// Get unique session partners count for a user
 router.get("/unique-partners/:userId", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -222,7 +236,7 @@ router.get("/unique-partners/:userId", async (req, res) => {
   }
 });
 
-// 🟢 Check if user can schedule meeting for conversation
+// Check if user can schedule meeting for conversation
 router.get("/can-schedule/:conversationId/:userId", async (req, res) => {
   try {
     const db = req.app.get("db");

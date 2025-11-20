@@ -68,6 +68,7 @@ const Notification = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptingId, setAcceptingId] = useState(null);
   const menuRefs = useRef({});
   const unreadCount = notifications.filter(n => !n.is_read).length;
   
@@ -434,8 +435,10 @@ const Notification = () => {
 
   // Accept session request
   const handleAccept = async (notification) => {
+    if (acceptingId === notification.id) return;
     const token = localStorage.getItem("token");
     try {
+      setAcceptingId(notification.id);
       const res = await axios.post(
         `${API_BASE_URL}/api/session/accept`,
         {
@@ -458,6 +461,8 @@ const Notification = () => {
     } catch (err) {
       console.error("❌ Failed to accept session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error accepting session request');
+    } finally {
+      setAcceptingId(null);
     }
   };
 
@@ -888,8 +893,9 @@ const Notification = () => {
                     <button
                       className="peerfusion-notification-btn peerfusion-notification-btn-accept"
                       onClick={() => handleAccept(selectedNotification)}
+                      disabled={acceptingId === selectedNotification.id}
                     >
-                      <InternetIcons.Accepted /> Accept
+                       <InternetIcons.Accepted /> {acceptingId === selectedNotification.id ? 'Accepting...' : 'Accept'}
                     </button>
                     <button
                       className="peerfusion-notification-btn peerfusion-notification-btn-reject"
