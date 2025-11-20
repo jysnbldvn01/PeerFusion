@@ -143,7 +143,22 @@ router.get("/conversation/:conversationId", async (req, res) => {
       return res.json({ success: true, meeting: null });
     }
 
-    res.json({ success: true, meeting: rows[0] });
+    const meeting = rows[0];
+    
+    // Format the response to match what frontend expects
+    const formattedMeeting = {
+      id: meeting.id,
+      conversation_id: meeting.conversation_id,
+      participants: typeof meeting.participants === 'string' 
+        ? JSON.parse(meeting.participants) 
+        : meeting.participants,
+      scheduled_at: meeting.scheduled_at,
+      status: meeting.status,
+      created_at: meeting.created_at,
+      updated_at: meeting.updated_at
+    };
+
+    res.json({ success: true, meeting: formattedMeeting });
   } catch (err) {
     console.error("❌ Error fetching conversation meeting:", err);
     res.status(500).json({ error: "Failed to fetch meeting" });
@@ -177,6 +192,98 @@ router.post("/update-status", async (req, res) => {
   } catch (err) {
     console.error("❌ Error updating meeting status:", err);
     res.status(500).json({ error: "Failed to update meeting" });
+  }
+});
+
+// Add this endpoint to your meeting.js
+router.post("/cancel", async (req, res) => {
+  try {
+    const db = req.app.get("db");
+    const emitToUser = req.app.get("emitToUser");
+    const { meetingId, conversationId, participants, cancelledBy } = req.body;
+
+    if (!meetingId || !conversationId) {
+      return res.status(400).json({ error: "Missing meetingId or conversationId" });
+    }
+
+    // Update meeting status to cancelled
+    await db.query(
+      "UPDATE meetings SET status = 'cancelled', updated_at = NOW() WHERE id = ?",
+      [meetingId]
+    );
+
+    // Get meeting details for notification
+    const [meetingRows] = await db.query(
+      "SELECT * FROM meetings WHERE id = ?",
+      [meetingId]
+    );
+
+    if (meetingRows.length === 0) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    const meeting = meetingRows[0];
+
+    // Build name map for participants
+    let nameMap = {};
+    try {
+      const [nameRows] = await db.query(
+        `SELECT id, name, username FROM users WHERE id IN (?)`,
+        [participants.join(',')]
+      );
+      nameRows.forEach(r => { 
+        nameMap[String(r.id)] = r.name || r.username || `User ${r.id}`;
+      });
+    } catch (_) {}
+
+    // Get canceller name
+    const [cancellerRows] = await db.query(
+      "SELECT name, username FROM users WHERE id = ?",
+      [cancelledBy]
+    );
+    const cancellerName = cancellerRows[0]?.name || cancellerRows[0]?.username || `User ${cancelledBy}`;
+
+    // Notify participants and emit socket
+    for (const participantId of participants) {
+      // Skip notifying the person who cancelled
+      if (Number(participantId) === Number(cancelledBy)) continue;
+
+      const others = participants.filter(p => p !== participantId && p !== cancelledBy);
+      const otherNames = others.map(id => nameMap[String(id)] || `User ${id}`).join(', ');
+      
+      const message = otherNames
+        ? `❌ Meeting with ${otherNames} scheduled for ${new Date(meeting.scheduled_at).toLocaleString()} has been cancelled by ${cancellerName}.`
+        : `❌ Your meeting scheduled for ${new Date(meeting.scheduled_at).toLocaleString()} has been cancelled by ${cancellerName}.`;
+
+      // Insert notification
+      await db.query(
+        `INSERT INTO notifications (sender_id, receiver_id, message, type, is_read, created_at)
+         VALUES (?, ?, ?, 'meeting_cancelled', 0, NOW())`,
+        [
+          cancelledBy,
+          participantId,
+          message,
+        ]
+      );
+
+      if (emitToUser) {
+        emitToUser(participantId, "meetingStatusUpdated", {
+          meetingId,
+          conversationId,
+          status: "cancelled",
+          cancelledBy: cancellerName,
+          message: message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Meeting cancelled successfully",
+    });
+  } catch (err) {
+    console.error("❌ Error cancelling meeting:", err);
+    res.status(500).json({ error: "Failed to cancel meeting" });
   }
 });
 

@@ -10,6 +10,9 @@ import {
   updateDoc,
   getDoc,
   arrayUnion,
+  deleteDoc, 
+  writeBatch,
+  arrayRemove,
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../firebase";
@@ -69,12 +72,6 @@ const CloseIcon = () => (
   </svg>
 );
 
-const CancelIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
-  </svg>
-);
-
 const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onShowInfo, isMobile, onOtherUserResolved, externalProfilesById, initialOtherUser }) => {
   const [messages, setMessages] = useState([]);
   const [filteredMessages, setFilteredMessages] = useState([]);
@@ -99,9 +96,7 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const [userRole, setUserRole] = useState('');
   const [showScheduleTooltip, setShowScheduleTooltip] = useState(false);
   const [avatarErrors, setAvatarErrors] = useState(new Set());
-  const [confirmUnsendMessageId, setConfirmUnsendMessageId] = useState(null);
-  const [cancellingMeeting, setCancellingMeeting] = useState(false);
-  const [showCancelMeetingModal, setShowCancelMeetingModal] = useState(false);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const menuBtnRefs = useRef({});
   const scrollRef = useRef();
   const enableTimerRef = useRef(null);
@@ -200,6 +195,21 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     return `${UPLOADS_BASE}${file}`;
   };
 
+    const confirmAction = (message, onConfirm, onCancel = () => {}) => {
+    if (window.confirm(message)) {
+      onConfirm();
+    } else {
+      onCancel();
+    }
+  };
+
+  const showCustomConfirm = (title, message, confirmText = "Confirm", cancelText = "Cancel") => {
+    return new Promise((resolve) => {
+      // You can implement a custom modal here, but for now using native confirm
+      const result = window.confirm(`${title}\n\n${message}`);
+      resolve(result);
+    });
+  };
   // Handle avatar image errors
   const handleAvatarError = (userId) => {
     setAvatarErrors(prev => new Set(prev).add(userId));
@@ -209,6 +219,165 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   const hasAvatarError = (userId) => {
     return avatarErrors.has(userId);
   };
+
+const handleCancelMeeting = async () => {
+  if (!currentMeeting?.id || !conversationId) return;
+
+  confirmAction(
+    "Are you sure you want to cancel this meeting?\n\nThis will notify the other participant and cannot be undone.",
+    async () => {
+      try {
+        const token = getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/meeting/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            meetingId: currentMeeting.id,
+            conversationId: conversationId,
+            participants: [currentUser.user_id, otherUser.id],
+            cancelledBy: currentUser.user_id
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          window.pfToast?.success?.('Meeting cancelled successfully');
+          setCurrentMeeting(null);
+          setJoinEnabled(false);
+          setReminderReceived(false);
+          
+          // Refresh meeting data
+          const meetingResponse = await fetch(`${API_BASE_URL}/api/meeting/conversation/${conversationId}`);
+          const meetingData = await meetingResponse.json();
+          if (meetingData.success) {
+            setCurrentMeeting(meetingData.meeting);
+          }
+        } else {
+          window.pfToast?.error?.(data.error || 'Failed to cancel meeting');
+        }
+      } catch (error) {
+        console.error('Error cancelling meeting:', error);
+        window.pfToast?.error?.('Error cancelling meeting');
+      }
+    }
+  );
+};
+
+// Unsend Message Function
+const handleUnsendMessage = async (messageId, forEveryone = false) => {
+  if (!messageId || !conversationId) return;
+
+  const messageText = forEveryone 
+    ? "Are you sure you want to unsend this message for everyone?\n\nThis will delete the message for both you and the other participant and cannot be undone."
+    : "Are you sure you want to unsend this message for yourself?\n\nThis will only remove the message from your view.";
+
+  confirmAction(messageText, async () => {
+    try {
+      if (forEveryone) {
+        // Delete message for everyone - remove from Firestore
+        const messageRef = doc(db, "conversations", conversationId, "messages", messageId);
+        await deleteDoc(messageRef);
+        
+        // Update last message if this was the last message
+        const conversationRef = doc(db, "conversations", conversationId);
+        await updateDoc(conversationRef, {
+          lastMessage: "Message unsent",
+          lastMessageTime: serverTimestamp()
+        });
+      } else {
+        // Delete only for current user - mark as deleted
+        const messageRef = doc(db, "conversations", conversationId, "messages", messageId);
+        await updateDoc(messageRef, {
+          deletedFor: arrayUnion(currentUser.user_id)
+        });
+      }
+
+      window.pfToast?.success?.(forEveryone ? 'Message unsent for everyone' : 'Message unsent for you');
+      setMenuMessageId(null);
+    } catch (error) {
+      console.error('Error unsending message:', error);
+      window.pfToast?.error?.('Error unsending message');
+    }
+  });
+};
+
+// Delete Conversation Function
+const handleDeleteConversation = async (forEveryone = false) => {
+  if (!conversationId) return;
+
+  const message = forEveryone 
+    ? `🚨 PERMANENT ACTION 🚨\n\nAre you absolutely sure you want to delete this conversation for EVERYONE?\n\nThis will:\n• Permanently delete all messages for both participants\n• Remove the entire conversation history\n• Delete from both MySQL and Firestore\n• This action cannot be undone!\n\nType "DELETE" to confirm:`
+    : `Are you sure you want to delete this conversation for yourself?\n\nThis will:\n• Remove the conversation from your chat list\n• Keep the conversation intact for the other participant\n• You can still receive new messages from them`;
+
+  if (forEveryone) {
+    // Enhanced confirmation for "delete for everyone"
+    const userInput = window.prompt(message);
+    if (userInput?.toUpperCase() === "DELETE") {
+      await performDeleteConversation(forEveryone);
+    } else {
+      window.pfToast?.info?.('Conversation deletion cancelled');
+    }
+  } else {
+    confirmAction(message, () => performDeleteConversation(forEveryone));
+  }
+};
+
+const performDeleteConversation = async (forEveryone = false) => {
+  try {
+    const token = getAuthToken();
+    
+    if (forEveryone) {
+      // Delete conversation for everyone - both MySQL and Firestore
+      const response = await fetch(`${API_BASE_URL}/api/conversations/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          conversationId: conversationId,
+          forEveryone: true,
+          userId: currentUser.user_id,
+          firestoreConversationId: conversationId // Your Firestore document ID
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        window.pfToast?.success?.('Conversation deleted for everyone');
+        setShowDeleteMenu(false);
+        onBackToList();
+      } else {
+        window.pfToast?.error?.(data.error || 'Failed to delete conversation');
+      }
+    } else {
+      // Delete only for current user - mark as deleted in Firestore
+      const conversationRef = doc(db, "conversations", conversationId);
+      await updateDoc(conversationRef, {
+        deletedFor: arrayUnion(currentUser.user_id)
+      });
+
+      window.pfToast?.success?.('Conversation deleted for you');
+      setShowDeleteMenu(false);
+      onBackToList();
+    }
+  } catch (error) {
+    console.error('Error deleting conversation:', error);
+    window.pfToast?.error?.('Error deleting conversation');
+  }
+};
+
+const getFilteredMessages = useCallback((messages) => {
+  return messages.filter(message => {
+    const deletedFor = message.deletedFor || [];
+    return !deletedFor.includes(currentUser.user_id);
+  });
+}, [currentUser.user_id]);
 
   // Check schedule permissions
   useEffect(() => {
@@ -327,49 +496,56 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
   }, [conversationId]);
 
   // Subscribe to messages
-  useEffect(() => {
-    if (!conversationId || !currentUser?.user_id) {
-      setMessages([]);
-      return;
-    }
+useEffect(() => {
+  if (!conversationId || !currentUser?.user_id) {
+    setMessages([]);
+    return;
+  }
 
-    const q = query(
-      collection(db, "conversations", conversationId, "messages"),
-      orderBy("createdAt", "asc")
-    );
+  const q = query(
+    collection(db, "conversations", conversationId, "messages"),
+    orderBy("createdAt", "asc")
+  );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const msgs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setMessages(msgs);
-
-      // Mark unseen messages as seen
-      try {
-        const unseen = msgs.filter(
-          (m) =>
-            String(m.senderId) !== String(currentUser.user_id) &&
-            !(m.seenBy || []).map(String).includes(String(currentUser.user_id))
-        );
-        if (unseen.length > 0) {
-          for (const m of unseen) {
-            const msgRef = doc(db, "conversations", conversationId, "messages", m.id);
-            await updateDoc(msgRef, {
-              seenBy: arrayUnion(currentUser.user_id),
-            });
-          }
-          
-          window.dispatchEvent(new Event('chatsUpdated'));
-          const user = JSON.parse(localStorage.getItem('user'));
-          if (user && user.id) {
-            socket.emit('getCounts', { userId: user.id });
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to mark some messages as seen:", e);
-      }
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const msgs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    
+    // Filter out messages deleted by current user
+    const filteredMsgs = msgs.filter(message => {
+      const deletedFor = message.deletedFor || [];
+      return !deletedFor.includes(currentUser.user_id);
     });
+    
+    setMessages(filteredMsgs);
 
-    return () => unsubscribe();
-  }, [conversationId, currentUser?.user_id]);
+    // Mark unseen messages as seen
+    try {
+      const unseen = filteredMsgs.filter(
+        (m) =>
+          String(m.senderId) !== String(currentUser.user_id) &&
+          !(m.seenBy || []).map(String).includes(String(currentUser.user_id))
+      );
+      if (unseen.length > 0) {
+        for (const m of unseen) {
+          const msgRef = doc(db, "conversations", conversationId, "messages", m.id);
+          await updateDoc(msgRef, {
+            seenBy: arrayUnion(currentUser.user_id),
+          });
+        }
+        
+        window.dispatchEvent(new Event('chatsUpdated'));
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user && user.id) {
+          socket.emit('getCounts', { userId: user.id });
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to mark some messages as seen:", e);
+    }
+  });
+
+  return () => unsubscribe();
+}, [conversationId, currentUser?.user_id, getFilteredMessages]);
 
   // Filter messages based on search term
   useEffect(() => {
@@ -674,45 +850,6 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     window.open(videocallUrl, "_blank", windowFeatures);
   };
 
-
-const handleCancelMeeting = async () => {
-  if (!currentMeeting || !currentUser) return;
-  if (userRole === 'requester') {
-    window.pfToast?.info?.('Only the person who accepted this session can cancel it.');
-    return;
-  }
-  try {
-    const ok = await window.pfConfirm?.('Cancel this session for both participants?');
-    if (!ok) return;
-    setCancellingMeeting(true);
-    const participants = currentMeeting.participants || [currentUser.user_id, otherUser?.id].filter(Boolean);
-    const res = await fetch(`${API_BASE_URL}/meeting/update-status`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        meetingId: currentMeeting.id,
-        status: 'cancelled',
-        participants,
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      window.pfToast?.success?.('Session cancelled.');
-      setCurrentMeeting(null);
-      setJoinEnabled(false);
-      setReminderReceived(false);
-    } else {
-      window.pfToast?.error?.(data.error || 'Failed to cancel session.');
-    }
-  } catch (err) {
-    console.error('Error cancelling meeting:', err);
-    window.pfToast?.error?.('Error cancelling session. Please try again.');
-  } finally {
-    setCancellingMeeting(false);
-  }
-};
-
-
   // Helper: check if a message is seen by the other party
   const isSeenByOther = (m) => {
     if (!m || !otherUser) return false;
@@ -877,48 +1014,7 @@ const handleCancelMeeting = async () => {
       return highlightSearchTerm(part);
     });
   };
-    const handleUnsendForYou = async (message) => {
-    if (!conversationId || !currentUser?.user_id || !message?.id) return;
-    try {
-      const msgRef = doc(db, "conversations", conversationId, "messages", message.id);
-      await updateDoc(msgRef, {
-        hiddenFor: arrayUnion(currentUser.user_id),
-      });
-    } catch (err) {
-      console.error("Failed to unsend message for you:", err);
-      window.pfToast?.error?.("Failed to unsend for you. Please try again.");
-    } finally {
-      setMenuMessageId(null);
-    }
-  };
 
-  const handleUnsendForEveryone = async (message) => {
-    if (!conversationId || !currentUser?.user_id || !message?.id) return;
-    if (String(message.senderId) !== String(currentUser.user_id)) {
-      window.pfToast?.info?.("Only the sender can unsend for everyone.");
-      return;
-    }
-    if (confirmUnsendMessageId !== message.id) {
-      setConfirmUnsendMessageId(message.id);
-      window.pfToast?.info?.('Tap "Unsend for everyone" again to confirm.');
-      setTimeout(() => {
-        setConfirmUnsendMessageId((prev) => (prev === message.id ? null : prev));
-      }, 5000);
-      return;
-    }
-    try {
-      const msgRef = doc(db, "conversations", conversationId, "messages", message.id);
-      await updateDoc(msgRef, {
-        unsentForEveryone: true,
-        unsentByName: message.senderName || currentUser.username || "Someone",
-      });
-    } catch (err) {
-      console.error("Failed to unsend message for everyone:", err);
-      window.pfToast?.error?.("Failed to unsend for everyone. Please try again.");
-    } finally {
-      setMenuMessageId(null);
-    }
-  };
   // Render avatar with error handling
   const renderAvatar = (user, className = "peerfusion-chat-partner-avatar", size = 'medium') => {
     const userId = user?.id;
@@ -996,94 +1092,128 @@ const handleCancelMeeting = async () => {
           </span>
           <span className={isAuthenticated ? 'online-indicator' : 'offline-indicator'} />
         </div>
-
-        <div className="peerfusion-chat-actions">
-          <div className="peerfusion-chat-schedule-button-wrapper" ref={scheduleButtonRef}>
-            <button
-              className={`peerfusion-chat-meeting-btn ${!canSchedule ? 'disabled' : ''}`}
-              onClick={handleScheduleClick}
-              disabled={!canSchedule}
-            >
-              <CalendarIcon />
-            </button>
-            {showScheduleTooltip && !canSchedule && (
-              <div className="peerfusion-chat-schedule-tooltip">
-                Only the person who accepted your session can schedule meetings
-              </div>
-            )}
-          </div>
-          {isMobile && (
-            <button 
-              className="peerfusion-chat-info-btn"
-              onClick={onShowInfo}
-              title="Conversation Info"
-            >
-              <InfoIcon />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Meeting Banner */}
-      {currentMeeting && (
-        <div className="peerfusion-chat-meeting-banner">
-          <div className="peerfusion-chat-meeting-body">
-            <div className="peerfusion-chat-meeting-reminder">
-              REMINDER: Session scheduled on{" "}
-              {new Date(currentMeeting.scheduled_at).toLocaleDateString()} at{" "}
-              {new Date(currentMeeting.scheduled_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <button
-                className={`peerfusion-chat-join-button ${joinEnabled ? "enabled" : ""}`}
-                onClick={handleJoin}
-                disabled={!joinEnabled}
-                title={
-                  joinEnabled
-                    ? "Join session"
-                    : "Join will be enabled 5 minutes before the session"
-                }
-              >
-                JOIN
-              </button>
-
-              {userRole !== 'requester' && (
+            <div className="peerfusion-chat-actions">
+              <div className="peerfusion-chat-schedule-button-wrapper" ref={scheduleButtonRef}>
                 <button
-                  className="peerfusion-chat-join-button peerfusion-chat-cancel-button"
-                  onClick={handleCancelMeeting}
-                  disabled={cancellingMeeting}
-                  title="Cancel this session for both participants"
+                  className={`peerfusion-chat-meeting-btn ${!canSchedule ? 'disabled' : ''}`}
+                  onClick={handleScheduleClick}
+                  disabled={!canSchedule}
                 >
-                  {cancellingMeeting ? 'Cancelling...' : 'Cancel Session'}
+                  <CalendarIcon />
+                </button>
+                {showScheduleTooltip && !canSchedule && (
+                  <div className="peerfusion-chat-schedule-tooltip">
+                    Only the person who accepted your session can schedule meetings
+                  </div>
+                )}
+              </div>
+              
+        {/* Delete Conversation Button */}
+        <div className="peerfusion-chat-delete-wrapper">
+          <button
+            className="peerfusion-chat-delete-btn"
+            onClick={() => setShowDeleteMenu(!showDeleteMenu)}
+            title="Delete conversation"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+          </button>
+          
+          {showDeleteMenu && (
+            <div className="peerfusion-chat-delete-menu">
+              <button
+                className="peerfusion-chat-delete-menu-item"
+                onClick={() => handleDeleteConversation(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+                Delete for me
+              </button>
+              <button
+                className="peerfusion-chat-delete-menu-item peerfusion-chat-delete-menu-item-danger"
+                onClick={() => handleDeleteConversation(true)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                Delete for everyone
+              </button>
+            </div>
+                )}
+              </div>
+              {isMobile && (
+                <button 
+                  className="peerfusion-chat-info-btn"
+                  onClick={onShowInfo}
+                  title="Conversation Info"
+                >
+                  <InfoIcon />
                 </button>
               )}
+            </div>
+      </div>
 
-              {/* Cancel Meeting Button */}
-              <button
-                className="peerfusion-chat-cancel-meeting-btn"
-                onClick={() => setShowCancelMeetingModal(true)}
-                title="Cancel meeting"
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  color: 'rgba(255,255,255,0.8)',
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  cursor: 'pointer'
-                }}
-              >
-                <CancelIcon />
-                Cancel
-              </button>
+        {currentMeeting && currentMeeting.status !== 'cancelled' && (
+          <div className="peerfusion-chat-meeting-banner">
+            <div className="peerfusion-chat-meeting-body">
+              <div className="peerfusion-chat-meeting-reminder">
+                REMINDER: Session scheduled on{" "}
+                {new Date(currentMeeting.scheduled_at).toLocaleDateString()} at{" "}
+                {new Date(currentMeeting.scheduled_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                {currentMeeting.status === 'pending' && (
+                  <span style={{ 
+                    marginLeft: '8px', 
+                    padding: '2px 8px', 
+                    background: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '4px',
+                    fontSize: '0.8rem'
+                  }}>
+                    Pending
+                  </span>
+                )}
+              </div>
+
+              <div className="peerfusion-chat-meeting-actions">
+                <button
+                  className={`peerfusion-chat-join-button ${joinEnabled ? "enabled" : ""}`}
+                  onClick={handleJoin}
+                  disabled={!joinEnabled || currentMeeting.status === 'pending'}
+                  title={
+                    currentMeeting.status === 'pending' 
+                      ? "Meeting is pending approval"
+                      : joinEnabled
+                      ? "Join session"
+                      : "Join will be enabled 5 minutes before the session"
+                  }
+                >
+                  {currentMeeting.status === 'pending' ? 'PENDING' : 'JOIN'}
+                </button>
+
+                {/* Cancel Meeting Button - Only show if meeting is scheduled or pending */}
+                {(currentMeeting.status === 'scheduled' || currentMeeting.status === 'pending') && (
+                  <button
+                    className="peerfusion-chat-cancel-meeting-button"
+                    onClick={handleCancelMeeting}
+                    title="Cancel this meeting"
+                  >
+                    Cancel Meeting
+                  </button>
+                )}
+
+                {!joinEnabled && currentMeeting.status === 'scheduled' && (
+                  <small style={{ color: "rgba(255,255,255,0.8)", textAlign: 'center', width: '100%' }}>
+                    {reminderReceived ? "Join will be available shortly" : "Join available 5 minutes before start"}
+                  </small>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Chat messages container */}
       <div className="peerfusion-chat-messages-container">
@@ -1111,9 +1241,6 @@ const handleCancelMeeting = async () => {
             groups.map((g, gIdx) => {
               const isMeGroup = String(g.senderId) === String(currentUser?.user_id);
               return g.msgs.map((m, idx) => {
-                if ((m.hiddenFor || []).map(String).includes(String(currentUser?.user_id))) {
-                  return null;
-                }
                 const isLastInGroup = idx === g.msgs.length - 1;
                 const showTailAvatar = !isMeGroup && isLastInGroup;
 
@@ -1133,75 +1260,8 @@ const handleCancelMeeting = async () => {
                   }
                   return false;
                 })();
-                const actionsMenu = (
-                  <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: sentByMe ? 0 : 4, marginRight: sentByMe ? 4 : 0 }}>
-                    <button
-                      className="peerfusion-chat-message-report-btn"
-                      title="Message actions"
-                      aria-label="Message actions"
-                      ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
-                      onClick={() => {
-                        const next = menuMessageId === m.id ? null : m.id;
-                        if (next) {
-                          const btn = menuBtnRefs.current[m.id];
-                          try {
-                            const rect = btn?.getBoundingClientRect();
-                            const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
-                            setMenuAbove(spaceBelow < 150);
-                          } catch (_) {
-                            setMenuAbove(false);
-                          }
-                        }
-                        setMenuMessageId(next);
-                      }}
-                      style={{
-                        display: isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
-                      }}
-                    >
-                      <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
-                    </button>
-                    {menuMessageId === m.id && (
-                      <div
-                        className="peerfusion-chat-message-menu"
-                        style={{ 
-                          top: menuAbove ? 'auto' : 'calc(100% + 6px)',
-                          bottom: menuAbove ? 'calc(100% + 6px)' : 'auto',
-                          left: sentByMe ? 'auto' : 0,
-                          right: sentByMe ? 0 : 'auto',
-                        }}
-                      >
-                        <button
-                          className="peerfusion-chat-message-menu-item"
-                          onClick={() => handleUnsendForYou(m)}
-                        >
-                          Unsend for you
-                        </button>
-                        <button
-                          className="peerfusion-chat-message-menu-item"
-                          onClick={() => handleUnsendForEveryone(m)}
-                          disabled={String(m.senderId) !== String(currentUser?.user_id) || m.unsentForEveryone}
-                          title={
-                            m.unsentForEveryone
-                              ? 'This message has already been unsent for everyone.'
-                              : (String(m.senderId) !== String(currentUser?.user_id)
-                                ? 'Only the sender can unsend for everyone.'
-                                : 'Unsend for everyone')
-                          }
-                        >
-                          Unsend for everyone
-                        </button>
-                        <button
-                          className="peerfusion-chat-message-menu-item"
-                          onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
-                        >
-                          <FlagIcon />
-                          Report
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-                 return (
+
+                return (
                   <div
                     key={m.id}
                     className={`peerfusion-chat-row ${isMeGroup ? "sent" : "received"}`}
@@ -1210,30 +1270,7 @@ const handleCancelMeeting = async () => {
                   >
                     {!isMeGroup ? (
                       showTailAvatar ? (
-                        otherUser?.avatar ? (
-                          <img 
-                            src={ensureAvatarUrl(otherUser.avatar)} 
-                            alt={otherUser.username} 
-                            className="peerfusion-chat-message-avatar" 
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                        ) : (
-                          <div 
-                            className="peerfusion-chat-message-avatar"
-                            style={{
-                              background: '#e8efe5',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#666',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            {otherUser?.username?.charAt(0) || 'U'}
-                          </div>
-                        )
+                        renderAvatar(otherUser, "peerfusion-chat-message-avatar", 'small')
                       ) : (
                         <div className="peerfusion-chat-avatar-space" />
                       )
@@ -1241,58 +1278,139 @@ const handleCancelMeeting = async () => {
                       <div className="peerfusion-chat-avatar-space" />
                     )}
 
-                    {sentByMe && actionsMenu}
-
                     <div
                       className={`peerfusion-chat-message-bubble ${isMeGroup ? "sent" : "received"}`}
                     >
-                      {m.unsentForEveryone ? (
-                        <div className="peerfusion-chat-bubble-text" style={{ fontStyle: 'italic', opacity: 0.8 }}>
-                          {(m.unsentByName || m.senderName || 'Someone')} unsent a message
-                        </div>
-                      ) : (
-                        <>
-                          {/* Render inline image */}
-                          {m.fileType === "image" && m.content ? (
-                            <img src={m.content} alt="uploaded" className="peerfusion-chat-image" />
-                          ) : null}
+                      {/* Render inline image */}
+                      {m.fileType === "image" && m.content ? (
+                        <img 
+                          src={m.content} 
+                          alt="uploaded" 
+                          className="peerfusion-chat-image" 
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
 
-                          {/* Render PDF or DOC as inline file card */}
-                          {m.fileType === "pdf" || m.fileType === "doc" ? (
-                            <a
-                              href={m.content}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="peerfusion-chat-file-card"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <FileIcon />
-                                <div>
-                                  <div style={{ fontWeight: 600 }}>
-                                    {m.fileName || "File"}
-                                  </div>
-                                  <div style={{ fontSize: 12, color: "#666" }}>{m.fileType?.toUpperCase()}</div>
-                                </div>
+                      {/* Render PDF or DOC as inline file card */}
+                      {m.fileType === "pdf" || m.fileType === "doc" ? (
+                        <a
+                          href={m.content}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="peerfusion-chat-file-card"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <FileIcon />
+                            <div>
+                              <div style={{ fontWeight: 600 }}>
+                                {m.fileName || "File"}
                               </div>
-                            </a>
-                          ) : null}
-
-                          {/* Text content with search highlighting and clickable links */}
-                          {(!m.fileType || m.fileType === null) && (
-                            <div className="peerfusion-chat-bubble-text">
-                              {makeLinksClickable(m.content)}
+                              <div style={{ fontSize: 12, color: "#666" }}>{m.fileType?.toUpperCase()}</div>
                             </div>
+                          </div>
+                        </a>
+                      ) : null}
+
+                      {/* Text content with search highlighting and clickable links */}
+                      {(!m.fileType || m.fileType === null) && (
+                        <div className="peerfusion-chat-bubble-text">
+                          {m.deletedFor?.includes(currentUser.user_id) ? (
+                            <span style={{ fontStyle: 'italic', color: '#999' }}>
+                              Message unsent
+                            </span>
+                          ) : (
+                            makeLinksClickable(m.content)
                           )}
-                        </>
+                        </div>
                       )}
+
                       <span className="peerfusion-chat-timestamp">
                         {timestamp}{" "}
                         {sentByMe ? (lastMessageInAll ? (isSeenByOther(m) ? "✓✓" : "✓") : "") : ""}
                       </span>
                     </div>
 
-                    {!sentByMe && actionsMenu}
+                    {/* Flag icon for reporting received messages */}
+                    {!sentByMe && (
+                      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: 4 }}>
+                        <button
+                          className="peerfusion-chat-message-report-btn"
+                          title="Report message"
+                          aria-label="Report message"
+                          ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
+                          onClick={() => {
+                            const next = menuMessageId === m.id ? null : m.id;
+                            if (next) {
+                              const btn = menuBtnRefs.current[m.id];
+                              try {
+                                const rect = btn?.getBoundingClientRect();
+                                const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
+                                setMenuAbove(spaceBelow < 120);
+                              } catch (_) {
+                                setMenuAbove(false);
+                              }
+                            }
+                            setMenuMessageId(next);
+                          }}
+                          style={{
+                            display: (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
+                          }}
+                        >
+                          <FlagIcon />
+                        </button>
+                            {menuMessageId === m.id && (
+                              <div
+                                className="peerfusion-chat-message-menu"
+                                style={{ 
+                                  top: menuAbove ? 'auto' : 'calc(100% + 6px)',
+                                  bottom: menuAbove ? 'calc(100% + 6px)' : 'auto'
+                                }}
+                              >
+                                {sentByMe ? (
+                                  <>
+                                    <button
+                                      className="peerfusion-chat-message-menu-item"
+                                      onClick={() => { 
+                                        setMenuMessageId(null); 
+                                        handleUnsendMessage(m.id, false); 
+                                      }}
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                      </svg>
+                                      Unsend for me
+                                    </button>
+                                    <button
+                                      className="peerfusion-chat-message-menu-item peerfusion-chat-menu-item-danger"
+                                      onClick={() => { 
+                                        setMenuMessageId(null); 
+                                        handleUnsendMessage(m.id, true); 
+                                      }}
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                      </svg>
+                                      Unsend for everyone
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    className="peerfusion-chat-message-menu-item peerfusion-chat-menu-item-report"
+                                    onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
+                                  >
+                                    <FlagIcon />
+                                    Report message
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                      </div>
+                    )}
+
                     {isMeGroup ? <div className="peerfusion-chat-avatar-space" /> : null}
                   </div>
                 );
@@ -1356,48 +1474,6 @@ const handleCancelMeeting = async () => {
           )}
         </button>
       </div>
-
-      {/* Cancel Meeting Confirmation Modal */}
-      {showCancelMeetingModal && (
-        <div className="peerfusion-chat-modal-overlay" onClick={() => setShowCancelMeetingModal(false)}>
-          <div className="peerfusion-chat-modal-content peerfusion-chat-cancel-modal" onClick={(e) => e.stopPropagation()} style={{position: 'relative'}}>
-            <button className="peerfusion-close-modal" onClick={() => setShowCancelMeetingModal(false)}>
-              <CloseIcon />
-            </button>
-            <div className="peerfusion-chat-modal-header">
-              <h3 className="peerfusion-chat-modal-title">
-                Cancel Meeting
-              </h3>
-            </div>
-            <div className="peerfusion-chat-modal-body">
-              <p>Are you sure you want to cancel this meeting?</p>
-              <div className="peerfusion-chat-modal-actions">
-                <button
-                  onClick={handleCancelMeeting}
-                  className="peerfusion-chat-danger-btn"
-                  disabled={cancellingMeeting}
-                >
-                  {cancellingMeeting ? (
-                    <>
-                      <div className="peerfusion-chat-loading-spinner-small"></div>
-                      Cancelling...
-                    </>
-                  ) : (
-                    'Yes, Cancel Meeting'
-                  )}
-                </button>
-                <button 
-                  onClick={() => setShowCancelMeetingModal(false)} 
-                  className="peerfusion-chat-secondary-btn"
-                  disabled={cancellingMeeting}
-                >
-                  Keep Meeting
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Report Modal */}
       {showReportModal && (

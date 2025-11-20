@@ -80,39 +80,46 @@ const ChatList = ({ onSelect, currentUser, activeConversationId, searchQuery, on
 }, [currentUser?.user_id, rawConversations]);
 
   // Subscribe once to conversations for the user
-  useEffect(() => {
-    const userId = currentUser?.user_id || currentUser?.id;
+useEffect(() => {
+  const userId = currentUser?.user_id || currentUser?.id;
 
-    if (!userId) {
-      setRawConversations([]);
-      setConversations([]);
-      setFilteredConversations([]);
+  if (!userId) {
+    setRawConversations([]);
+    setConversations([]);
+    setFilteredConversations([]);
+    setLoading(false);
+    return;
+  }
+
+  setLoading(true);
+
+  const q = query(
+    collection(db, "conversations"),
+    where("participants", "array-contains", Number(userId)), 
+    orderBy("lastMessageTime", "desc")
+  );
+
+  const unsubscribe = onSnapshot(q, 
+    (snapshot) => {
+      const rows = snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+      
+      // Filter out conversations deleted by current user
+      const filteredRows = rows.filter(({ id, data }) => {
+        const deletedFor = data.deletedFor || [];
+        return !deletedFor.includes(Number(userId));
+      });
+      
+      setRawConversations(filteredRows);
       setLoading(false);
-      return;
+    },
+    (error) => {
+      console.error("❌ Firestore error:", error);
+      setLoading(false);
     }
+  );
 
-    setLoading(true);
-
-    const q = query(
-      collection(db, "conversations"),
-      where("participants", "array-contains", Number(userId)), 
-      orderBy("lastMessageTime", "desc")
-    );
-
-    const unsubscribe = onSnapshot(q, 
-      (snapshot) => {
-        const rows = snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
-        setRawConversations(rows);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("❌ Firestore error:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [currentUser]);
+  return () => unsubscribe();
+}, [currentUser]);
 
   // Enhance conversations with latest profiles and unread counts
   useEffect(() => {
