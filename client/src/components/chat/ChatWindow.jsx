@@ -686,7 +686,7 @@ const handleCancelMeeting = async () => {
     if (!ok) return;
     setCancellingMeeting(true);
     const participants = currentMeeting.participants || [currentUser.user_id, otherUser?.id].filter(Boolean);
-    const res = await fetch(`${API}/meeting/update-status`, {
+    const res = await fetch(`${API_BASE_URL}/meeting/update-status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
