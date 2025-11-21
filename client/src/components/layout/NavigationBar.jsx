@@ -320,8 +320,7 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
               className="peerfusion-nav-logout-btn"
             >
               <FiLogOut className="peerfusion-nav-logout-icon" />
-              {/* Always show logout label on mobile when sidebar is open */}
-              {(!isCollapsed || isMobile) && <span className="peerfusion-nav-logout-label">Logout</span>}
+              {!isCollapsed && <span className="peerfusion-nav-logout-label">Logout</span>}
             </button>
           </div>
         </div>

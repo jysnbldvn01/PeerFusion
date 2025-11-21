@@ -338,12 +338,7 @@
   transition: all 0.3s ease;
 }
 
-/* Show logout label on mobile when sidebar is open */
-.peerfusion-nav-sidebar.mobile:not(.collapsed) .peerfusion-nav-logout-label {
-  display: block !important;
-}
-
-.peerfusion-nav-sidebar.collapsed:not(.mobile) .peerfusion-nav-logout-label {
+.peerfusion-nav-sidebar.collapsed .peerfusion-nav-logout-label {
   display: none;
 }
 
