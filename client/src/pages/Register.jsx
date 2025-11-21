@@ -411,13 +411,13 @@ export default function Register() {
                   
                   <form className="auth-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                      <label htmlFor="name">Full name</label>
+                      <label htmlFor="name">Username</label>
                       <input
                         id="name"
                         name="name"
                         type="text"
                         className="form-control"
-                        placeholder="Enter your full name"
+                        placeholder="Enter your Username"
                         value={form.name}
                         onChange={handleChange}
                         autoComplete="name"

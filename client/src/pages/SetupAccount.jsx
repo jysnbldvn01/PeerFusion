@@ -363,13 +363,13 @@ const handleSubmit = async (e) => {
 
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">Username *</label>
+                <label className="form-label">Full name *</label>
                 <input 
                   type="text" 
                   name="username" 
                   value={form.username} 
                   onChange={handleChange} 
-                  placeholder="Enter your username" 
+                  placeholder="Enter your Full name" 
                   className={`form-input ${errors.username ? 'error' : ''}`}
                   required 
                 />

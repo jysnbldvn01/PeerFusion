@@ -574,6 +574,51 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     return "file";
   };
 
+  // Helper function to calculate menu position with viewport boundaries
+    const getMenuPositionStyle = (buttonElement) => {
+      if (!buttonElement) return {};
+      
+      try {
+        const rect = buttonElement.getBoundingClientRect();
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        
+        const menuWidth = 180;
+        const menuHeight = 120;
+        
+        const style = {};
+        
+        // Check if menu would overflow right edge
+        if (rect.left + menuWidth > viewportWidth - 10) {
+          style.right = '0';
+          style.left = 'auto';
+        }
+        
+        // Check if menu would overflow left edge
+        if (rect.right - menuWidth < 10) {
+          style.left = '0';
+          style.right = 'auto';
+        }
+        
+        // Check if menu would overflow bottom edge (for bottom-positioned menus)
+        if (!menuAbove && rect.bottom + menuHeight > viewportHeight - 10) {
+          style.bottom = 'calc(100% + 6px)';
+          style.top = 'auto';
+        }
+        
+        // Check if menu would overflow top edge (for top-positioned menus)
+        if (menuAbove && rect.top - menuHeight < 10) {
+          style.top = 'calc(100% + 6px)';
+          style.bottom = 'auto';
+        }
+        
+        return style;
+      } catch (error) {
+        console.warn('Error calculating menu position:', error);
+        return {};
+      }
+    };
+
   // Upload file to Firebase Storage
   const uploadFileToStorage = (file) => {
     return new Promise((resolve, reject) => {
@@ -1198,71 +1243,77 @@ const handleUnsendForEveryone = async (message) => {
                 })();
                 const actionsMenu = (
                   <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginLeft: sentByMe ? 0 : 4, marginRight: sentByMe ? 4 : 0 }}>
-                    <button
-                      className="peerfusion-chat-message-report-btn"
-                      title="Message actions"
-                      aria-label="Message actions"
-                      ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
-                      onClick={() => {
-                        const next = menuMessageId === m.id ? null : m.id;
-                        if (next) {
-                          const btn = menuBtnRefs.current[m.id];
-                          try {
-                            const rect = btn?.getBoundingClientRect();
-                            const spaceBelow = (window.innerHeight || document.documentElement.clientHeight) - (rect?.bottom || 0);
-                            setMenuAbove(spaceBelow < 150);
-                          } catch (_) {
-                            setMenuAbove(false);
+                      <button
+                        className="peerfusion-chat-message-report-btn"
+                        title="Message actions"
+                        aria-label="Message actions"
+                        ref={(el) => { if (el) menuBtnRefs.current[m.id] = el; }}
+                        onClick={() => {
+                          const next = menuMessageId === m.id ? null : m.id;
+                          if (next) {
+                            const btn = menuBtnRefs.current[m.id];
+                            try {
+                              const rect = btn?.getBoundingClientRect();
+                              const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                              const spaceBelow = viewportHeight - (rect?.bottom || 0);
+                              const spaceAbove = rect?.top || 0;
+                              
+                              // Use more dynamic threshold based on viewport height
+                              const threshold = Math.min(200, viewportHeight * 0.3);
+                              setMenuAbove(spaceBelow < threshold && spaceAbove > spaceBelow);
+                            } catch (_) {
+                              setMenuAbove(false);
+                            }
                           }
-                        }
-                        setMenuMessageId(next);
-                      }}
-                      style={{
-                        display: isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
-                      }}
-                    >
-                      <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
-                    </button>
-                      {menuMessageId === m.id && (
-                        <div
-                          className="peerfusion-chat-message-menu"
-                          style={{ 
-                            top: menuAbove ? 'auto' : 'calc(100% + 6px)',
-                            bottom: menuAbove ? 'calc(100% + 6px)' : 'auto',
-                            left: sentByMe ? 'auto' : 0,
-                            right: sentByMe ? 0 : 'auto',
-                          }}
-                        >
-                          {/* Only show "Unsend for everyone" for own messages */}
-                          {sentByMe && !m.unsentForEveryone && (
-                            <button
-                              className="peerfusion-chat-message-menu-item"
-                              onClick={() => handleUnsendForEveryone(m)}
+                          setMenuMessageId(next);
+                        }}
+                        style={{
+                          display: isMobile || (hoveredMessageId === m.id) || (menuMessageId === m.id) || (showReportModal && reportTarget?.message?.id === m.id) ? 'inline-flex' : 'none'
+                        }}
+                      >
+                        <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
+                      </button>
+                          {menuMessageId === m.id && (
+                            <div
+                              className="peerfusion-chat-message-menu"
+                              style={{ 
+                                top: menuAbove ? 'auto' : 'calc(100% + 6px)',
+                                bottom: menuAbove ? 'calc(100% + 6px)' : 'auto',
+                                left: sentByMe ? 'auto' : 0,
+                                right: sentByMe ? 0 : 'auto',
+                                ...(getMenuPositionStyle(menuBtnRefs.current[m.id]))
+                              }}
                             >
-                              Unsend for everyone
-                            </button>
-                          )}
-                          
-                          {/* Always show "Remove for you" for any message */}
-                          <button
-                            className="peerfusion-chat-message-menu-item"
-                            onClick={() => handleUnsendForYou(m)}
-                          >
-                            Remove for you
-                          </button>
-                          
-                          {/* Report option for other people's messages */}
-                          {!sentByMe && !m.unsentForEveryone && (
-                            <button
-                              className="peerfusion-chat-message-menu-item"
-                              onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
-                            >
-                              <FlagIcon />
-                              Report
-                            </button>
-                          )}
-                        </div>
-                      )}
+                                {/* Only show "Unsend for everyone" for own messages */}
+                                {sentByMe && !m.unsentForEveryone && (
+                                  <button
+                                    className="peerfusion-chat-message-menu-item"
+                                    onClick={() => handleUnsendForEveryone(m)}
+                                  >
+                                    Unsend for everyone
+                                  </button>
+                                )}
+                                
+                                {/* Always show "Remove for you" for any message */}
+                                <button
+                                  className="peerfusion-chat-message-menu-item"
+                                  onClick={() => handleUnsendForYou(m)}
+                                >
+                                  Remove for you
+                                </button>
+                                
+                                {/* Report option for other people's messages */}
+                                {!sentByMe && !m.unsentForEveryone && (
+                                  <button
+                                    className="peerfusion-chat-message-menu-item"
+                                    onClick={() => { setMenuMessageId(null); openReportMessage(m); }}
+                                  >
+                                    <FlagIcon />
+                                    Report
+                                  </button>
+                                )}
+                              </div>
+                            )}
                   </div>
                 );
                 return (

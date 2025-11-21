@@ -1296,6 +1296,46 @@
   transform: none;
 }
 
+/* Message Report Styles */
+.peerfusion-chat-message-report-btn {
+  display: inline-flex;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.peerfusion-chat-message-report-btn:hover {
+  background: rgba(0,0,0,0.1);
+  color: #ff4444;
+}
+
+.peerfusion-chat-report-user-btn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: #ff4444;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.peerfusion-chat-report-user-btn:hover {
+  background: rgba(255, 68, 68, 0.1);
+}
+
 /* Report Modal Specific Styles */
 .peerfusion-chat-report-modal {
   max-width: 500px;
@@ -2432,5 +2472,137 @@ body {
     max-height: 100px;
     padding: 10px;
     font-size: 13px;
+  }
+}
+/* Enhanced Message Menu for Mobile */
+.peerfusion-chat-message-menu {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #e8efe5;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(45, 90, 39, 0.15);
+  z-index: 1000;
+  min-width: 180px;
+  padding: 4px;
+  /* Ensure menu stays within viewport */
+  max-width: calc(100vw - 20px);
+}
+
+/* Mobile-specific menu styles */
+@media (max-width: 768px) {
+  .peerfusion-chat-message-menu {
+    min-width: 160px;
+    max-width: calc(100vw - 40px);
+    /* Add safe area insets for notched devices */
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(4px, env(safe-area-inset-right));
+  }
+  
+  .peerfusion-chat-message-menu-item {
+    padding: 10px 12px;
+    font-size: 14px;
+    /* Ensure touch-friendly size */
+    min-height: 44px;
+  }
+  
+  /* Prevent menu from being too close to screen edges */
+  .peerfusion-chat-message-menu[style*="left: 0"] {
+    margin-left: 10px;
+  }
+  
+  .peerfusion-chat-message-menu[style*="right: 0"] {
+    margin-right: 10px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .peerfusion-chat-message-menu {
+    min-width: 140px;
+    max-width: calc(100vw - 60px);
+  }
+  
+  .peerfusion-chat-message-menu-item {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  /* Ensure menu doesn't overlap with message bubbles */
+  .peerfusion-chat-row.sent .peerfusion-chat-message-menu {
+    transform: translateX(-10px);
+  }
+  
+  .peerfusion-chat-row.received .peerfusion-chat-message-menu {
+    transform: translateX(10px);
+  }
+}
+
+/* Very small devices */
+@media (max-width: 360px) {
+  .peerfusion-chat-message-menu {
+    min-width: 130px;
+    max-width: calc(100vw - 80px);
+  }
+  
+  .peerfusion-chat-message-menu-item {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
+/* Prevent horizontal scrolling caused by menu */
+.peerfusion-chat-messages-container {
+  overflow-x: hidden !important;
+}
+
+/* Ensure menu stays within chat boundaries */
+.peerfusion-chat-messages {
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Menu item hover states */
+.peerfusion-chat-message-menu-item {
+  padding: 8px 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #2d5a27;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peerfusion-chat-message-menu-item:hover {
+  background: #f8faf7;
+  color: #4a7c3a;
+}
+
+.peerfusion-chat-message-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .peerfusion-chat-message-menu {
+    /* Improve rendering on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Android Chrome specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 768px) {
+  .peerfusion-chat-message-menu {
+    /* Prevent zoom on focus */
+    font-size: 16px;
   }
 }

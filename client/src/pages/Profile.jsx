@@ -2203,7 +2203,7 @@ const Profile = () => {
                 {editMode ? (
                   <div className="peerfusion-form-grid">
                     <div className="peerfusion-form-group">
-                      <label className="peerfusion-form-label">Username</label>
+                      <label className="peerfusion-form-label">Full name</label>
                       <input 
                         type="text" 
                         name="username" 
