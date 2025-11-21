@@ -1433,9 +1433,6 @@ const handleUnsendForEveryone = async (message) => {
       {showCancelMeetingModal && (
         <div className="peerfusion-chat-modal-overlay" onClick={() => setShowCancelMeetingModal(false)}>
           <div className="peerfusion-chat-modal-content peerfusion-chat-confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="peerfusion-close-modal" onClick={() => setShowCancelMeetingModal(false)}>
-              <CloseIcon />
-            </button>
             
             <div className="peerfusion-chat-modal-header">
               <div className="peerfusion-chat-warning-icon">
@@ -1490,9 +1487,6 @@ const handleUnsendForEveryone = async (message) => {
       {showUnsendModal && (
         <div className="peerfusion-chat-modal-overlay" onClick={() => setShowUnsendModal(false)}>
           <div className="peerfusion-chat-modal-content peerfusion-chat-confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="peerfusion-close-modal" onClick={() => setShowUnsendModal(false)}>
-              <CloseIcon />
-            </button>
             
             <div className="peerfusion-chat-modal-header">
               <div className="peerfusion-chat-warning-icon">
@@ -1568,9 +1562,6 @@ const handleUnsendForEveryone = async (message) => {
         {showReportModal && (
           <div className="peerfusion-chat-modal-overlay" onClick={() => setShowReportModal(false)}>
             <div className="peerfusion-chat-modal-content peerfusion-chat-report-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="peerfusion-close-modal" onClick={() => setShowReportModal(false)}>
-                <CloseIcon />
-              </button>
               <div className="peerfusion-chat-modal-header">
                 <h3 className="peerfusion-chat-modal-title">
                   Report Message
@@ -1657,12 +1648,6 @@ const handleUnsendForEveryone = async (message) => {
       {showMeetingModal && (
         <div className="peerfusion-chat-modal-overlay">
           <div className="peerfusion-chat-modal-content peerfusion-chat-meeting-modal" style={{position: 'relative'}}>
-            <button 
-              className="peerfusion-close-modal"
-              onClick={() => setShowMeetingModal(false)}
-            >
-              <CloseIcon />
-            </button>
             <div className="peerfusion-chat-modal-header">
               <h3 className="peerfusion-chat-modal-title">Schedule Meeting</h3>
             </div>
