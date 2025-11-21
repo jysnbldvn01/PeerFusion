@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import '../../css/toasthost.css';
 
-const AUTO_DISMISS_MS = 3500;
+const AUTO_DISMISS_MS = 4000;
 
 // Professional SVG Icons
 const SuccessIcon = () => (
@@ -35,33 +35,48 @@ const CloseIcon = () => (
 );
 
 const ToastHost = () => {
-  const [toast, setToast] = useState(null);
-  const [timer, setTimer] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [timers, setTimers] = useState({});
 
-  const clear = useCallback(() => {
-    setToast(null);
-    if (timer) {
-      clearTimeout(timer);
+  const clearToast = useCallback((id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+    if (timers[id]) {
+      clearTimeout(timers[id]);
+      const newTimers = { ...timers };
+      delete newTimers[id];
+      setTimers(newTimers);
     }
-  }, [timer]);
+  }, [timers]);
 
   useEffect(() => {
     const handler = (e) => {
-      const { message, type = 'info' } = e.detail || {};
-      setToast({ message: String(message ?? ''), type });
-      if (timer) clearTimeout(timer);
-      const t = setTimeout(() => setToast(null), AUTO_DISMISS_MS);
-      setTimer(t);
+      const { message, type = 'info', duration = AUTO_DISMISS_MS } = e.detail || {};
+      const id = Date.now().toString();
+      
+      const newToast = {
+        id,
+        message: String(message ?? ''),
+        type,
+        timestamp: Date.now()
+      };
+
+      setToasts(prev => [newToast, ...prev.slice(0, 4)]); // Max 5 toasts
+
+      // Auto dismiss
+      const timer = setTimeout(() => {
+        clearToast(id);
+      }, duration);
+
+      setTimers(prev => ({ ...prev, [id]: timer }));
     };
 
     window.addEventListener('peerfusion-toast', handler);
     return () => {
       window.removeEventListener('peerfusion-toast', handler);
-      if (timer) clearTimeout(timer);
+      // Clear all timers on unmount
+      Object.values(timers).forEach(timer => clearTimeout(timer));
     };
-  }, [timer]);
-
-  if (!toast) return null;
+  }, [clearToast, timers]);
 
   const getToastConfig = (type) => {
     const configs = {
@@ -69,123 +84,97 @@ const ToastHost = () => {
         icon: <SuccessIcon />,
         bgColor: '#f0f9f0',
         borderColor: '#4caf50',
-        textColor: '#ffffffff',
+        accentColor: '#4caf50',
+        textColor: '#2d5a27',
         iconColor: '#4caf50'
       },
       error: {
         icon: <ErrorIcon />,
         bgColor: '#fdf2f2',
         borderColor: '#f44336',
-        textColor: '#ffffffff',
+        accentColor: '#f44336',
+        textColor: '#7c2d2d',
         iconColor: '#f44336'
       },
       warning: {
         icon: <WarningIcon />,
         bgColor: '#fffbf0',
         borderColor: '#ff9800',
-        textColor: '#ffffffff',
+        accentColor: '#ff9800',
+        textColor: '#7c5a2d',
         iconColor: '#ff9800'
       },
       info: {
         icon: <InfoIcon />,
         bgColor: '#f0f7ff',
         borderColor: '#2196f3',
-        textColor: '#fcfcfcff',
+        accentColor: '#2196f3',
+        textColor: '#2d5a7c',
         iconColor: '#2196f3'
       }
     };
     return configs[type] || configs.info;
   };
 
-  const config = getToastConfig(toast.type);
+  if (toasts.length === 0) return null;
 
   return (
-    <div 
-      className="notification-alert-banner" 
-      role="status" 
-      aria-live="polite"
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 10000,
-        backgroundColor: config.bgColor,
-        border: `1px solid ${config.borderColor}`,
-        borderRadius: '8px',
-        padding: '16px',
-        minWidth: '300px',
-        maxWidth: '400px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-        animation: 'slideInRight 0.3s ease-out'
-      }}
-    >
-      <style>
-        {`
-          @keyframes slideInRight {
-            from {
-              transform: translateX(100%);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-        `}
-      </style>
-      <div 
-        className="alert-content" 
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '12px'
-        }}
-      >
-        <div 
-          className="alert-icon" 
-          style={{
-            color: config.iconColor,
-            flexShrink: 0,
-            marginTop: '2px'
-          }}
-        >
-          {config.icon}
-        </div>
-        <div 
-          className="alert-message" 
-          style={{
-            flex: 1,
-            color: config.textColor,
-            fontSize: '14px',
-            lineHeight: '1.4'
-          }}
-        >
-          <strong style={{ display: 'block', marginBottom: '4px', fontSize: '15px' }}>
-            PeerFusion
-          </strong>
-          <span>{toast.message}</span>
-        </div>
-        <button 
-          className="alert-close" 
-          onClick={clear} 
-          aria-label="Close"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: config.textColor,
-            cursor: 'pointer',
-            padding: '4px',
-            borderRadius: '4px',
-            flexShrink: 0,
-            opacity: 0.7,
-            transition: 'opacity 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.opacity = '1'}
-          onMouseLeave={(e) => e.target.style.opacity = '0.7'}
-        >
-          <CloseIcon />
-        </button>
-      </div>
+    <div className="peerfusion-toast-container">
+      {toasts.map((toast, index) => {
+        const config = getToastConfig(toast.type);
+        
+        return (
+          <div
+            key={toast.id}
+            className="peerfusion-toast"
+            style={{
+              '--toast-bg': config.bgColor,
+              '--toast-border': config.borderColor,
+              '--toast-accent': config.accentColor,
+              '--toast-text': config.textColor,
+              '--toast-icon': config.iconColor,
+              transform: `translateY(${index * 80}px)`
+            }}
+          >
+            <div className="peerfusion-toast-content">
+              <div className="peerfusion-toast-icon">
+                {config.icon}
+              </div>
+              
+              <div className="peerfusion-toast-message">
+                <div className="peerfusion-toast-header">
+                  <span className="peerfusion-toast-title">
+                    {toast.type.charAt(0).toUpperCase() + toast.type.slice(1)}
+                  </span>
+                  <span className="peerfusion-toast-brand">PeerFusion</span>
+                </div>
+                <div className="peerfusion-toast-body">
+                  {toast.message}
+                </div>
+              </div>
+
+              <button 
+                className="peerfusion-toast-close"
+                onClick={() => clearToast(toast.id)}
+                aria-label="Close notification"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            {/* Progress bar */}
+            <div className="peerfusion-toast-progress">
+              <div 
+                className="peerfusion-toast-progress-bar"
+                style={{
+                  backgroundColor: config.accentColor,
+                  animation: `shrink ${AUTO_DISMISS_MS}ms linear forwards`
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
