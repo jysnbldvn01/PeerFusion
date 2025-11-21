@@ -169,7 +169,7 @@ router.post("/accept", async (req, res) => {
         requester_id, // receiver is the original requester
         requestId,
         requestId,
-        `✅ ${userInfoMap[String(receiver_id)].username} accepted your session request`,
+        `${userInfoMap[String(receiver_id)].username} accepted your session request`,
       ]
     );
 

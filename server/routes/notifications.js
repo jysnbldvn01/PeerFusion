@@ -71,7 +71,7 @@ router.post('/accept/:id', authenticateToken, async (req, res) => {
       [
         userId,      // acceptor
         peerId,      // original requester
-        `✅ ${acceptorName} accepted your session request`,
+        `${acceptorName} accepted your session request`,
       ]
     );
 

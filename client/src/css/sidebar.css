@@ -1,4 +1,6 @@
-/* PeerFusion Navigation System - Unique Classes */
+/* PeerFusion Navigation System - Complete Responsive Update */
+
+/* Base Sidebar Styles */
 .peerfusion-nav-sidebar {
   width: 280px;
   height: 100vh;
@@ -19,23 +21,19 @@
   width: 80px;
 }
 
+/* Mobile Specific Styles */
 .peerfusion-nav-sidebar.mobile {
   transform: translateX(-100%);
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   z-index: 1002;
+  top: 0;
+  height: 100vh;
 }
 
 .peerfusion-nav-sidebar.mobile:not(.collapsed) {
   transform: translateX(0);
-  box-shadow: 4px 0 30px rgba(0, 0, 0, 0.3);
-}
-
-.peerfusion-nav-scroll-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-  justify-content: space-between;
+  box-shadow: 4px 0 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Mobile Header */
@@ -68,6 +66,7 @@
   margin-right: 1rem;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .peerfusion-nav-mobile-toggle:hover {
@@ -88,7 +87,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   z-index: 1001;
   animation: peerfusion-nav-fadeIn 0.3s ease;
 }
@@ -109,13 +108,18 @@
   flex-shrink: 0;
 }
 
-.peerfusion-nav-logoss {
+.peerfusion-nav-logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.peerfusion-nav-logo {
   height: 42px;
   filter: brightness(0) invert(1);
   transition: all 0.3s ease;
 }
 
-.peerfusion-nav-sidebar.collapsed .peerfusion-nav-logoss {
+.peerfusion-nav-sidebar.collapsed .peerfusion-nav-logo {
   opacity: 0;
   width: 0;
   overflow: hidden;
@@ -134,11 +138,22 @@
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .peerfusion-nav-toggle-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   transform: scale(1.1);
+}
+
+/* Scroll Container */
+.peerfusion-nav-scroll-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  justify-content: space-between;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Navigation Items */
@@ -149,6 +164,7 @@
   padding: 1.5rem 1rem;
   overflow-y: auto;
   flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 .peerfusion-nav-item {
@@ -167,6 +183,8 @@
   font-family: inherit;
   position: relative;
   flex-shrink: 0;
+  min-height: 56px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .peerfusion-nav-item:hover {
@@ -220,6 +238,7 @@
   overflow: hidden;
 }
 
+/* Notification Styles */
 .peerfusion-nav-notification-container {
   position: relative;
   display: flex;
@@ -286,19 +305,20 @@
   display: none;
 }
 
-/* Footer Section - Smaller Logout Button */
+/* Footer Section */
 .peerfusion-nav-footer {
   padding: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
+  margin-top: auto;
 }
 
 .peerfusion-nav-logout-btn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.7rem 1rem;
+  padding: 0.9rem 1rem;
   border-radius: 10px;
   color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
@@ -309,7 +329,8 @@
   font-size: 0.9rem;
   font-family: inherit;
   width: 100%;
-  min-height: auto;
+  min-height: 48px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .peerfusion-nav-logout-btn:hover {
@@ -338,7 +359,12 @@
   transition: all 0.3s ease;
 }
 
-.peerfusion-nav-sidebar.collapsed .peerfusion-nav-logout-label {
+/* Always show logout label on mobile */
+.peerfusion-nav-sidebar.mobile .peerfusion-nav-logout-label {
+  display: block !important;
+}
+
+.peerfusion-nav-sidebar.collapsed:not(.mobile) .peerfusion-nav-logout-label {
   display: none;
 }
 
@@ -362,61 +388,264 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Responsive Design - Mobile First Approach */
+
+/* Small Mobile Devices (320px - 480px) */
+@media (max-width: 480px) {
   .peerfusion-nav-mobile-header {
     padding: 0 1rem;
     height: 65px;
   }
 
-  .peerfusion-nav-sidebar {
-    padding: 0;
+  .peerfusion-nav-sidebar.mobile {
+    max-width: 100%;
+  }
+
+  .peerfusion-nav-mobile-logo img {
+    height: 36px;
+  }
+
+  .peerfusion-nav-mobile-toggle {
+    width: 42px;
+    height: 42px;
+    margin-right: 0.8rem;
+  }
+
+  .peerfusion-nav-items {
+    padding: 1rem 0.8rem;
+    gap: 0.4rem;
+  }
+
+  .peerfusion-nav-item {
+    padding: 1rem 0.8rem;
+    min-height: 52px;
+    gap: 0.8rem;
+  }
+
+  .peerfusion-nav-icon {
+    font-size: 1.3rem;
+  }
+
+  .peerfusion-nav-label {
+    font-size: 1rem;
+  }
+
+  .peerfusion-nav-footer {
+    padding: 0.8rem;
+  }
+
+  .peerfusion-nav-logout-btn {
+    padding: 0.9rem 0.8rem;
+    min-height: 46px;
+    gap: 0.6rem;
+  }
+
+  .peerfusion-nav-logout-icon {
+    font-size: 1.1rem;
+  }
+
+  .peerfusion-nav-logout-label {
+    font-size: 0.85rem;
+  }
+}
+
+/* Medium Mobile Devices (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .peerfusion-nav-sidebar.mobile {
+    max-width: 320px;
+  }
+
+  .peerfusion-nav-mobile-header {
+    padding: 0 1.25rem;
+    height: 68px;
+  }
+
+  .peerfusion-nav-items {
+    padding: 1.25rem 1rem;
+  }
+
+  .peerfusion-nav-item {
+    padding: 1.1rem 1rem;
+    min-height: 54px;
+  }
+
+  .peerfusion-nav-footer {
+    padding: 1rem;
+  }
+}
+
+/* Tablets (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .peerfusion-nav-sidebar:not(.mobile) {
+    width: 240px;
+  }
+
+  .peerfusion-nav-sidebar.collapsed:not(.mobile) {
+    width: 70px;
   }
 
   .peerfusion-nav-header {
     padding: 1.5rem 1rem 1rem;
   }
 
+  .peerfusion-nav-logo {
+    height: 38px;
+  }
+
   .peerfusion-nav-items {
-    padding: 1rem 0.8rem;
+    padding: 1.25rem 0.8rem;
   }
 
   .peerfusion-nav-item {
-    padding: 1.1rem 1rem;
-  }
-  
-  .peerfusion-nav-logout-btn {
-    padding: 0.9rem 0.9rem;
+    padding: 0.9rem 1rem;
+    min-height: 52px;
+    gap: 0.8rem;
   }
 
   .peerfusion-nav-icon {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   .peerfusion-nav-label {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
   }
 
-  .peerfusion-nav-sidebar.mobile:not(.collapsed) {
-    overflow-y: auto;
+  .peerfusion-nav-footer {
+    padding: 0.8rem;
+  }
+
+  .peerfusion-nav-logout-btn {
+    padding: 0.8rem 0.9rem;
+    min-height: 46px;
   }
 }
 
-@media (max-width: 480px) {
-  .peerfusion-nav-sidebar.mobile {
-    width: 100%;
+/* Large Tablets and Small Desktops (1025px - 1440px) */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .peerfusion-nav-sidebar:not(.mobile) {
+    width: 260px;
   }
 
+  .peerfusion-nav-sidebar.collapsed:not(.mobile) {
+    width: 75px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .peerfusion-nav-item:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .peerfusion-nav-item:active {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.98);
+  }
+
+  .peerfusion-nav-logout-btn:hover {
+    transform: none;
+  }
+
+  .peerfusion-nav-logout-btn:active {
+    background: rgba(254, 178, 178, 0.2);
+    transform: scale(0.98);
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .peerfusion-nav-sidebar {
+    border-right-width: 0.5px;
+  }
+  
   .peerfusion-nav-mobile-header {
-    padding: 0 0.8rem;
+    border-bottom-width: 0.5px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .peerfusion-nav-sidebar {
+    transition: none;
+  }
+  
+  .peerfusion-nav-item,
+  .peerfusion-nav-logout-btn,
+  .peerfusion-nav-toggle-btn,
+  .peerfusion-nav-mobile-toggle {
+    transition: none;
+  }
+  
+  .peerfusion-nav-notification-indicator {
+    animation: none;
+  }
+  
+  .peerfusion-nav-mobile-overlay {
+    animation: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .peerfusion-nav-sidebar {
+    background: #2d5a27;
+  }
+}
+
+/* Landscape Orientation for Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .peerfusion-nav-sidebar.mobile {
+    height: 100vh;
+    overflow-y: auto;
   }
 
-  .peerfusion-nav-mobile-logo img {
-    height: 34px;
+  .peerfusion-nav-items {
+    max-height: 60vh;
   }
 
-  .peerfusion-nav-logoss {
-    height: 38px;
+  .peerfusion-nav-footer {
+    position: relative;
+    margin-top: auto;
+  }
+}
+
+/* Very small height devices */
+@media (max-height: 600px) {
+  .peerfusion-nav-header {
+    padding: 1rem 1.5rem 0.8rem;
+  }
+
+  .peerfusion-nav-items {
+    padding: 1rem 1rem 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .peerfusion-nav-item {
+    padding: 0.8rem 1rem;
+    min-height: 48px;
+  }
+
+  .peerfusion-nav-footer {
+    padding: 0.8rem;
+  }
+
+  .peerfusion-nav-logout-btn {
+    padding: 0.7rem 0.9rem;
+    min-height: 44px;
+  }
+}
+
+/* Safe area support for modern devices */
+@supports (padding: max(0px)) {
+  .peerfusion-nav-sidebar.mobile {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .peerfusion-nav-mobile-header {
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
   }
 }
 
@@ -436,6 +665,7 @@
   }
 }
 
-.peerfusion-nav-scroll-container {
-  -webkit-overflow-scrolling: touch;
+/* Ensure proper stacking context */
+.peerfusion-nav-sidebar.mobile {
+  isolation: isolate;
 }

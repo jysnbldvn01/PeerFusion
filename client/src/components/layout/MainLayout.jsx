@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import NavigationBar from './NavigationBar';
 import { AuthContext } from '../../context/AuthContext';
@@ -7,16 +7,23 @@ import '../../css/layout.css';
 import '../../css/floatingchattoggle.css';
 import ToastHost from '../ui/ToastHost';
 import ConfirmHost from '../ui/ConfirmHost';
-import useIsMobile from '../../hooks/useIsMobile';
 
 function MainLayout() {
   const { user } = useContext(AuthContext);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
-  const isMobile = useIsMobile();
+  const [isMobile, setIsMobile] = useState(false);
 
-  React.useEffect(() => {
-    setIsNavCollapsed(isMobile ? true : false);
-  }, [isMobile]);
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="app-container">
@@ -25,8 +32,7 @@ function MainLayout() {
       <NavigationBar 
         key={user?.id || 'guest'}
         isCollapsed={isNavCollapsed} 
-        onToggle={() => setIsNavCollapsed(!isNavCollapsed)}
-        isMobile={isMobile}
+        onToggle={() => setIsNavCollapsed(!isNavCollapsed)} 
       />
       <div className={`content-container ${isNavCollapsed ? 'collapsed' : ''} ${isMobile ? 'has-mobile-header' : ''}`}>
         <main className="main-content">

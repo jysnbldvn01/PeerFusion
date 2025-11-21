@@ -24,7 +24,6 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
   const setupRealTimeChatCount = () => {
     if (!user?.user_id) return () => {};
 
-    // Listen to all conversations where user is a participant
     const conversationsQuery = query(
       collection(db, "conversations"),
       where("participants", "array-contains", Number(user.user_id)),
@@ -35,7 +34,6 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
       const conversationUnreadCounts = {};
       const unsubscribeCallbacks = [];
 
-      // For each conversation, listen to messages to calculate unread counts
       snapshot.docs.forEach((conversationDoc) => {
         const conversationId = conversationDoc.id;
         const messagesQuery = query(
@@ -50,13 +48,10 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
             const message = messageDoc.data();
             const messageId = messageDoc.id;
             
-            // Check if message is from other user and not seen by current user
             if (String(message.senderId) !== String(user.user_id)) {
               const seenBy = message.seenBy || [];
               if (!seenBy.map(String).includes(String(user.user_id))) {
                 unread++;
-                
-                // Track new messages for potential notifications (same logic as floating chat)
                 if (!notifiedMessageIds.current.has(messageId)) {
                   notifiedMessageIds.current.add(messageId);
                 }
@@ -130,7 +125,6 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
     }
 
     const handleCountsUpdated = (data) => {
-      console.log('Counts updated:', data);
       setNotificationCount(data.notifications || 0);
     };
 
@@ -164,10 +158,9 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
       if (unsubscribeFirebase) {
         unsubscribeFirebase();
       }
-      
       notifiedMessageIds.current.clear();
     };
-  }, [user?.user_id]); // Re-run when user changes
+  }, [user?.user_id]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -195,7 +188,6 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Format count for display (same as floating chat)
   const formatCount = (count) => {
     if (count > 99) return '99+';
     return count;
@@ -209,6 +201,7 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
           <button 
             className="peerfusion-nav-mobile-toggle"
             onClick={handleMobileToggle}
+            aria-label={isCollapsed ? "Open menu" : "Close menu"}
           >
             {isCollapsed ? <FiMenu size={24} /> : <FiX size={24} />}
           </button>
@@ -232,12 +225,15 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
         {!isMobile && (
           <div className="peerfusion-nav-header">
             {!isCollapsed && (
-              <img src="/logo.png" alt="PeerFusion" className="peerfusion-nav-logoss" />
+              <div className="peerfusion-nav-logo-container">
+                <img src="/logo.png" alt="PeerFusion" className="peerfusion-nav-logo" />
+              </div>
             )}
             <button 
               className="peerfusion-nav-toggle-btn"
               onClick={handleDesktopToggle}
               title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isCollapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
             </button>
@@ -320,7 +316,7 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
               className="peerfusion-nav-logout-btn"
             >
               <FiLogOut className="peerfusion-nav-logout-icon" />
-              {!isCollapsed && <span className="peerfusion-nav-logout-label">Logout</span>}
+              <span className="peerfusion-nav-logout-label">Logout</span>
             </button>
           </div>
         </div>

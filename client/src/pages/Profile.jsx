@@ -2203,7 +2203,7 @@ const Profile = () => {
                 {editMode ? (
                   <div className="peerfusion-form-grid">
                     <div className="peerfusion-form-group">
-                      <label className="peerfusion-form-label">Full name</label>
+                      <label className="peerfusion-form-label">Full Name</label>
                       <input 
                         type="text" 
                         name="username" 
@@ -2314,7 +2314,7 @@ const Profile = () => {
                 ) : (
                   <div className="peerfusion-info-grid">
                     <div className="peerfusion-info-item">
-                      <span className="peerfusion-info-label">Username</span>
+                      <span className="peerfusion-info-label">Full Name</span>
                       <span className="peerfusion-info-value">{profile.username}</span>
                     </div>
                     <div className="peerfusion-info-item">

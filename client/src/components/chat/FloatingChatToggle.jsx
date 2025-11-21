@@ -177,9 +177,13 @@ const FloatingChatToggle = () => {
           const messageId = messageDoc.id;
           
           // Check if message is from other user and not seen by current user
+          // Also check if message is not unsent for everyone and not hidden for current user
           if (String(message.senderId) !== String(user.user_id)) {
             const seenBy = message.seenBy || [];
-            if (!seenBy.map(String).includes(String(user.user_id))) {
+            const hiddenFor = message.hiddenFor || [];
+            if (!seenBy.map(String).includes(String(user.user_id)) && 
+                !hiddenFor.map(String).includes(String(user.user_id)) &&
+                !message.unsentForEveryone) {
               unread++;
               
               // Check if this is a new message we haven't notified about
@@ -288,13 +292,21 @@ const FloatingChatToggle = () => {
         ...d.data(),
         createdAt: d.data().createdAt?.toDate?.() || new Date()
       }));
-      setMessages(msgs);
+      
+      // Filter out messages that are hidden for current user or unsent for everyone
+      const filteredMsgs = msgs.filter(message => {
+        const hiddenFor = message.hiddenFor || [];
+        return !hiddenFor.map(String).includes(String(user.user_id));
+      });
+      
+      setMessages(filteredMsgs);
 
       // Mark messages as read when viewing conversation
-      const unseen = msgs.filter(
+      const unseen = filteredMsgs.filter(
         (m) =>
           String(m.senderId) !== String(user.user_id) &&
-          !(m.seenBy || []).map(String).includes(String(user.user_id))
+          !(m.seenBy || []).map(String).includes(String(user.user_id)) &&
+          !m.unsentForEveryone
       );
 
       if (unseen.length > 0) {
@@ -345,6 +357,12 @@ const FloatingChatToggle = () => {
         const m = { id: d.id, ...d.data() };
         const ft = (m.fileType || "").toString().toLowerCase();
 
+        // Skip unsent or hidden messages
+        const hiddenFor = m.hiddenFor || [];
+        if (m.unsentForEveryone || hiddenFor.map(String).includes(String(user.user_id))) {
+          return;
+        }
+
         if (ft === "image" && m.content) {
           images.push({
             id: m.id,
@@ -369,7 +387,7 @@ const FloatingChatToggle = () => {
     });
 
     return () => unsubscribe();
-  }, [activeConversation?.id, view]);
+  }, [activeConversation?.id, view, user?.user_id]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -771,30 +789,49 @@ const FloatingChatToggle = () => {
                       <p>No messages yet. Start the conversation!</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`peerfusion-floating-message ${
-                          String(message.senderId) === String(user.user_id) ? 'sent' : 'received'
-                        }`}
-                      >
-                        <div className="peerfusion-floating-message-content">
-                          {message.fileType === "image" ? (
-                            <img src={message.content} alt="Shared" className="peerfusion-floating-chat-image" />
-                          ) : message.fileType === "pdf" || message.fileType === "doc" ? (
-                            <a href={message.content} target="_blank" rel="noopener noreferrer" className="peerfusion-floating-chat-file">
-                              <FileIcon />
-                              <span>{message.fileName || "Download file"}</span>
-                            </a>
-                          ) : (
-                            message.content
-                          )}
+                    messages.map((message) => {
+                      // Check if message is unsent for everyone
+                      if (message.unsentForEveryone) {
+                        return (
+                          <div
+                            key={message.id}
+                            className="peerfusion-floating-message unsent"
+                          >
+                            <div className="peerfusion-floating-message-content unsent">
+                              <em>{(message.unsentByName || message.senderName || 'Someone')} unsent a message</em>
+                            </div>
+                            <div className="peerfusion-floating-message-time">
+                              {formatMessageTime(message.createdAt)}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={message.id}
+                          className={`peerfusion-floating-message ${
+                            String(message.senderId) === String(user.user_id) ? 'sent' : 'received'
+                          }`}
+                        >
+                          <div className="peerfusion-floating-message-content">
+                            {message.fileType === "image" ? (
+                              <img src={message.content} alt="Shared" className="peerfusion-floating-chat-image" />
+                            ) : message.fileType === "pdf" || message.fileType === "doc" ? (
+                              <a href={message.content} target="_blank" rel="noopener noreferrer" className="peerfusion-floating-chat-file">
+                                <FileIcon />
+                                <span>{message.fileName || "Download file"}</span>
+                              </a>
+                            ) : (
+                              message.content
+                            )}
+                          </div>
+                          <div className="peerfusion-floating-message-time">
+                            {formatMessageTime(message.createdAt)}
+                          </div>
                         </div>
-                        <div className="peerfusion-floating-message-time">
-                          {formatMessageTime(message.createdAt)}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                   <div ref={messagesEndRef} />
                 </div>
