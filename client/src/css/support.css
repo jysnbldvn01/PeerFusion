@@ -355,10 +355,10 @@
   cursor: not-allowed;
   transform: none;
 }
-
 /* Alternative Contact */
 .alternative-contact {
   padding: 2rem 0;
+  text-align: center; /* Center align for all devices */
 }
 
 .alternative-contact h3 {
@@ -366,6 +366,7 @@
   margin-bottom: 2rem;
   color: #1a202c;
   font-weight: 700;
+  text-align: center; /* Ensure heading is centered */
 }
 
 .contact-methods {
@@ -383,6 +384,7 @@
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   transition: all 0.3s ease;
+  text-align: left; /* Keep text left-aligned for desktop */
 }
 
 .contact-method:hover {
@@ -414,6 +416,11 @@
   height: 24px;
 }
 
+.method-info {
+  flex: 1;
+  text-align: left; /* Keep text left-aligned for desktop */
+}
+
 .method-info h4 {
   margin: 0 0 0.5rem 0;
   color: #1a202c;
@@ -431,6 +438,8 @@
 .method-info small {
   color: #718096;
   font-size: 0.85rem;
+  display: block;
+  line-height: 1.4;
 }
 
 /* Responsive Design */
@@ -498,6 +507,43 @@
   .faq-answer {
     padding: 0 1.5rem 1.5rem;
   }
+  
+  /* Mobile-specific contact method styles */
+  .contact-method {
+    flex-direction: column; /* Stack icon and content vertically */
+    align-items: center; /* Center align items */
+    text-align: center; /* Center text */
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+  
+  .method-icon {
+    margin: 0 auto; /* Center the icon */
+    align-self: center; /* Ensure icon stays centered */
+  }
+  
+  .method-info {
+    text-align: center; /* Center all text in method info */
+    width: 100%; /* Take full width */
+  }
+  
+  .method-info h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .method-info p {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2d5a27;
+  }
+  
+  .method-info small {
+    font-size: 0.85rem;
+    color: #718096;
+    line-height: 1.4;
+  }
 }
 
 @media (max-width: 480px) {
@@ -519,14 +565,55 @@
     height: 28px;
   }
   
+  .alternative-contact h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+  
   .contact-method {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
+    padding: 1rem;
+    gap: 0.75rem;
   }
   
   .method-icon {
-    align-self: center;
+    width: 45px;
+    height: 45px;
+  }
+  
+  .method-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .method-info h4 {
+    font-size: 1rem;
+  }
+  
+  .method-info p {
+    font-size: 0.95rem;
+  }
+  
+  .method-info small {
+    font-size: 0.8rem;
+  }
+}
+
+/* Ensure proper spacing on very small screens */
+@media (max-width: 360px) {
+  .contact-method {
+    padding: 0.875rem;
+  }
+  
+  .method-info h4 {
+    font-size: 0.95rem;
+  }
+  
+  .method-info p {
+    font-size: 0.9rem;
+  }
+  
+  .method-info small {
+    font-size: 0.75rem;
   }
 }
 .file-upload-label {

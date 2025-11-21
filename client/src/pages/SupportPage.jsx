@@ -158,7 +158,7 @@ const SupportPage = () => {
       {
         id: 4,
         question: "How do I create an account?",
-        answer: "Click the 'Get Started' button on our homepage and use your EARIST student credentials to register. You'll need to verify your email address to complete the registration process."
+        answer: "Click the 'Get Started' button on our homepage. You'll need to verify your email address to complete the registration process."
       }
     ],
     technical: [
@@ -187,7 +187,7 @@ const SupportPage = () => {
       {
         id: 9,
         question: "How do I schedule a learning session?",
-        answer: "Navigate to the 'Find Skills' section, browse available skill sharers, and use the scheduling feature to book a session based on mutual availability. You'll receive confirmation and reminders."
+        answer: "Navigate to the 'Home Page' section, browse available skill sharers, and use the scheduling feature to book a session based on mutual availability. You'll receive confirmation and reminders."
       },
       {
         id: 10,
