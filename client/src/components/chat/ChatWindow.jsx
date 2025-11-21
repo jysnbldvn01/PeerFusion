@@ -1092,14 +1092,6 @@ const handleUnsendForEveryone = async (message) => {
             >
               <CalendarIcon />
             </button>
-            
-            {/* Permanent tooltip that shows on hover/touch for disabled schedule button */}
-            {!canSchedule && (
-              <div className="peerfusion-chat-schedule-tooltip peerfusion-chat-schedule-tooltip-permanent">
-                <div className="peerfusion-chat-tooltip-arrow"></div>
-                Only the person who accepted your session can schedule meetings
-              </div>
-            )}
           </div>
           
           {isMobile && (
