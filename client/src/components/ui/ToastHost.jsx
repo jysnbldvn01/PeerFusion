@@ -69,28 +69,28 @@ const ToastHost = () => {
         icon: <SuccessIcon />,
         bgColor: '#f0f9f0',
         borderColor: '#4caf50',
-        textColor: '#2e7d32',
+        textColor: '#ffffffff',
         iconColor: '#4caf50'
       },
       error: {
         icon: <ErrorIcon />,
         bgColor: '#fdf2f2',
         borderColor: '#f44336',
-        textColor: '#c62828',
+        textColor: '#ffffffff',
         iconColor: '#f44336'
       },
       warning: {
         icon: <WarningIcon />,
         bgColor: '#fffbf0',
         borderColor: '#ff9800',
-        textColor: '#ef6c00',
+        textColor: '#ffffffff',
         iconColor: '#ff9800'
       },
       info: {
         icon: <InfoIcon />,
         bgColor: '#f0f7ff',
         borderColor: '#2196f3',
-        textColor: '#1565c0',
+        textColor: '#fcfcfcff',
         iconColor: '#2196f3'
       }
     };
