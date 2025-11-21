@@ -75,10 +75,6 @@
 }
 
 @media (max-width: 480px) {
-  .main-content {
-    padding: 0.75rem;
-  }
-  
   .peerfusion-nav-sidebar.mobile:not(.collapsed) ~ .content-container {
     transform: translateX(100%);
   }

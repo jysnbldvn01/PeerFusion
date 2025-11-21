@@ -221,22 +221,6 @@ const NavigationBar = ({ isCollapsed, onToggle, isMobile }) => {
 
       {/* Sidebar - Hidden by default on mobile, shows when hamburger is clicked */}
       <nav className={`peerfusion-nav-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}>
-        {/* Mobile Sidebar Header with Close Button */}
-        {isMobile && (
-          <div className="peerfusion-nav-mobile-sidebar-header">
-            <div className="peerfusion-nav-mobile-sidebar-logo">
-              <img src="/logo.png" alt="PeerFusion" />
-              <span>PeerFusion</span>
-            </div>
-            <button 
-              className="peerfusion-nav-mobile-close"
-              onClick={handleMobileToggle}
-              aria-label="Close menu"
-            >
-              <FiX size={24} />
-            </button>
-          </div>
-        )}
 
         {/* Desktop Header with Toggle */}
         {!isMobile && (
