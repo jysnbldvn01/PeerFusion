@@ -727,9 +727,9 @@ const Notification = () => {
                     <h4 className="peerfusion-notification-username">
                       {getDisplayName(notification)}
                     </h4>
-                      <p className="peerfusion-notification-time">
-                        {notification.created_at_formatted}
-                      </p>
+                    <p className="peerfusion-notification-time">
+                      {notification.created_at_formatted}
+                    </p>
                   </div>
                   
                   <p 
@@ -847,9 +847,9 @@ const Notification = () => {
               </div>
               <div className="peerfusion-notification-modal-user">
                 <h3>{getDisplayName(selectedNotification)}</h3>
-                  <div className="peerfusion-notification-modal-time">
-                    {selectedNotification.created_at_formatted}
-                  </div>
+                <div className="peerfusion-notification-modal-time">
+                  {selectedNotification.created_at_formatted}
+                </div>
               </div>
             </div>
 

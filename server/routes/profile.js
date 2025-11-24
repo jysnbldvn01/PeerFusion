@@ -39,20 +39,6 @@ const createAccountStatusNotification = async (userId, message, type = 'account_
   }
 };
 
-const formatDateForManila = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleString('en-PH', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
-};
-
 function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
@@ -484,14 +470,7 @@ router.get('/notifications', authenticateToken, async (req, res) => {
     `;
     
     const [results] = await db.query(sql, [userId]);
-    
-    // Format dates for Manila timezone before sending to frontend
-    const formattedResults = results.map(notification => ({
-      ...notification,
-      created_at_formatted: formatDateForManila(notification.created_at)
-    }));
-    
-    res.json(formattedResults);
+    res.json(results);
   } catch (err) {
     console.error('Notifications error:', err);
     res.status(500).json({ error: 'DB error' });
