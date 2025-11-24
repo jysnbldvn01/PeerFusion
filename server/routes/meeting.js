@@ -2,7 +2,20 @@ const express = require("express");
 const router = express.Router();
 const schedule = require("node-schedule");
 
-// 🟢 Schedule a meeting
+const formatManilaDateTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
+//  Schedule a meeting
 router.post("/schedule", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -31,7 +44,7 @@ router.post("/schedule", async (req, res) => {
       nameRows.forEach(r => { nameMap[String(r.id)] = r.name; });
     } catch (_) {}
 
-    const scheduledLabel = new Date(scheduledAt).toLocaleString();
+    const scheduledLabel = formatManilaDateTime(scheduledAt);
 
     // Notify participants and emit socket
     for (const participantId of participants) {
@@ -104,7 +117,7 @@ router.post("/schedule", async (req, res) => {
   }
 });
 
-// 🟢 Fetch meetings for a user
+// Fetch meetings for a user
 router.get("/user/:userId", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -124,7 +137,7 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
-// 🟢 Fetch a meeting by conversationId (for chat banner)
+// Fetch a meeting by conversationId (for chat banner)
 router.get("/conversation/:conversationId", async (req, res) => {
   try {
     const db = req.app.get("db");
@@ -150,7 +163,7 @@ router.get("/conversation/:conversationId", async (req, res) => {
   }
 });
 
-// 🟢 Update meeting status (cancel / complete)
+// Update meeting status (cancel / complete)
 router.post("/update-status", async (req, res) => {
   try {
     const db = req.app.get("db");
