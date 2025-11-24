@@ -150,6 +150,14 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     }
   };
 
+  const formatManilaTime = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila'
+  });
+};
+
   useEffect(() => {
   const handleDocumentClick = () => {
     if (tooltipActive) {
@@ -1156,12 +1164,8 @@ const handleUnsendForEveryone = async (message) => {
         <div className="peerfusion-chat-meeting-banner">
           <div className="peerfusion-chat-meeting-body">
             <div className="peerfusion-chat-meeting-reminder">
-              REMINDER: Session scheduled on{" "}
-              {new Date(currentMeeting.scheduled_at).toLocaleDateString()} at{" "}
-              {new Date(currentMeeting.scheduled_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              REMINDER: Session scheduled for{" "}
+              {formatManilaTime(currentMeeting.scheduled_at)}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1491,7 +1495,7 @@ const handleUnsendForEveryone = async (message) => {
                 <p>Are you sure you want to cancel this session?</p>
                 <div className="peerfusion-chat-meeting-details">
                   <strong>Session Time:</strong><br />
-                  {currentMeeting && new Date(currentMeeting.scheduled_at).toLocaleString()}
+                  {currentMeeting && formatManilaTime(currentMeeting.scheduled_at)}
                 </div>
                 <div className="peerfusion-chat-warning-note">
                   This action cannot be undone. Both participants will be notified.
