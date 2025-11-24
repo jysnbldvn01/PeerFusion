@@ -275,6 +275,7 @@
 .rm-table td {
   padding: 20px 12px;
   border-bottom: 1px solid #f1f5f9;
+  position: relative;
 }
 
 .rm-table tbody tr {

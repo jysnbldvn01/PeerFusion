@@ -117,59 +117,6 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
     }
   };
 
-  const formatManilaTime = (dateString) => {
-  if (!dateString) return '';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-PH', {
-      timeZone: 'Asia/Manila',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch (error) {
-    return 'Invalid date';
-  }
-};
-
-const formatManilaDateTime = (dateString) => {
-  if (!dateString) return '';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-PH', {
-      timeZone: 'Asia/Manila',
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch (error) {
-    return 'Invalid date';
-  }
-};
-
-// For Firebase timestamps
-const formatFirebaseTime = (timestamp) => {
-  if (!timestamp) return '';
-  try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleTimeString('en-PH', {
-      timeZone: 'Asia/Manila',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch (error) {
-    return '';
-  }
-};
-
   // Enhanced API request function with proper error handling
   const makeApiRequest = async (url, options = {}) => {
     const token = getAuthToken();
@@ -1208,10 +1155,14 @@ const handleUnsendForEveryone = async (message) => {
       {currentMeeting && (
         <div className="peerfusion-chat-meeting-banner">
           <div className="peerfusion-chat-meeting-body">
-              <div className="peerfusion-chat-meeting-reminder">
-                REMINDER: Session scheduled for{" "}
-                {formatManilaDateTime(currentMeeting.scheduled_at)}
-              </div>
+            <div className="peerfusion-chat-meeting-reminder">
+              REMINDER: Session scheduled on{" "}
+              {new Date(currentMeeting.scheduled_at).toLocaleDateString()} at{" "}
+              {new Date(currentMeeting.scheduled_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button
@@ -1274,7 +1225,12 @@ const handleUnsendForEveryone = async (message) => {
                 const isLastInGroup = idx === g.msgs.length - 1;
                 const showTailAvatar = !isMeGroup && isLastInGroup;
 
-                const timestamp = formatFirebaseTime(m.createdAt);
+                const timestamp = m.createdAt?.toDate
+                  ? new Date(m.createdAt.toDate()).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "";
 
                 const sentByMe = isMeGroup;
                 const lastMessageInAll = (() => {
@@ -1533,10 +1489,10 @@ const handleUnsendForEveryone = async (message) => {
             <div className="peerfusion-chat-modal-body">
               <div className="peerfusion-chat-confirm-message">
                 <p>Are you sure you want to cancel this session?</p>
-                  <div className="peerfusion-chat-meeting-details">
-                    <strong>Session Time:</strong><br />
-                    {currentMeeting && formatManilaDateTime(currentMeeting.scheduled_at)}
-                  </div>
+                <div className="peerfusion-chat-meeting-details">
+                  <strong>Session Time:</strong><br />
+                  {currentMeeting && new Date(currentMeeting.scheduled_at).toLocaleString()}
+                </div>
                 <div className="peerfusion-chat-warning-note">
                   This action cannot be undone. Both participants will be notified.
                 </div>

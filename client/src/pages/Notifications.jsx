@@ -728,7 +728,7 @@ const Notification = () => {
                       {getDisplayName(notification)}
                     </h4>
                     <p className="peerfusion-notification-time">
-                      {notification.created_at_formatted}
+                      {new Date(notification.created_at).toLocaleString()}
                     </p>
                   </div>
                   
@@ -848,7 +848,7 @@ const Notification = () => {
               <div className="peerfusion-notification-modal-user">
                 <h3>{getDisplayName(selectedNotification)}</h3>
                 <div className="peerfusion-notification-modal-time">
-                  {selectedNotification.created_at_formatted}
+                  {new Date(selectedNotification.created_at).toLocaleString()}
                 </div>
               </div>
             </div>
