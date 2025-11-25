@@ -78,7 +78,6 @@ const LandingPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-// In your useEffect, organize the existing testimonials into columns
 useEffect(() => {
   const organizeExistingTestimonials = () => {
     const track = testimonialTrackRef.current;
@@ -90,22 +89,18 @@ useEffect(() => {
     track.innerHTML = '';
     
     if (isMobile) {
-      // Mobile: Single items in a row - NO COLUMNS
       testimonials.forEach(testimonial => {
         const card = testimonial.cloneNode(true);
-        // Remove any column classes if they exist
         card.classList.remove('testimonial-column');
         track.appendChild(card);
       });
       
-      // Duplicate for seamless loop
       const allCards = Array.from(track.children);
       allCards.forEach(card => {
         const clone = card.cloneNode(true);
         track.appendChild(clone);
       });
     } else {
-      // Desktop: Column-based (your existing code)
       const columns = 5;
       const columnData = Array.from({ length: columns }, () => []);
       

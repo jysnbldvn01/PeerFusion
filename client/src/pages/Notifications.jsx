@@ -74,10 +74,16 @@ const Notification = () => {
   
   const navigate = useNavigate();
 
-  // Add debug logging
+  // Enhanced debug logging to verify username data
   useEffect(() => {
     console.log('Current notifications:', notifications);
-    console.log('Filtered notifications:', filteredNotifications);
+    console.log('Notification usernames:', notifications.map(n => ({
+      id: n.id,
+      type: n.type,
+      sender_id: n.sender_id,
+      sender_name: n.sender_name,
+      sender_role: n.sender_role
+    })));
   }, [notifications]);
 
   const formatNotificationMessage = (message) => {
@@ -139,7 +145,6 @@ const Notification = () => {
     }
   };
 
-  // EXACT SAME PATTERN AS OLDEST CODE
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('token');
     const url =
@@ -151,7 +156,7 @@ const Notification = () => {
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Fetched notifications:', res.data);
+      console.log('Fetched notifications with usernames:', res.data);
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -159,7 +164,6 @@ const Notification = () => {
     }
   }, [activeTab]);
 
-  // EXACT SAME PATTERN AS OLDEST CODE
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
@@ -194,12 +198,12 @@ const Notification = () => {
 
   // Enhanced helper functions to determine display name and avatar
   const getDisplayName = (notification) => {
-    console.log('Processing notification:', {
+    console.log('Processing notification for display name:', {
       id: notification.id,
       type: notification.type,
       sender_id: notification.sender_id,
       sender_name: notification.sender_name,
-      message: notification.message?.substring(0, 100)
+      sender_role: notification.sender_role
     });
 
     // ALWAYS show PeerFusion Team for penalty type (from report.js and user management)
@@ -229,7 +233,8 @@ const Notification = () => {
       return 'PeerFusion Team';
     }
     
-    return notification.sender_name || 'System';
+    // Use the username from user_profiles (now coming from backend)
+    return notification.sender_name || 'User';
   };
 
   const getDisplayAvatar = (notification) => {
@@ -261,9 +266,10 @@ const Notification = () => {
     if (displayName === 'PeerFusion Team') {
       return <InternetIcons.Team />;
     }
-    return displayName.charAt(0) || 'U';
+    return displayName.charAt(0)?.toUpperCase() || 'U';
   };
 
+  // Rest of your component remains the same...
   const fetchFeedbackDetails = async (notificationId) => {
     const token = localStorage.getItem('token');
     try {
@@ -283,7 +289,6 @@ const Notification = () => {
     }
   };
 
-  // EXACT SAME ACTION HANDLERS AS OLDEST CODE
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');

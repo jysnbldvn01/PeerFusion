@@ -22,14 +22,18 @@ router.post("/schedule", async (req, res) => {
     const meetingId = result.insertId;
 
     // Build name map for participants to personalize notifications
-    let nameMap = {};
-    try {
-      const [nameRows] = await db.query(
-        `SELECT id, name FROM users WHERE id IN (${participants.map(() => '?').join(',')})`,
-        participants
-      );
-      nameRows.forEach(r => { nameMap[String(r.id)] = r.name; });
-    } catch (_) {}
+      let nameMap = {};
+      try {
+        const [nameRows] = await db.query(
+          `SELECT up.user_id, up.username 
+          FROM user_profiles up 
+          WHERE up.user_id IN (${participants.map(() => '?').join(',')})`,
+          participants
+        );
+        nameRows.forEach(r => { 
+          nameMap[String(r.user_id)] = r.username; // Changed to username
+        });
+      } catch (_) {}
 
     const scheduledLabel = new Date(scheduledAt).toLocaleString();
 

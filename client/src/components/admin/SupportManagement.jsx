@@ -53,7 +53,6 @@ const SupportManagement = () => {
     closed: 0
   });
 
-  // Debounce search term
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -62,12 +61,10 @@ const SupportManagement = () => {
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
-  // Fetch tickets when page, filters, or debounced search changes
   useEffect(() => {
     fetchTickets();
   }, [currentPage, filters.status, debouncedSearchTerm]);
 
-  // Fetch total counts on component mount
   useEffect(() => {
     fetchTotalCounts();
   }, []);

@@ -455,15 +455,14 @@ router.get('/notifications', authenticateToken, async (req, res) => {
         n.status,
         CASE 
           WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN 'PeerFusion Team'
-          ELSE u.name 
+          ELSE up.username 
         END AS sender_name,
         CASE 
           WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN NULL
           ELSE up.avatar 
         END AS sender_avatar,
-        COALESCE(u.role, 'system') as sender_role
+        COALESCE(up.role, 'system') as sender_role
       FROM notifications n
-      LEFT JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = FALSE
       ORDER BY n.created_at DESC
@@ -496,15 +495,14 @@ router.get('/notifications/archived', authenticateToken, async (req, res) => {
         n.status,
         CASE 
           WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN 'PeerFusion Team'
-          ELSE u.name 
+          ELSE up.username 
         END AS sender_name,
         CASE 
           WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN NULL
           ELSE up.avatar 
         END AS sender_avatar,
-        COALESCE(u.role, 'system') as sender_role
+        COALESCE(up.role, 'system') as sender_role
       FROM notifications n
-      LEFT JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = TRUE
       ORDER BY n.created_at DESC
@@ -682,15 +680,14 @@ router.get('/notifications', authenticateToken, async (req, res) => {
       SELECT n.*, 
              CASE 
                WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN 'PeerFusion Team'
-               ELSE u.name 
+               ELSE up.username 
              END AS sender_name,
              CASE 
                WHEN n.sender_id = 0 OR n.type IN ('warning', 'suspension', 'ban', 'penalty', 'account_status') THEN NULL
                ELSE up.avatar 
              END AS sender_avatar,
-             COALESCE(u.role, 'system') as sender_role
+             COALESCE(up.role, 'system') as sender_role
       FROM notifications n
-      LEFT JOIN users u ON u.id = n.sender_id
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = FALSE
       ORDER BY n.created_at DESC
