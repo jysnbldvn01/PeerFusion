@@ -597,66 +597,66 @@ const FloatingChatToggle = () => {
         )}
       </div>
 
-        {/* Notifications Container */}
-        <div className="peerfusion-chat-notifications-container">
+      {/* Notifications Container */}
+      <div className="peerfusion-chat-notifications-container">
         {notifications.map((notification) => (
-            <div 
+          <div 
             key={notification.id} 
             className="peerfusion-chat-notification"
             onClick={() => handleNotificationClick(notification)}
-            >
+          >
             <div className="peerfusion-chat-notification-content">
-                <div className="peerfusion-chat-notification-header">
+              <div className="peerfusion-chat-notification-header">
                 <div className="peerfusion-chat-notification-profile">
-                    <img 
+                  <img 
                     src={notification.senderAvatar} 
                     alt={notification.senderName}
                     className="peerfusion-chat-notification-avatar"
                     onError={(e) => {
-                        e.target.src = "/default-avatar.png";
+                      e.target.src = "/default-avatar.png";
                     }}
-                    />
-                    <span className="peerfusion-chat-notification-name">
+                  />
+                  <span className="peerfusion-chat-notification-name">
                     {notification.senderName}
-                    </span>
+                  </span>
                 </div>
                 
                 {/* Time positioned top right */}
                 <div className="peerfusion-chat-notification-time">
-                    {formatNotificationTime(notification.timestamp)}
+                  {formatNotificationTime(notification.timestamp)}
                 </div>
                 
                 {/* Close button positioned top right */}
                 <button 
-                    className="peerfusion-chat-notification-close"
-                    onClick={(e) => {
+                  className="peerfusion-chat-notification-close"
+                  onClick={(e) => {
                     e.stopPropagation();
                     removeNotification(notification.id);
-                    }}
+                  }}
                 >
-                    <CloseIcon />
+                  <CloseIcon />
                 </button>
-                </div>
-                
-                {/* Separator line */}
-                <div className="peerfusion-chat-notification-separator"></div>
-                
-                {/* Clean plain message */}
-                <div className="peerfusion-chat-notification-message">
+              </div>
+              
+              {/* Separator line */}
+              <div className="peerfusion-chat-notification-separator"></div>
+              
+              {/* Clean plain message */}
+              <div className="peerfusion-chat-notification-message">
                 {notification.message.length > 120 
-                    ? `${notification.message.substring(0, 120)}...` 
-                    : notification.message
+                  ? `${notification.message.substring(0, 120)}...` 
+                  : notification.message
                 }
-                </div>
+              </div>
             </div>
             
             {/* Time limit progress bar */}
             <div className="peerfusion-chat-notification-progress">
-                <div className="peerfusion-chat-notification-progress-bar"></div>
+              <div className="peerfusion-chat-notification-progress-bar"></div>
             </div>
-            </div>
+          </div>
         ))}
-        </div>
+      </div>
 
       {/* Chat Panel */}
       {isOpen && (
@@ -790,12 +790,13 @@ const FloatingChatToggle = () => {
                     </div>
                   ) : (
                     messages.map((message) => {
-                      // Check if message is unsent for everyone
                       if (message.unsentForEveryone) {
+                        const isMyMessage = String(message.senderId) === String(user.user_id);
+                        
                         return (
                           <div
                             key={message.id}
-                            className="peerfusion-floating-message unsent"
+                            className={`peerfusion-floating-message ${isMyMessage ? 'sent' : 'received'} unsent`}
                           >
                             <div className="peerfusion-floating-message-content unsent">
                               <em>{(message.unsentByName || message.senderName || 'Someone')} unsent a message</em>
