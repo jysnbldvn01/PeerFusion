@@ -51,6 +51,12 @@ const Videocall = () => {
 
   const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
+  const getAvatarUrl = (avatar) => {
+    if (!avatar) return null;
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+    return `${API_BASE_URL}/uploads/${avatar}`;
+  };
+
   useEffect(() => {
     const initJitsi = async () => {
       try {
@@ -145,7 +151,6 @@ const Videocall = () => {
     };
 
     const handleInviteClick = () => {
-      // Generate invite link
       const currentUrl = window.location.href;
       setInviteLink(currentUrl);
       setShowInviteModal(true);
@@ -174,7 +179,6 @@ const Videocall = () => {
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy invite link:', err);
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = inviteLink;
       document.body.appendChild(textArea);
@@ -330,7 +334,7 @@ const handleReportSubmit = async () => {
       reported_user_id: partnerInfo.id,
       report_type: reportType,
       description: reportDescription,
-      source: 'video_call'  // This is correct
+      source: 'video_call'
     };
       // Add report data
       formData.append('reported_user_id', partnerInfo.id);
@@ -447,18 +451,22 @@ const handleReportSubmit = async () => {
             <div className="feedback-partner-info">
               {partnerInfo?.avatar ? (
                 <img 
-                  src={`${API_BASE_URL}/api/uploads/${partnerInfo.avatar}`} 
+                  src={getAvatarUrl(partnerInfo.avatar)} 
                   alt={partnerInfo.username}
                   className="partner-avatar"
                   onError={(e) => {
+                    console.error('Failed to load avatar:', partnerInfo.avatar);
                     e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
                   }}
                 />
-              ) : (
-                <div className="partner-avatar placeholder">
-                  {partnerInfo?.username?.charAt(0) || 'U'}
-                </div>
-              )}
+              ) : null}
+              <div 
+                className="partner-avatar placeholder"
+                style={{ display: partnerInfo?.avatar ? 'none' : 'flex' }}
+              >
+                {partnerInfo?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
               <div className="partner-details">
                 <h3>{partnerInfo?.username || 'Your Partner'}</h3>
                 <span className="session-completed">Session Completed</span>
@@ -565,15 +573,22 @@ const handleReportSubmit = async () => {
             <div className="feedback-partner-info">
               {partnerInfo?.avatar ? (
                 <img 
-                  src={`${API_BASE_URL}api/uploads/${partnerInfo.avatar}`} 
+                  src={getAvatarUrl(partnerInfo.avatar)} 
                   alt={partnerInfo.username}
                   className="partner-avatar"
+                  onError={(e) => {
+                    console.error('Failed to load avatar:', partnerInfo.avatar);
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
                 />
-              ) : (
-                <div className="partner-avatar placeholder">
-                  {partnerInfo?.username?.charAt(0) || 'U'}
-                </div>
-              )}
+              ) : null}
+              <div 
+                className="partner-avatar placeholder"
+                style={{ display: partnerInfo?.avatar ? 'none' : 'flex' }}
+              >
+                {partnerInfo?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
               <div className="partner-details">
                 <h3>{partnerInfo?.username || 'Your Partner'}</h3>
                 <span className="session-completed">Reporting this user</span>
