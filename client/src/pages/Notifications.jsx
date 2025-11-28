@@ -66,13 +66,20 @@ const InternetIcons = {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
     </svg>
+  ),
+  Dropdown: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M7 10l5 5 5-5z"/>
+    </svg>
   )
 };
 
 const Notification = () => {
   const [activeTab, setActiveTab] = useState('all');
-  const [sortFilter, setSortFilter] = useState('all'); // 'all', 'pending', 'feedback', 'meetings'
+  const [sortFilter, setSortFilter] = useState('all');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [allNotifications, setAllNotifications] = useState([]);
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -80,22 +87,38 @@ const Notification = () => {
   const [feedbackDetails, setFeedbackDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptingId, setAcceptingId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const menuRefs = useRef({});
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const dropdownRef = useRef(null);
+  const observerRef = useRef(null);
+  const listRef = useRef(null);
   
   const navigate = useNavigate();
 
-  // Enhanced debug logging to verify username data
+  const ITEMS_PER_PAGE = 10;
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    console.log('Current notifications:', notifications);
-    console.log('Notification usernames:', notifications.map(n => ({
-      id: n.id,
-      type: n.type,
-      sender_id: n.sender_id,
-      sender_name: n.sender_name,
-      sender_role: n.sender_role
-    })));
-  }, [notifications]);
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowSortDropdown(false);
+      }
+      
+      // Close menu when clicking outside
+      const isOutside = Object.values(menuRefs.current).every((ref) => {
+        return ref && !ref.contains(event.target);
+      });
+
+      if (isOutside) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
@@ -156,7 +179,7 @@ const Notification = () => {
     }
   };
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (pageNum = 1, isLoadMore = false) => {
     const token = localStorage.getItem('token');
     const url =
       activeTab === 'archived'
@@ -164,16 +187,77 @@ const Notification = () => {
         : `${API_BASE_URL}/api/profile/notifications`;
 
     try {
+      if (isLoadMore) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
+
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
       console.log('Fetched notifications with usernames:', res.data);
-      setNotifications(res.data);
+      
+      if (isLoadMore) {
+        setAllNotifications(prev => [...prev, ...res.data]);
+      } else {
+        setAllNotifications(res.data);
+        setPage(1);
+      }
+      
+      // Check if there are more items to load
+      if (res.data.length < ITEMS_PER_PAGE) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }, [activeTab]);
+
+  // Load more notifications when scrolling
+  const loadMoreNotifications = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchNotifications(nextPage, true);
+    }
+  }, [page, hasMore, isLoadingMore, fetchNotifications]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMoreNotifications();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentObserver = observerRef.current;
+    const sentinel = document.querySelector('.load-more-sentinel');
+    
+    if (sentinel && hasMore) {
+      currentObserver.observe(sentinel);
+    }
+
+    return () => {
+      if (currentObserver) {
+        currentObserver.disconnect();
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMoreNotifications]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -191,20 +275,6 @@ const Notification = () => {
 
     fetchProfile();
     fetchNotifications();
-
-    // Close menu when clicking outside
-    const handleClickOutside = (event) => {
-      const isOutside = Object.values(menuRefs.current).every((ref) => {
-        return ref && !ref.contains(event.target);
-      });
-
-      if (isOutside) {
-        setOpenMenuId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [fetchNotifications]);
 
   // Enhanced helper functions to determine display name and avatar
@@ -393,9 +463,9 @@ const Notification = () => {
 
   // Mark all notifications as read
   const markAllAsRead = async () => {
-    if (!notifications || notifications.length === 0) return;
+    if (!allNotifications || allNotifications.length === 0) return;
     const token = localStorage.getItem('token');
-    const unread = notifications.filter(n => !n.is_read);
+    const unread = allNotifications.filter(n => !n.is_read);
     if (unread.length === 0) {
       window.pfToast?.info?.('All notifications are already read');
       return;
@@ -475,9 +545,8 @@ const Notification = () => {
       );
 
       if (res.data.success && res.data.conversationId) {
-        setNotifications((prev) =>
-          prev.filter((n) => n.id !== notification.id)
-        );
+        // Remove from local state immediately
+        setAllNotifications(prev => prev.filter((n) => n.id !== notification.id));
         closeModal();
         window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
@@ -493,7 +562,7 @@ const Notification = () => {
     }
   };
 
-  // Decline session request
+  // Decline session request - Auto delete after rejection
   const handleDecline = async (notification) => {
     const token = localStorage.getItem("token");
     try {
@@ -504,9 +573,10 @@ const Notification = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setNotifications((prev) =>
-        prev.filter((n) => n.id !== notification.id)
-      );
+      
+      // Auto delete the notification after rejection
+      await deleteNotification(notification.id);
+      
       closeModal();
       window.pfToast?.success?.('Session request declined');
     } catch (err) {
@@ -664,26 +734,37 @@ const Notification = () => {
     }
   };
 
-  const filteredNotifications = notifications.filter(
-    (notification) =>
+  // Filter and sort notifications based on current filters
+  const filteredNotifications = allNotifications
+    .filter((notification) =>
       getDisplayName(notification)
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       notification.message?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    )
+    .filter(notification => {
+      if (sortFilter === 'all') return true;
+      const category = categorizeNotifications(notification);
+      return category === sortFilter;
+    })
+    .slice(0, page * ITEMS_PER_PAGE); // Only show current page items
 
-  // Apply sorting filter
-  const sortedNotifications = filteredNotifications.filter(notification => {
-    if (sortFilter === 'all') return true;
-    const category = categorizeNotifications(notification);
-    return category === sortFilter;
-  });
+  const unreadCount = allNotifications.filter(n => !n.is_read).length;
 
   // Get counts for each category
   const getCategoryCount = (category) => {
-    return filteredNotifications.filter(notification => 
+    return allNotifications.filter(notification => 
       categorizeNotifications(notification) === category
     ).length;
+  };
+
+  const getSortFilterLabel = () => {
+    switch (sortFilter) {
+      case 'pending': return 'Pending Requests';
+      case 'feedback': return 'Feedback & Ratings';
+      case 'meetings': return 'Meetings';
+      default: return 'All Notifications';
+    }
   };
 
   return (
@@ -711,13 +792,21 @@ const Notification = () => {
       <div className="peerfusion-notification-tabs">
         <button
           className={`peerfusion-notification-tab ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
+          onClick={() => {
+            setActiveTab('all');
+            setSortFilter('all');
+            fetchNotifications();
+          }}
         >
           All Notifications
         </button>
         <button
           className={`peerfusion-notification-tab ${activeTab === 'archived' ? 'active' : ''}`}
-          onClick={() => setActiveTab('archived')}
+          onClick={() => {
+            setActiveTab('archived');
+            setSortFilter('all');
+            fetchNotifications();
+          }}
         >
           Archived
         </button>
@@ -732,39 +821,66 @@ const Notification = () => {
         </button>
       </div>
 
-      {/* Sorting Filters - Only show when in All Notifications tab */}
-      {activeTab === 'all' && (
-        <div className="peerfusion-notification-sorting-filters">
-          <button
-            className={`peerfusion-sorting-filter ${sortFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setSortFilter('all')}
-          >
-            All ({filteredNotifications.length})
-          </button>
-          <button
-            className={`peerfusion-sorting-filter ${sortFilter === 'pending' ? 'active' : ''}`}
-            onClick={() => setSortFilter('pending')}
-          >
-            <InternetIcons.Clock /> Pending ({getCategoryCount('pending')})
-          </button>
-          <button
-            className={`peerfusion-sorting-filter ${sortFilter === 'feedback' ? 'active' : ''}`}
-            onClick={() => setSortFilter('feedback')}
-          >
-            <InternetIcons.Rating /> Feedback ({getCategoryCount('feedback')})
-          </button>
-          <button
-            className={`peerfusion-sorting-filter ${sortFilter === 'meetings' ? 'active' : ''}`}
-            onClick={() => setSortFilter('meetings')}
-          >
-            <InternetIcons.Calendar /> Meetings ({getCategoryCount('meetings')})
-          </button>
-        </div>
-      )}
+      {/* Sorting Dropdown - Available in both All and Archived tabs */}
+      <div className="peerfusion-notification-sorting-container" ref={dropdownRef}>
+        <button 
+          className="peerfusion-sorting-dropdown-btn"
+          onClick={() => setShowSortDropdown(!showSortDropdown)}
+        >
+          <span>{getSortFilterLabel()}</span>
+          <InternetIcons.Dropdown />
+        </button>
+        
+        {showSortDropdown && (
+          <div className="peerfusion-sorting-dropdown">
+            <button
+              className={`peerfusion-sorting-option ${sortFilter === 'all' ? 'active' : ''}`}
+              onClick={() => {
+                setSortFilter('all');
+                setShowSortDropdown(false);
+              }}
+            >
+              All Notifications ({allNotifications.length})
+            </button>
+            <button
+              className={`peerfusion-sorting-option ${sortFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => {
+                setSortFilter('pending');
+                setShowSortDropdown(false);
+              }}
+            >
+              Pending Requests ({getCategoryCount('pending')})
+            </button>
+            <button
+              className={`peerfusion-sorting-option ${sortFilter === 'feedback' ? 'active' : ''}`}
+              onClick={() => {
+                setSortFilter('feedback');
+                setShowSortDropdown(false);
+              }}
+            >
+              Feedback & Ratings ({getCategoryCount('feedback')})
+            </button>
+            <button
+              className={`peerfusion-sorting-option ${sortFilter === 'meetings' ? 'active' : ''}`}
+              onClick={() => {
+                setSortFilter('meetings');
+                setShowSortDropdown(false);
+              }}
+            >
+              Meetings ({getCategoryCount('meetings')})
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Single Row Notifications List */}
-      <div className="peerfusion-notification-list">
-        {sortedNotifications.length === 0 ? (
+      <div className="peerfusion-notification-list" ref={listRef}>
+        {isLoading ? (
+          <div className="peerfusion-notification-loading">
+            <div className="peerfusion-loading-spinner"></div>
+            <p>Loading notifications...</p>
+          </div>
+        ) : filteredNotifications.length === 0 ? (
           <div className="peerfusion-notification-empty">
             <div className="peerfusion-notification-empty-icon">
               {sortFilter === 'pending' ? '⏰' : 
@@ -786,151 +902,151 @@ const Notification = () => {
             </p>
           </div>
         ) : (
-          sortedNotifications.map((notification) => (
-            <div
-              className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
-                (notification.type === 'warning' || 
-                 notification.type === 'suspension' || 
-                 notification.type === 'ban' || 
-                 notification.type === 'penalty' ||
-                 notification.type === 'appeal_approved' ||
-                 notification.type === 'appeal_rejected' ||
-                 notification.type === 'account_reactivated') 
-                  ? 'peerfusion-notification-important' 
-                  : ''
-              } ${
-                notification.type === 'appeal_approved' || 
-                notification.type === 'account_reactivated' || 
-                notification.status === 'accepted' ||
-                notification.status === 'completed'
-                  ? 'peerfusion-notification-approved'
-                  : notification.type === 'appeal_rejected' || 
-                    notification.status === 'rejected'
-                  ? 'peerfusion-notification-rejected'
-                  : ''
-              } ${
-                categorizeNotifications(notification) === 'pending'
-                  ? 'peerfusion-notification-pending'
-                  : ''
-              }`}
-              key={notification.id}
-              onClick={() => viewNotification(notification)}
-            >
-              <div className="peerfusion-notification-content">
-                {/* Avatar */}
-                {getDisplayAvatar(notification) ? (
-                  <img
-                    src={`${API_BASE_URL}/uploads/${getDisplayAvatar(notification)}`}
-                    alt={getDisplayName(notification)}
-                    className="peerfusion-notification-avatar"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className={`peerfusion-notification-avatar-placeholder ${
-                    getDisplayName(notification) === 'PeerFusion Team' ? 'peerfusion-team-avatar' : ''
-                  }`}
-                  style={{ display: getDisplayAvatar(notification) ? 'none' : 'flex' }}
-                >
-                  {getAvatarPlaceholder(notification)}
+          <>
+            {filteredNotifications.map((notification) => (
+              <div
+                className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
+                  notification.type === 'appeal_approved' || 
+                  notification.type === 'account_reactivated' || 
+                  notification.status === 'accepted' ||
+                  notification.status === 'completed'
+                    ? 'peerfusion-notification-approved'
+                    : notification.type === 'appeal_rejected' || 
+                      notification.status === 'rejected'
+                    ? 'peerfusion-notification-rejected'
+                    : ''
+                }`}
+                key={notification.id}
+                onClick={() => viewNotification(notification)}
+              >
+                <div className="peerfusion-notification-content">
+                  {/* Avatar */}
+                  {getDisplayAvatar(notification) ? (
+                    <img
+                      src={`${API_BASE_URL}/uploads/${getDisplayAvatar(notification)}`}
+                      alt={getDisplayName(notification)}
+                      className="peerfusion-notification-avatar"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className={`peerfusion-notification-avatar-placeholder ${
+                      getDisplayName(notification) === 'PeerFusion Team' ? 'peerfusion-team-avatar' : ''
+                    }`}
+                    style={{ display: getDisplayAvatar(notification) ? 'none' : 'flex' }}
+                  >
+                    {getAvatarPlaceholder(notification)}
+                  </div>
+
+                  {/* Content */}
+                  <div className="peerfusion-notification-details">
+                    <div className="peerfusion-notification-header">
+                      <h4 className="peerfusion-notification-username">
+                        {getDisplayName(notification)}
+                      </h4>
+                      <p className="peerfusion-notification-time">
+                        {new Date(notification.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    
+                    <p 
+                      className="peerfusion-notification-message"
+                      dangerouslySetInnerHTML={{ 
+                        __html: formatNotificationMessage(notification.message) 
+                      }}
+                    />
+
+                    <div className="peerfusion-notification-badges">
+                      {getNotificationBadge(notification)}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Content */}
-                <div className="peerfusion-notification-details">
-                  <div className="peerfusion-notification-header">
-                    <h4 className="peerfusion-notification-username">
-                      {getDisplayName(notification)}
-                    </h4>
-                    <p className="peerfusion-notification-time">
-                      {new Date(notification.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  
-                  <p 
-                    className="peerfusion-notification-message"
-                    dangerouslySetInnerHTML={{ 
-                      __html: formatNotificationMessage(notification.message) 
-                    }}
-                  />
+                {/* Menu */}
+                <div
+                  className="peerfusion-notification-menu-container"
+                  ref={(el) => (menuRefs.current[notification.id] = el)}
+                >
+                  <button
+                    className="peerfusion-notification-menu-button"
+                    onClick={(e) => toggleMenu(notification.id, e)}
+                  >
+                    ⋮
+                  </button>
 
-                  <div className="peerfusion-notification-badges">
-                    {getNotificationBadge(notification)}
-                  </div>
+                  {openMenuId === notification.id && (
+                    <div className="peerfusion-notification-menu">
+                      {notification.is_read ? (
+                        <button
+                          className="peerfusion-notification-menu-item mark-unread"
+                          onClick={(e) =>
+                            markNotificationAsUnread(notification.id, e)
+                          }
+                        >
+                          Mark as Unread
+                        </button>
+                      ) : (
+                        <button
+                          className="peerfusion-notification-menu-item mark-read"
+                          onClick={(e) =>
+                            markNotificationAsRead(notification.id, e)
+                          }
+                        >
+                          Mark as Read
+                        </button>
+                      )}
+                      {!notification.is_archived ? (
+                        <button
+                          className="peerfusion-notification-menu-item"
+                          onClick={(e) =>
+                            archiveNotification(notification.id, e)
+                          }
+                        >
+                          Archive
+                        </button>
+                      ) : (
+                        <button
+                          className="peerfusion-notification-menu-item"
+                          onClick={(e) =>
+                            unarchiveNotification(notification.id, e)
+                          }
+                        >
+                          Unarchive
+                        </button>
+                      )}
+                      <button
+                        className="peerfusion-notification-menu-item delete"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const ok = await window.pfConfirm?.('Are you sure you want to delete this notification?');
+                          if (ok) {
+                            deleteNotification(notification.id, e);
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* Menu */}
-              <div
-                className="peerfusion-notification-menu-container"
-                ref={(el) => (menuRefs.current[notification.id] = el)}
-              >
-                <button
-                  className="peerfusion-notification-menu-button"
-                  onClick={(e) => toggleMenu(notification.id, e)}
-                >
-                  ⋮
-                </button>
-
-                {openMenuId === notification.id && (
-                  <div className="peerfusion-notification-menu">
-                    {notification.is_read ? (
-                      <button
-                        className="peerfusion-notification-menu-item mark-unread"
-                        onClick={(e) =>
-                          markNotificationAsUnread(notification.id, e)
-                        }
-                      >
-                        Mark as Unread
-                      </button>
-                    ) : (
-                      <button
-                        className="peerfusion-notification-menu-item mark-read"
-                        onClick={(e) =>
-                          markNotificationAsRead(notification.id, e)
-                        }
-                      >
-                        Mark as Read
-                      </button>
-                    )}
-                    {!notification.is_archived ? (
-                      <button
-                        className="peerfusion-notification-menu-item"
-                        onClick={(e) =>
-                          archiveNotification(notification.id, e)
-                        }
-                      >
-                        Archive
-                      </button>
-                    ) : (
-                      <button
-                        className="peerfusion-notification-menu-item"
-                        onClick={(e) =>
-                          unarchiveNotification(notification.id, e)
-                        }
-                      >
-                        Unarchive
-                      </button>
-                    )}
-                    <button
-                      className="peerfusion-notification-menu-item delete"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const ok = await window.pfConfirm?.('Are you sure you want to delete this notification?');
-                        if (ok) {
-                          deleteNotification(notification.id, e);
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
+            ))}
+            
+            {/* Load More Sentinel for Infinite Scroll */}
+            {hasMore && (
+              <div className="load-more-sentinel">
+                {isLoadingMore && (
+                  <div className="peerfusion-loading-more">
+                    <div className="peerfusion-loading-spinner"></div>
+                    <p>Loading more notifications...</p>
                   </div>
                 )}
               </div>
-            </div>
-          ))
+            )}
+          </>
         )}
       </div>
 
