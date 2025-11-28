@@ -66,18 +66,12 @@ const InternetIcons = {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
     </svg>
-  ),
-  Dropdown: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M7 10l5 5 5-5z"/>
-    </svg>
   )
 };
 
 const Notification = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [sortFilter, setSortFilter] = useState('all');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [allNotifications, setAllNotifications] = useState([]);
   const [profile, setProfile] = useState(null);
@@ -86,39 +80,17 @@ const Notification = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [acceptingId, setAcceptingId] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const menuRefs = useRef({});
-  const dropdownRef = useRef(null);
   const observerRef = useRef(null);
   const listRef = useRef(null);
   
   const navigate = useNavigate();
 
   const ITEMS_PER_PAGE = 10;
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowSortDropdown(false);
-      }
-      
-      // Close menu when clicking outside
-      const isOutside = Object.values(menuRefs.current).every((ref) => {
-        return ref && !ref.contains(event.target);
-      });
-
-      if (isOutside) {
-        setOpenMenuId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
@@ -191,27 +163,27 @@ const Notification = () => {
         setIsLoadingMore(true);
       } else {
         setIsLoading(true);
+        setPage(1);
       }
 
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      console.log('Fetched notifications with usernames:', res.data);
+      console.log('Fetched notifications:', res.data.length);
       
       if (isLoadMore) {
+        // Append new notifications for infinite scroll
         setAllNotifications(prev => [...prev, ...res.data]);
       } else {
+        // Replace all notifications for initial load
         setAllNotifications(res.data);
-        setPage(1);
       }
       
-      // Check if there are more items to load
-      if (res.data.length < ITEMS_PER_PAGE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+      // Accurate pagination check
+      const currentItems = pageNum * ITEMS_PER_PAGE;
+      setHasMore(res.data.length >= ITEMS_PER_PAGE && res.data.length === currentItems);
+      
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
@@ -221,7 +193,7 @@ const Notification = () => {
     }
   }, [activeTab]);
 
-  // Load more notifications when scrolling
+  // Load more notifications
   const loadMoreNotifications = useCallback(() => {
     if (!isLoadingMore && hasMore) {
       const nextPage = page + 1;
@@ -275,29 +247,32 @@ const Notification = () => {
 
     fetchProfile();
     fetchNotifications();
+
+    // Close menu when clicking outside
+    const handleClickOutside = (event) => {
+      const isOutside = Object.values(menuRefs.current).every((ref) => {
+        return ref && !ref.contains(event.target);
+      });
+
+      if (isOutside) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [fetchNotifications]);
 
   // Enhanced helper functions to determine display name and avatar
   const getDisplayName = (notification) => {
-    console.log('Processing notification for display name:', {
-      id: notification.id,
-      type: notification.type,
-      sender_id: notification.sender_id,
-      sender_name: notification.sender_name,
-      sender_role: notification.sender_role
-    });
-
-    // ALWAYS show PeerFusion Team for penalty type (from report.js and user management)
     if (notification.type === 'penalty') {
       return 'PeerFusion Team';
     }
     
-    // Also show PeerFusion Team for NULL sender_id or system sender
     if (notification.sender_id === null || notification.sender_id === 0) {
       return 'PeerFusion Team';
     }
     
-    // Show PeerFusion Team for specific notification types
     if (notification.type === 'warning' || 
         notification.type === 'suspension' || 
         notification.type === 'ban' || 
@@ -309,17 +284,14 @@ const Notification = () => {
       return 'PeerFusion Team';
     }
 
-    // For feedback from admin/moderator, show as PeerFusion Team
     if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
       return 'PeerFusion Team';
     }
     
-    // Use the username from user_profiles (now coming from backend)
     return notification.sender_name || 'User';
   };
 
   const getDisplayAvatar = (notification) => {
-    // No avatar for PeerFusion Team notifications
     if (notification.type === 'penalty' || 
         notification.sender_id === null || 
         notification.sender_id === 0 ||
@@ -334,7 +306,6 @@ const Notification = () => {
       return null;
     }
     
-    // No avatar for admin/moderator feedback
     if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
       return null;
     }
@@ -545,7 +516,6 @@ const Notification = () => {
       );
 
       if (res.data.success && res.data.conversationId) {
-        // Remove from local state immediately
         setAllNotifications(prev => prev.filter((n) => n.id !== notification.id));
         closeModal();
         window.pfToast?.success?.('Session request accepted');
@@ -734,7 +704,7 @@ const Notification = () => {
     }
   };
 
-  // Filter and sort notifications based on current filters
+  // Filter and paginate notifications
   const filteredNotifications = allNotifications
     .filter((notification) =>
       getDisplayName(notification)
@@ -746,8 +716,10 @@ const Notification = () => {
       if (sortFilter === 'all') return true;
       const category = categorizeNotifications(notification);
       return category === sortFilter;
-    })
-    .slice(0, page * ITEMS_PER_PAGE); // Only show current page items
+    });
+
+  // Apply pagination - only show current page items
+  const paginatedNotifications = filteredNotifications.slice(0, page * ITEMS_PER_PAGE);
 
   const unreadCount = allNotifications.filter(n => !n.is_read).length;
 
@@ -758,14 +730,21 @@ const Notification = () => {
     ).length;
   };
 
-  const getSortFilterLabel = () => {
-    switch (sortFilter) {
-      case 'pending': return 'Pending Requests';
-      case 'feedback': return 'Feedback & Ratings';
-      case 'meetings': return 'Meetings';
-      default: return 'All Notifications';
-    }
-  };
+  // Skeleton loading component
+  const NotificationSkeleton = () => (
+    <div className="peerfusion-skeleton-notification">
+      <div className="peerfusion-skeleton-avatar peerfusion-skeleton"></div>
+      <div className="peerfusion-skeleton-content">
+        <div className="peerfusion-skeleton-header">
+          <div className="peerfusion-skeleton-username peerfusion-skeleton"></div>
+          <div className="peerfusion-skeleton-time peerfusion-skeleton"></div>
+        </div>
+        <div className="peerfusion-skeleton-message peerfusion-skeleton"></div>
+        <div className="peerfusion-skeleton-message-short peerfusion-skeleton"></div>
+        <div className="peerfusion-skeleton-badge peerfusion-skeleton"></div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="peerfusion-notification-container">
@@ -821,66 +800,44 @@ const Notification = () => {
         </button>
       </div>
 
-      {/* Sorting Dropdown - Available in both All and Archived tabs */}
-      <div className="peerfusion-notification-sorting-container" ref={dropdownRef}>
-        <button 
-          className="peerfusion-sorting-dropdown-btn"
-          onClick={() => setShowSortDropdown(!showSortDropdown)}
+      {/* Sorting Filters - Available in both All and Archived tabs */}
+      <div className="peerfusion-notification-sorting-filters">
+        <button
+          className={`peerfusion-sorting-filter ${sortFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setSortFilter('all')}
         >
-          <span>{getSortFilterLabel()}</span>
-          <InternetIcons.Dropdown />
+          All ({allNotifications.length})
         </button>
-        
-        {showSortDropdown && (
-          <div className="peerfusion-sorting-dropdown">
-            <button
-              className={`peerfusion-sorting-option ${sortFilter === 'all' ? 'active' : ''}`}
-              onClick={() => {
-                setSortFilter('all');
-                setShowSortDropdown(false);
-              }}
-            >
-              All Notifications ({allNotifications.length})
-            </button>
-            <button
-              className={`peerfusion-sorting-option ${sortFilter === 'pending' ? 'active' : ''}`}
-              onClick={() => {
-                setSortFilter('pending');
-                setShowSortDropdown(false);
-              }}
-            >
-              Pending Requests ({getCategoryCount('pending')})
-            </button>
-            <button
-              className={`peerfusion-sorting-option ${sortFilter === 'feedback' ? 'active' : ''}`}
-              onClick={() => {
-                setSortFilter('feedback');
-                setShowSortDropdown(false);
-              }}
-            >
-              Feedback & Ratings ({getCategoryCount('feedback')})
-            </button>
-            <button
-              className={`peerfusion-sorting-option ${sortFilter === 'meetings' ? 'active' : ''}`}
-              onClick={() => {
-                setSortFilter('meetings');
-                setShowSortDropdown(false);
-              }}
-            >
-              Meetings ({getCategoryCount('meetings')})
-            </button>
-          </div>
-        )}
+        <button
+          className={`peerfusion-sorting-filter ${sortFilter === 'pending' ? 'active' : ''}`}
+          onClick={() => setSortFilter('pending')}
+        >
+          <InternetIcons.Clock /> Pending ({getCategoryCount('pending')})
+        </button>
+        <button
+          className={`peerfusion-sorting-filter ${sortFilter === 'feedback' ? 'active' : ''}`}
+          onClick={() => setSortFilter('feedback')}
+        >
+          <InternetIcons.Rating /> Feedback ({getCategoryCount('feedback')})
+        </button>
+        <button
+          className={`peerfusion-sorting-filter ${sortFilter === 'meetings' ? 'active' : ''}`}
+          onClick={() => setSortFilter('meetings')}
+        >
+          <InternetIcons.Calendar /> Meetings ({getCategoryCount('meetings')})
+        </button>
       </div>
 
       {/* Single Row Notifications List */}
       <div className="peerfusion-notification-list" ref={listRef}>
         {isLoading ? (
-          <div className="peerfusion-notification-loading">
-            <div className="peerfusion-loading-spinner"></div>
-            <p>Loading notifications...</p>
-          </div>
-        ) : filteredNotifications.length === 0 ? (
+          // Initial loading skeleton
+          <>
+            {[...Array(5)].map((_, index) => (
+              <NotificationSkeleton key={index} />
+            ))}
+          </>
+        ) : paginatedNotifications.length === 0 ? (
           <div className="peerfusion-notification-empty">
             <div className="peerfusion-notification-empty-icon">
               {sortFilter === 'pending' ? '⏰' : 
@@ -903,7 +860,7 @@ const Notification = () => {
           </div>
         ) : (
           <>
-            {filteredNotifications.map((notification) => (
+            {paginatedNotifications.map((notification) => (
               <div
                 className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
                   notification.type === 'appeal_approved' || 
@@ -914,6 +871,8 @@ const Notification = () => {
                     : notification.type === 'appeal_rejected' || 
                       notification.status === 'rejected'
                     ? 'peerfusion-notification-rejected'
+                    : categorizeNotifications(notification) === 'pending'
+                    ? 'peerfusion-notification-pending'
                     : ''
                 }`}
                 key={notification.id}
@@ -1035,15 +994,32 @@ const Notification = () => {
               </div>
             ))}
             
-            {/* Load More Sentinel for Infinite Scroll */}
+            {/* Load More Section */}
             {hasMore && (
               <div className="load-more-sentinel">
-                {isLoadingMore && (
-                  <div className="peerfusion-loading-more">
-                    <div className="peerfusion-loading-spinner"></div>
-                    <p>Loading more notifications...</p>
+                {isLoadingMore ? (
+                  // Loading more skeleton
+                  <>
+                    {[...Array(3)].map((_, index) => (
+                      <NotificationSkeleton key={`loading-${index}`} />
+                    ))}
+                    <div className="peerfusion-loading-more">
+                      <div className="peerfusion-loading-spinner"></div>
+                      <p>Loading more notifications...</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="peerfusion-load-more-trigger">
+                    Scroll down to load more
                   </div>
                 )}
+              </div>
+            )}
+            
+            {/* No more notifications message */}
+            {!hasMore && paginatedNotifications.length > 0 && (
+              <div className="peerfusion-no-more-notifications">
+                <p>No more notifications to load</p>
               </div>
             )}
           </>
