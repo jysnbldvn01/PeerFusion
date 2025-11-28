@@ -357,10 +357,22 @@ const Notification = () => {
     }
   };
 
+  // Update local state instead of refetching
+  const updateNotificationInState = (id, updates) => {
+    setAllNotifications(prev => 
+      prev.map(notification => 
+        notification.id === id ? { ...notification, ...updates } : notification
+      )
+    );
+  };
+
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
+      // Optimistically update UI
+      updateNotificationInState(id, { is_read: true });
+      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/read`,
         {},
@@ -368,10 +380,12 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
+      // Revert on error
+      updateNotificationInState(id, { is_read: false });
       console.error('Failed to mark notification as read:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as read');
     }
@@ -381,6 +395,9 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
+      // Optimistically update UI
+      updateNotificationInState(id, { is_read: false });
+      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
         {},
@@ -388,10 +405,12 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
+      // Revert on error
+      updateNotificationInState(id, { is_read: true });
       console.error('Failed to mark notification as unread:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
     }
@@ -401,6 +420,9 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
+      // Optimistically update UI
+      updateNotificationInState(id, { is_archived: true });
+      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/archive`,
         {},
@@ -408,10 +430,12 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
+      // Revert on error
+      updateNotificationInState(id, { is_archived: false });
       console.error('Failed to archive notification:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to archive notification');
     }
@@ -421,6 +445,9 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
+      // Optimistically update UI
+      updateNotificationInState(id, { is_archived: false });
+      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/unarchive`,
         {},
@@ -428,10 +455,12 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
+      // Revert on error
+      updateNotificationInState(id, { is_archived: true });
       console.error('Failed to unarchive notification:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to unarchive notification');
     }
@@ -447,6 +476,16 @@ const Notification = () => {
       return;
     }
     try {
+      // Optimistically update all unread notifications
+      const unreadIds = unread.map(n => n.id);
+      setAllNotifications(prev => 
+        prev.map(notification => 
+          unreadIds.includes(notification.id) 
+            ? { ...notification, is_read: true }
+            : notification
+        )
+      );
+      
       await Promise.all(
         unread.map(n =>
           axios.put(
@@ -456,10 +495,18 @@ const Notification = () => {
           )
         )
       );
-      await fetchNotifications();
+      
       window.dispatchEvent(new Event('notificationsUpdated'));
       window.pfToast?.success?.('All notifications marked as read');
     } catch (err) {
+      // Revert on error
+      setAllNotifications(prev => 
+        prev.map(notification => 
+          unreadIds.includes(notification.id) 
+            ? { ...notification, is_read: false }
+            : notification
+        )
+      );
       console.error('Failed to mark all as read:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
     }
@@ -469,16 +516,21 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
+      // Optimistically remove from UI
+      setAllNotifications(prev => prev.filter(notification => notification.id !== id));
+      
       await axios.delete(
         `${API_BASE_URL}/api/profile/notifications/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchNotifications();
+      
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
+      // Revert on error by refetching
+      fetchNotifications();
       console.error('Failed to delete notification:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to delete notification');
     }
@@ -521,12 +573,14 @@ const Notification = () => {
       );
 
       if (res.data.success && res.data.conversationId) {
+        // Remove from UI immediately
         setAllNotifications(prev => prev.filter((n) => n.id !== notification.id));
         closeModal();
         window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
       } else {
-        fetchNotifications();
+        // Just update the status if no conversation ID
+        updateNotificationInState(notification.id, { status: 'accepted' });
         window.pfToast?.info?.('Session accepted');
       }
     } catch (err) {
@@ -541,6 +595,9 @@ const Notification = () => {
   const handleDecline = async (notification) => {
     const token = localStorage.getItem("token");
     try {
+      // Remove from UI immediately
+      setAllNotifications(prev => prev.filter((n) => n.id !== notification.id));
+      
       await axios.post(
         `${API_BASE_URL}/api/session/reject`,
         {
@@ -549,12 +606,11 @@ const Notification = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Auto delete the notification after rejection
-      await deleteNotification(notification.id);
-      
       closeModal();
       window.pfToast?.success?.('Session request declined');
     } catch (err) {
+      // Revert on error by refetching
+      fetchNotifications();
       console.error("❌ Failed to reject session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error rejecting session request');
     }
