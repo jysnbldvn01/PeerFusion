@@ -439,6 +439,9 @@ router.get("/users", authenticateToken, async (req, res) => {
 router.get('/notifications', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
     const sql = `
       SELECT 
@@ -466,9 +469,10 @@ router.get('/notifications', authenticateToken, async (req, res) => {
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = FALSE
       ORDER BY n.created_at DESC
+      LIMIT ? OFFSET ?
     `;
     
-    const [results] = await db.query(sql, [userId]);
+    const [results] = await db.query(sql, [userId, limit, offset]);
     res.json(results);
   } catch (err) {
     console.error('Notifications error:', err);
@@ -476,9 +480,13 @@ router.get('/notifications', authenticateToken, async (req, res) => {
   }
 });
 
+
 router.get('/notifications/archived', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
     const sql = `
       SELECT 
@@ -506,9 +514,10 @@ router.get('/notifications/archived', authenticateToken, async (req, res) => {
       LEFT JOIN user_profiles up ON up.user_id = n.sender_id
       WHERE n.receiver_id = ? AND n.is_archived = TRUE
       ORDER BY n.created_at DESC
+      LIMIT ? OFFSET ?
     `;
     
-    const [results] = await db.query(sql, [userId]);
+    const [results] = await db.query(sql, [userId, limit, offset]);
     res.json(results);
   } catch (err) {
     console.error('Archived notifications error:', err);

@@ -164,13 +164,18 @@ const Notification = () => {
       } else {
         setIsLoading(true);
         setPage(1);
+        setHasMore(true);
       }
 
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
+        params: {
+          page: pageNum,
+          limit: ITEMS_PER_PAGE
+        }
       });
       
-      console.log('Fetched notifications:', res.data.length);
+      console.log('Fetched notifications:', res.data);
       
       if (isLoadMore) {
         // Append new notifications for infinite scroll
@@ -180,9 +185,9 @@ const Notification = () => {
         setAllNotifications(res.data);
       }
       
-      // Accurate pagination check
-      const currentItems = pageNum * ITEMS_PER_PAGE;
-      setHasMore(res.data.length >= ITEMS_PER_PAGE && res.data.length === currentItems);
+      // Check if there are more notifications to load
+      const hasMoreData = res.data.length === ITEMS_PER_PAGE;
+      setHasMore(hasMoreData);
       
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -220,7 +225,7 @@ const Notification = () => {
     const currentObserver = observerRef.current;
     const sentinel = document.querySelector('.load-more-sentinel');
     
-    if (sentinel && hasMore) {
+    if (sentinel && hasMore && !isLoading) {
       currentObserver.observe(sentinel);
     }
 
@@ -229,7 +234,7 @@ const Notification = () => {
         currentObserver.disconnect();
       }
     };
-  }, [hasMore, isLoadingMore, loadMoreNotifications]);
+  }, [hasMore, isLoadingMore, isLoading, loadMoreNotifications]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -704,7 +709,7 @@ const Notification = () => {
     }
   };
 
-  // Filter and paginate notifications
+  // Filter notifications (no pagination here since we're using infinite scroll)
   const filteredNotifications = allNotifications
     .filter((notification) =>
       getDisplayName(notification)
@@ -717,9 +722,6 @@ const Notification = () => {
       const category = categorizeNotifications(notification);
       return category === sortFilter;
     });
-
-  // Apply pagination - only show current page items
-  const paginatedNotifications = filteredNotifications.slice(0, page * ITEMS_PER_PAGE);
 
   const unreadCount = allNotifications.filter(n => !n.is_read).length;
 
@@ -774,7 +776,8 @@ const Notification = () => {
           onClick={() => {
             setActiveTab('all');
             setSortFilter('all');
-            fetchNotifications();
+            setPage(1);
+            fetchNotifications(1, false);
           }}
         >
           All Notifications
@@ -784,7 +787,8 @@ const Notification = () => {
           onClick={() => {
             setActiveTab('archived');
             setSortFilter('all');
-            fetchNotifications();
+            setPage(1);
+            fetchNotifications(1, false);
           }}
         >
           Archived
@@ -837,7 +841,7 @@ const Notification = () => {
               <NotificationSkeleton key={index} />
             ))}
           </>
-        ) : paginatedNotifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
           <div className="peerfusion-notification-empty">
             <div className="peerfusion-notification-empty-icon">
               {sortFilter === 'pending' ? '⏰' : 
@@ -860,7 +864,7 @@ const Notification = () => {
           </div>
         ) : (
           <>
-            {paginatedNotifications.map((notification) => (
+            {filteredNotifications.map((notification) => (
               <div
                 className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
                   notification.type === 'appeal_approved' || 
@@ -1017,7 +1021,7 @@ const Notification = () => {
             )}
             
             {/* No more notifications message */}
-            {!hasMore && paginatedNotifications.length > 0 && (
+            {!hasMore && filteredNotifications.length > 0 && (
               <div className="peerfusion-no-more-notifications">
                 <p>No more notifications to load</p>
               </div>
