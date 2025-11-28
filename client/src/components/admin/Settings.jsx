@@ -591,7 +591,7 @@ export default function Settings() {
                   <li className="st-permission-item st-permission-allowed">View and manage user reports</li>
                   <li className="st-permission-item st-permission-allowed">Handle content flags</li>
                   <li className="st-permission-item st-permission-allowed">View all user accounts</li>
-                  <li className="st-permission-item st-permission-allowed">Deactivate problematic users</li>
+                  <li className="st-permission-item st-permission-allowed">Apply Strikes to problematic users</li>
                   <li className="st-permission-item st-permission-allowed">Manage content categories</li>
                   <li className="st-permission-item st-permission-allowed">View system analytics</li>
                 </ul>
@@ -605,8 +605,7 @@ export default function Settings() {
                 <ul className="st-permissions-list">
                   <li className="st-permission-item st-permission-denied">Create other moderators or admins</li>
                   <li className="st-permission-item st-permission-denied">Access admin settings</li>
-                  <li className="st-permission-item st-permission-denied">Delete the system</li>
-                  <li className="st-permission-item st-permission-denied">Change system-wide configurations</li>
+                  <li className="st-permission-item st-permission-denied">Delete Users</li>
                   <li className="st-permission-item st-permission-denied">View admin activity logs</li>
                 </ul>
               </div>
