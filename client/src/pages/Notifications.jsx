@@ -73,24 +73,17 @@ const Notification = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [sortFilter, setSortFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
-  const [allNotifications, setAllNotifications] = useState([]);
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [feedbackDetails, setFeedbackDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [acceptingId, setAcceptingId] = useState(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const menuRefs = useRef({});
-  const observerRef = useRef(null);
-  const listRef = useRef(null);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
   
   const navigate = useNavigate();
-
-  const ITEMS_PER_PAGE = 10;
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
@@ -151,7 +144,7 @@ const Notification = () => {
     }
   };
 
-  const fetchNotifications = useCallback(async (pageNum = 1, isLoadMore = false) => {
+  const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('token');
     const url =
       activeTab === 'archived'
@@ -159,82 +152,19 @@ const Notification = () => {
         : `${API_BASE_URL}/api/profile/notifications`;
 
     try {
-      if (isLoadMore) {
-        setIsLoadingMore(true);
-      } else {
-        setIsLoading(true);
-        setPage(1);
-        setHasMore(true);
-      }
-
+      setIsLoading(true);
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
-        params: {
-          page: pageNum,
-          limit: ITEMS_PER_PAGE
-        }
       });
-      
-      console.log('Fetched notifications:', res.data);
-      
-      if (isLoadMore) {
-        // Append new notifications for infinite scroll
-        setAllNotifications(prev => [...prev, ...res.data]);
-      } else {
-        // Replace all notifications for initial load
-        setAllNotifications(res.data);
-      }
-      
-      // Check if there are more notifications to load
-      const hasMoreData = res.data.length === ITEMS_PER_PAGE;
-      setHasMore(hasMoreData);
-      
+      console.log('Fetched notifications with usernames:', res.data);
+      setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
     } finally {
       setIsLoading(false);
-      setIsLoadingMore(false);
     }
   }, [activeTab]);
-
-  // Load more notifications
-  const loadMoreNotifications = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchNotifications(nextPage, true);
-    }
-  }, [page, hasMore, isLoadingMore, fetchNotifications]);
-
-  // Set up intersection observer for infinite scroll
-  useEffect(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          loadMoreNotifications();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const currentObserver = observerRef.current;
-    const sentinel = document.querySelector('.load-more-sentinel');
-    
-    if (sentinel && hasMore && !isLoading) {
-      currentObserver.observe(sentinel);
-    }
-
-    return () => {
-      if (currentObserver) {
-        currentObserver.disconnect();
-      }
-    };
-  }, [hasMore, isLoadingMore, isLoading, loadMoreNotifications]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -270,14 +200,17 @@ const Notification = () => {
 
   // Enhanced helper functions to determine display name and avatar
   const getDisplayName = (notification) => {
+    // ALWAYS show PeerFusion Team for penalty type (from report.js and user management)
     if (notification.type === 'penalty') {
       return 'PeerFusion Team';
     }
     
+    // Also show PeerFusion Team for NULL sender_id or system sender
     if (notification.sender_id === null || notification.sender_id === 0) {
       return 'PeerFusion Team';
     }
     
+    // Show PeerFusion Team for specific notification types
     if (notification.type === 'warning' || 
         notification.type === 'suspension' || 
         notification.type === 'ban' || 
@@ -289,14 +222,17 @@ const Notification = () => {
       return 'PeerFusion Team';
     }
 
+    // For feedback from admin/moderator, show as PeerFusion Team
     if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
       return 'PeerFusion Team';
     }
     
+    // Use the username from user_profiles (now coming from backend)
     return notification.sender_name || 'User';
   };
 
   const getDisplayAvatar = (notification) => {
+    // No avatar for PeerFusion Team notifications
     if (notification.type === 'penalty' || 
         notification.sender_id === null || 
         notification.sender_id === 0 ||
@@ -311,6 +247,7 @@ const Notification = () => {
       return null;
     }
     
+    // No avatar for admin/moderator feedback
     if (notification.type === 'feedback' && (notification.sender_role === 'admin' || notification.sender_role === 'moderator')) {
       return null;
     }
@@ -332,7 +269,7 @@ const Notification = () => {
       return 'pending';
     } else if (notification.type === 'feedback') {
       return 'feedback';
-    } else if (notification.type === 'session_request' && (notification.status === 'accepted' || notification.status === 'completed')) {
+    } else if (notification.type === 'session_request' && (notification.status === 'accepted' || notification.status === 'completed' || notification.status === 'scheduled')) {
       return 'meetings';
     }
     return 'other';
@@ -359,7 +296,7 @@ const Notification = () => {
 
   // Update local state instead of refetching
   const updateNotificationInState = (id, updates) => {
-    setAllNotifications(prev => 
+    setNotifications(prev => 
       prev.map(notification => 
         notification.id === id ? { ...notification, ...updates } : notification
       )
@@ -466,49 +403,51 @@ const Notification = () => {
     }
   };
 
-const markAllAsRead = async () => {
-  if (!allNotifications || allNotifications.length === 0) return;
-  const token = localStorage.getItem('token');
-  const unread = allNotifications.filter(n => !n.is_read);
-  if (unread.length === 0) {
-    window.pfToast?.info?.('All notifications are already read');
-    return;
-  }
-  try {
-    setAllNotifications(prev => 
-      prev.map(notification => 
-        !notification.is_read 
-          ? { ...notification, is_read: true }
-          : notification
-      )
-    );
-    
-    await Promise.all(
-      unread.map(n =>
-        axios.put(
-          `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!notifications || notifications.length === 0) return;
+    const token = localStorage.getItem('token');
+    const unread = notifications.filter(n => !n.is_read);
+    if (unread.length === 0) {
+      window.pfToast?.info?.('All notifications are already read');
+      return;
+    }
+    try {
+      // Optimistically update all unread notifications
+      setNotifications(prev => 
+        prev.map(notification => 
+          !notification.is_read 
+            ? { ...notification, is_read: true }
+            : notification
         )
-      )
-    );
-    
-    window.dispatchEvent(new Event('notificationsUpdated'));
-    window.pfToast?.success?.('All notifications marked as read');
-  } catch (err) {
-    // Revert on error by refetching
-    fetchNotifications();
-    console.error('Failed to mark all as read:', err);
-    window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
-  }
-};
+      );
+      
+      await Promise.all(
+        unread.map(n =>
+          axios.put(
+            `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+        )
+      );
+      
+      window.dispatchEvent(new Event('notificationsUpdated'));
+      window.pfToast?.success?.('All notifications marked as read');
+    } catch (err) {
+      // Revert on error by refetching
+      fetchNotifications();
+      console.error('Failed to mark all as read:', err);
+      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
+    }
+  };
 
   const deleteNotification = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
       // Optimistically remove from UI
-      setAllNotifications(prev => prev.filter(notification => notification.id !== id));
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
       
       await axios.delete(
         `${API_BASE_URL}/api/profile/notifications/${id}`,
@@ -565,7 +504,7 @@ const markAllAsRead = async () => {
 
       if (res.data.success && res.data.conversationId) {
         // Remove from UI immediately
-        setAllNotifications(prev => prev.filter((n) => n.id !== notification.id));
+        setNotifications(prev => prev.filter((n) => n.id !== notification.id));
         closeModal();
         window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
@@ -587,7 +526,7 @@ const markAllAsRead = async () => {
     const token = localStorage.getItem("token");
     try {
       // Remove from UI immediately
-      setAllNotifications(prev => prev.filter((n) => n.id !== notification.id));
+      setNotifications(prev => prev.filter((n) => n.id !== notification.id));
       
       await axios.post(
         `${API_BASE_URL}/api/session/reject`,
@@ -643,6 +582,12 @@ const markAllAsRead = async () => {
           return (
             <span className="peerfusion-notification-badge peerfusion-badge-completed">
               <InternetIcons.Calendar /> Completed
+            </span>
+          );
+        } else if (notification.status === 'scheduled') {
+          return (
+            <span className="peerfusion-notification-badge peerfusion-badge-scheduled">
+              <InternetIcons.Calendar /> Scheduled
             </span>
           );
         }
@@ -756,8 +701,8 @@ const markAllAsRead = async () => {
     }
   };
 
-  // Filter notifications (no pagination here since we're using infinite scroll)
-  const filteredNotifications = allNotifications
+  // Filter notifications based on search and sort filter
+  const filteredNotifications = notifications
     .filter((notification) =>
       getDisplayName(notification)
         .toLowerCase()
@@ -770,11 +715,9 @@ const markAllAsRead = async () => {
       return category === sortFilter;
     });
 
-  const unreadCount = allNotifications.filter(n => !n.is_read).length;
-
   // Get counts for each category
   const getCategoryCount = (category) => {
-    return allNotifications.filter(notification => 
+    return notifications.filter(notification => 
       categorizeNotifications(notification) === category
     ).length;
   };
@@ -823,8 +766,7 @@ const markAllAsRead = async () => {
           onClick={() => {
             setActiveTab('all');
             setSortFilter('all');
-            setPage(1);
-            fetchNotifications(1, false);
+            fetchNotifications();
           }}
         >
           All Notifications
@@ -834,8 +776,7 @@ const markAllAsRead = async () => {
           onClick={() => {
             setActiveTab('archived');
             setSortFilter('all');
-            setPage(1);
-            fetchNotifications(1, false);
+            fetchNotifications();
           }}
         >
           Archived
@@ -857,7 +798,7 @@ const markAllAsRead = async () => {
           className={`peerfusion-sorting-filter ${sortFilter === 'all' ? 'active' : ''}`}
           onClick={() => setSortFilter('all')}
         >
-          All ({allNotifications.length})
+          All ({notifications.length})
         </button>
         <button
           className={`peerfusion-sorting-filter ${sortFilter === 'pending' ? 'active' : ''}`}
@@ -880,7 +821,7 @@ const markAllAsRead = async () => {
       </div>
 
       {/* Single Row Notifications List */}
-      <div className="peerfusion-notification-list" ref={listRef}>
+      <div className="peerfusion-notification-list">
         {isLoading ? (
           // Initial loading skeleton
           <>
@@ -910,170 +851,140 @@ const markAllAsRead = async () => {
             </p>
           </div>
         ) : (
-          <>
-            {filteredNotifications.map((notification) => (
-              <div
-                className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
-                  notification.type === 'appeal_approved' || 
-                  notification.type === 'account_reactivated' || 
-                  notification.status === 'accepted' ||
-                  notification.status === 'completed'
-                    ? 'peerfusion-notification-approved'
-                    : notification.type === 'appeal_rejected' || 
-                      notification.status === 'rejected'
-                    ? 'peerfusion-notification-rejected'
-                    : categorizeNotifications(notification) === 'pending'
-                    ? 'peerfusion-notification-pending'
-                    : ''
-                }`}
-                key={notification.id}
-                onClick={() => viewNotification(notification)}
-              >
-                <div className="peerfusion-notification-content">
-                  {/* Avatar */}
-                  {getDisplayAvatar(notification) ? (
-                    <img
-                      src={`${API_BASE_URL}/uploads/${getDisplayAvatar(notification)}`}
-                      alt={getDisplayName(notification)}
-                      className="peerfusion-notification-avatar"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div 
-                    className={`peerfusion-notification-avatar-placeholder ${
-                      getDisplayName(notification) === 'PeerFusion Team' ? 'peerfusion-team-avatar' : ''
-                    }`}
-                    style={{ display: getDisplayAvatar(notification) ? 'none' : 'flex' }}
-                  >
-                    {getAvatarPlaceholder(notification)}
-                  </div>
-
-                  {/* Content */}
-                  <div className="peerfusion-notification-details">
-                    <div className="peerfusion-notification-header">
-                      <h4 className="peerfusion-notification-username">
-                        {getDisplayName(notification)}
-                      </h4>
-                      <p className="peerfusion-notification-time">
-                        {new Date(notification.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                    
-                    <p 
-                      className="peerfusion-notification-message"
-                      dangerouslySetInnerHTML={{ 
-                        __html: formatNotificationMessage(notification.message) 
-                      }}
-                    />
-
-                    <div className="peerfusion-notification-badges">
-                      {getNotificationBadge(notification)}
-                    </div>
-                  </div>
+          filteredNotifications.map((notification) => (
+            <div
+              className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
+                notification.type === 'appeal_approved' || 
+                notification.type === 'account_reactivated' || 
+                notification.status === 'accepted' ||
+                notification.status === 'completed' ||
+                notification.status === 'scheduled'
+                  ? 'peerfusion-notification-approved'
+                  : notification.type === 'appeal_rejected' || 
+                    notification.status === 'rejected'
+                  ? 'peerfusion-notification-rejected'
+                  : categorizeNotifications(notification) === 'pending'
+                  ? 'peerfusion-notification-pending'
+                  : ''
+              }`}
+              key={notification.id}
+              onClick={() => viewNotification(notification)}
+            >
+              <div className="peerfusion-notification-content">
+                {/* Avatar */}
+                {getDisplayAvatar(notification) ? (
+                  <img
+                    src={`${API_BASE_URL}/uploads/${getDisplayAvatar(notification)}`}
+                    alt={getDisplayName(notification)}
+                    className="peerfusion-notification-avatar"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`peerfusion-notification-avatar-placeholder ${
+                    getDisplayName(notification) === 'PeerFusion Team' ? 'peerfusion-team-avatar' : ''
+                  }`}
+                  style={{ display: getDisplayAvatar(notification) ? 'none' : 'flex' }}
+                >
+                  {getAvatarPlaceholder(notification)}
                 </div>
 
-                {/* Menu */}
-                <div
-                  className="peerfusion-notification-menu-container"
-                  ref={(el) => (menuRefs.current[notification.id] = el)}
-                >
-                  <button
-                    className="peerfusion-notification-menu-button"
-                    onClick={(e) => toggleMenu(notification.id, e)}
-                  >
-                    ⋮
-                  </button>
+                {/* Content */}
+                <div className="peerfusion-notification-details">
+                  <div className="peerfusion-notification-header">
+                    <h4 className="peerfusion-notification-username">
+                      {getDisplayName(notification)}
+                    </h4>
+                    <p className="peerfusion-notification-time">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  <p 
+                    className="peerfusion-notification-message"
+                    dangerouslySetInnerHTML={{ 
+                      __html: formatNotificationMessage(notification.message) 
+                    }}
+                  />
 
-                  {openMenuId === notification.id && (
-                    <div className="peerfusion-notification-menu">
-                      {notification.is_read ? (
-                        <button
-                          className="peerfusion-notification-menu-item mark-unread"
-                          onClick={(e) =>
-                            markNotificationAsUnread(notification.id, e)
-                          }
-                        >
-                          Mark as Unread
-                        </button>
-                      ) : (
-                        <button
-                          className="peerfusion-notification-menu-item mark-read"
-                          onClick={(e) =>
-                            markNotificationAsRead(notification.id, e)
-                          }
-                        >
-                          Mark as Read
-                        </button>
-                      )}
-                      {!notification.is_archived ? (
-                        <button
-                          className="peerfusion-notification-menu-item"
-                          onClick={(e) =>
-                            archiveNotification(notification.id, e)
-                          }
-                        >
-                          Archive
-                        </button>
-                      ) : (
-                        <button
-                          className="peerfusion-notification-menu-item"
-                          onClick={(e) =>
-                            unarchiveNotification(notification.id, e)
-                          }
-                        >
-                          Unarchive
-                        </button>
-                      )}
-                      <button
-                        className="peerfusion-notification-menu-item delete"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const ok = await window.pfConfirm?.('Are you sure you want to delete this notification?');
-                          if (ok) {
-                            deleteNotification(notification.id, e);
-                          }
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
+                  <div className="peerfusion-notification-badges">
+                    {getNotificationBadge(notification)}
+                  </div>
                 </div>
               </div>
-            ))}
-            
-            {/* Load More Section */}
-            {hasMore && (
-              <div className="load-more-sentinel">
-                {isLoadingMore ? (
-                  // Loading more skeleton
-                  <>
-                    {[...Array(3)].map((_, index) => (
-                      <NotificationSkeleton key={`loading-${index}`} />
-                    ))}
-                    <div className="peerfusion-loading-more">
-                      <div className="peerfusion-loading-spinner"></div>
-                      <p>Loading more notifications...</p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="peerfusion-load-more-trigger">
-                    Scroll down to load more
+
+              {/* Menu */}
+              <div
+                className="peerfusion-notification-menu-container"
+                ref={(el) => (menuRefs.current[notification.id] = el)}
+              >
+                <button
+                  className="peerfusion-notification-menu-button"
+                  onClick={(e) => toggleMenu(notification.id, e)}
+                >
+                  ⋮
+                </button>
+
+                {openMenuId === notification.id && (
+                  <div className="peerfusion-notification-menu">
+                    {notification.is_read ? (
+                      <button
+                        className="peerfusion-notification-menu-item mark-unread"
+                        onClick={(e) =>
+                          markNotificationAsUnread(notification.id, e)
+                        }
+                      >
+                        Mark as Unread
+                      </button>
+                    ) : (
+                      <button
+                        className="peerfusion-notification-menu-item mark-read"
+                        onClick={(e) =>
+                          markNotificationAsRead(notification.id, e)
+                        }
+                      >
+                        Mark as Read
+                      </button>
+                    )}
+                    {!notification.is_archived ? (
+                      <button
+                        className="peerfusion-notification-menu-item"
+                        onClick={(e) =>
+                          archiveNotification(notification.id, e)
+                        }
+                      >
+                        Archive
+                      </button>
+                    ) : (
+                      <button
+                        className="peerfusion-notification-menu-item"
+                        onClick={(e) =>
+                          unarchiveNotification(notification.id, e)
+                        }
+                      >
+                        Unarchive
+                      </button>
+                    )}
+                    <button
+                      className="peerfusion-notification-menu-item delete"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const ok = await window.pfConfirm?.('Are you sure you want to delete this notification?');
+                        if (ok) {
+                          deleteNotification(notification.id, e);
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 )}
               </div>
-            )}
-            
-            {/* No more notifications message */}
-            {!hasMore && filteredNotifications.length > 0 && (
-              <div className="peerfusion-no-more-notifications">
-                <p>No more notifications to load</p>
-              </div>
-            )}
-          </>
+            </div>
+          ))
         )}
       </div>
 
@@ -1162,6 +1073,23 @@ const markAllAsRead = async () => {
                       onClick={() => handleDecline(selectedNotification)}
                     >
                       <InternetIcons.Rejected /> Decline
+                    </button>
+                  </div>
+                )}
+
+              {/* Rate and Feedback button for completed sessions */}
+              {selectedNotification.type === 'session_request' &&
+                selectedNotification.status === 'completed' && (
+                  <div className="peerfusion-notification-session-actions">
+                    <button
+                      className="peerfusion-notification-btn peerfusion-notification-btn-primary"
+                      onClick={() => {
+                        // Navigate to rating page or open rating modal
+                        navigate(`/rate-user?session=${selectedNotification.session_request_id}`);
+                        closeModal();
+                      }}
+                    >
+                      <InternetIcons.Rating /> Rate and Feedback
                     </button>
                   </div>
                 )}
