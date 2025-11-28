@@ -466,51 +466,42 @@ const Notification = () => {
     }
   };
 
-  // Mark all notifications as read
-  const markAllAsRead = async () => {
-    if (!allNotifications || allNotifications.length === 0) return;
-    const token = localStorage.getItem('token');
-    const unread = allNotifications.filter(n => !n.is_read);
-    if (unread.length === 0) {
-      window.pfToast?.info?.('All notifications are already read');
-      return;
-    }
-    try {
-      // Optimistically update all unread notifications
-      const unreadIds = unread.map(n => n.id);
-      setAllNotifications(prev => 
-        prev.map(notification => 
-          unreadIds.includes(notification.id) 
-            ? { ...notification, is_read: true }
-            : notification
+const markAllAsRead = async () => {
+  if (!allNotifications || allNotifications.length === 0) return;
+  const token = localStorage.getItem('token');
+  const unread = allNotifications.filter(n => !n.is_read);
+  if (unread.length === 0) {
+    window.pfToast?.info?.('All notifications are already read');
+    return;
+  }
+  try {
+    setAllNotifications(prev => 
+      prev.map(notification => 
+        !notification.is_read 
+          ? { ...notification, is_read: true }
+          : notification
+      )
+    );
+    
+    await Promise.all(
+      unread.map(n =>
+        axios.put(
+          `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
         )
-      );
-      
-      await Promise.all(
-        unread.map(n =>
-          axios.put(
-            `${API_BASE_URL}/api/profile/notifications/${n.id}/read`,
-            {},
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-        )
-      );
-      
-      window.dispatchEvent(new Event('notificationsUpdated'));
-      window.pfToast?.success?.('All notifications marked as read');
-    } catch (err) {
-      // Revert on error
-      setAllNotifications(prev => 
-        prev.map(notification => 
-          unreadIds.includes(notification.id) 
-            ? { ...notification, is_read: false }
-            : notification
-        )
-      );
-      console.error('Failed to mark all as read:', err);
-      window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
-    }
-  };
+      )
+    );
+    
+    window.dispatchEvent(new Event('notificationsUpdated'));
+    window.pfToast?.success?.('All notifications marked as read');
+  } catch (err) {
+    // Revert on error by refetching
+    fetchNotifications();
+    console.error('Failed to mark all as read:', err);
+    window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
+  }
+};
 
   const deleteNotification = async (id, e) => {
     if (e) e.stopPropagation();
