@@ -506,13 +506,13 @@ router.post('/login', async (req, res) => {
 
 //-------------------------- Google Login Route --------------------------//
 router.post('/google-login', async (req, res) => {
-  const { token: googleToken } = req.body;
+  const { code } = req.body; // Change from token to code
 
   // Validate input
-  if (!googleToken) {
+  if (!code) {
     return res.status(400).json({ 
       success: false,
-      error: 'Google token is required' 
+      error: 'Authorization code is required' 
     });
   }
 
@@ -525,9 +525,13 @@ router.post('/google-login', async (req, res) => {
   }
 
   try {
-    // Verify Google token
+    const { tokens } = await client.getToken({
+      code: code,
+      redirect_uri: 'postmessage'
+    });
+    
     const ticket = await client.verifyIdToken({
-      idToken: googleToken,
+      idToken: tokens.id_token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     
@@ -539,10 +543,8 @@ router.post('/google-login', async (req, res) => {
     const [users] = await db.query(findUserSql, [email]);
 
     if (users.length > 0) {
-      // User exists - login
       const existingUser = users[0];
       
-      // Check user status with comprehensive handling
       if (existingUser.status === 'suspended') {
         if (existingUser.suspended_until && new Date(existingUser.suspended_until) > new Date()) {
           const timeLeft = Math.ceil((new Date(existingUser.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
@@ -602,7 +604,7 @@ router.post('/google-login', async (req, res) => {
           'UPDATE users SET google_id = ?, name = ? WHERE id = ?',
           [googleId, name, existingUser.id]
         );
-        existingUser.name = name; // Update local object for response
+        existingUser.name = name;
       }
       
       // Generate app JWT token
@@ -679,16 +681,16 @@ router.post('/google-login', async (req, res) => {
   } catch (error) {
     console.error('Google login error:', error);
     
-    if (error.message.includes('Token used too late')) {
+    if (error.message.includes('Token used too late') || error.message.includes('invalid_grant')) {
       return res.status(401).json({ 
         success: false,
-        error: 'Google token has expired. Please try again.' 
+        error: 'Google authorization code has expired. Please try again.' 
       });
     }
     
     res.status(401).json({ 
       success: false,
-      error: 'Invalid Google token' 
+      error: 'Invalid Google authorization code' 
     });
   }
 });

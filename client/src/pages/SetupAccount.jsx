@@ -55,6 +55,21 @@ const SetupAccount = () => {
     '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
   ];
 
+  // Age validation function
+  const isAtLeast18YearsOld = (birthday) => {
+    if (!birthday) return true; // Return true if no birthday provided (optional field)
+    
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      return age - 1 >= 18;
+    }
+    return age >= 18;
+  };
+
   useEffect(() => {
     const checkExistingProfile = async () => {
       const token = localStorage.getItem('token');
@@ -120,9 +135,14 @@ const SetupAccount = () => {
 
     switch (step) {
       case 1:
-        if (!form.username.trim()) newErrors.username = 'Username is required';
+        if (!form.username.trim()) newErrors.username = 'Full name is required';
         if (!form.role) newErrors.role = 'Role is required';
         if (!form.year_level) newErrors.year_level = 'Year level is required';
+        
+        // Age validation (only if birthday is provided)
+        if (form.birthday && !isAtLeast18YearsOld(form.birthday)) {
+          newErrors.birthday = 'You must be at least 18 years old';
+        }
         break;
       
       case 2:
@@ -153,10 +173,21 @@ const SetupAccount = () => {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    
     // Clear error when user starts typing
-    if (errors[e.target.name]) {
-      setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
+    // Special handling for birthday to validate age immediately
+    if (name === 'birthday' && value) {
+      if (!isAtLeast18YearsOld(value)) {
+        setErrors(prev => ({ ...prev, birthday: 'You must be at least 18 years old' }));
+      } else {
+        setErrors(prev => ({ ...prev, birthday: '' }));
+      }
     }
   };
 
@@ -242,79 +273,87 @@ const SetupAccount = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Validate ALL steps before submitting
-  let allValid = true;
-  let firstInvalidStep = 1;
-  
-  for (let step = 1; step <= steps.length; step++) {
-    if (!validateStep(step)) {
-      allValid = false;
-      firstInvalidStep = step;
-      break;
-    }
-  }
-
-  if (!allValid) {
-    setCurrentStep(firstInvalidStep);
-    alert(`Please complete all required fields in step ${firstInvalidStep} before submitting.`);
-    return;
-  }
-
-  const token = localStorage.getItem('token');
-  if (!token) {
-    alert('Please log in again.');
-    navigate('/login');
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const formData = new FormData();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Ensure role value matches what home page expects
-    const formWithSubjects = {
-      ...form,
-      subject: selectedSubjects.join(','),
-      availability: form.role !== 'Skill Learner' ? JSON.stringify(availability) : '[]'
-    };
+    // Validate ALL steps before submitting
+    let allValid = true;
+    let firstInvalidStep = 1;
     
-    for (const key in formWithSubjects) {
-      if (formWithSubjects[key] !== null && formWithSubjects[key] !== undefined) {
-        formData.append(key, formWithSubjects[key]);
+    for (let step = 1; step <= steps.length; step++) {
+      if (!validateStep(step)) {
+        allValid = false;
+        firstInvalidStep = step;
+        break;
       }
     }
-    
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
+
+    if (!allValid) {
+      setCurrentStep(firstInvalidStep);
+      alert(`Please complete all required fields in step ${firstInvalidStep} before submitting.`);
+      return;
     }
 
-    const response = await axios.post(`${API_BASE_URL}/api/profile/setup`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-
-    if (response.status === 200 || response.status === 201) {
-      console.log('Profile setup successful!');
-      navigate('/profile');
+    // Final age validation check
+    if (form.birthday && !isAtLeast18YearsOld(form.birthday)) {
+      setCurrentStep(1);
+      setErrors(prev => ({ ...prev, birthday: 'You must be at least 18 years old' }));
+      alert('You must be at least 18 years old to use this platform.');
+      return;
     }
-  } catch (err) {
-    console.error('Setup error:', err);
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token');
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in again.');
       navigate('/login');
-    } else {
-      alert('Failed to save setup info: ' + (err.response?.data?.message || 'Please try again'));
+      return;
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      
+      // Ensure role value matches what home page expects
+      const formWithSubjects = {
+        ...form,
+        subject: selectedSubjects.join(','),
+        availability: form.role !== 'Skill Learner' ? JSON.stringify(availability) : '[]'
+      };
+      
+      for (const key in formWithSubjects) {
+        if (formWithSubjects[key] !== null && formWithSubjects[key] !== undefined) {
+          formData.append(key, formWithSubjects[key]);
+        }
+      }
+      
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/api/profile/setup`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        console.log('Profile setup successful!');
+        navigate('/profile');
+      }
+    } catch (err) {
+      console.error('Setup error:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert('Failed to save setup info: ' + (err.response?.data?.message || 'Please try again'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Loading state while checking profile
   if (!hasCheckedProfile) {
@@ -402,8 +441,11 @@ const handleSubmit = async (e) => {
                     name="birthday" 
                     value={form.birthday} 
                     onChange={handleChange} 
-                    className="form-input"
+                    className={`form-input ${errors.birthday ? 'error' : ''}`}
+                    max={new Date().toISOString().split('T')[0]} // Prevent future dates
                   />
+                  {errors.birthday && <span className="error-message">{errors.birthday}</span>}
+                  <small className="help-text">Must be 18 years or older</small>
                 </div>
 
                 <div className="form-group">
