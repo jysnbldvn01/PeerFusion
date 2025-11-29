@@ -2547,7 +2547,6 @@
 }
 
 .peerfusion-sidebar-rating {
-  margin: 1rem 0 1.5rem 0;
   text-align: center;
 }
 
@@ -2555,14 +2554,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: white;
   color: #f39c12;
-  padding: 0.6rem 1.2rem;
   border-radius: 20px;
   font-size: 1rem;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
-  border: 1px solid #fef3c7;
 }
 
 .peerfusion-reviews-count {
@@ -2629,7 +2624,6 @@
   transform: translateY(-1px);
 }
 
-/* Mobile responsiveness for buttons */
 @media (max-width: 768px) {
   .peerfusion-edit-actions {
     flex-direction: column;
