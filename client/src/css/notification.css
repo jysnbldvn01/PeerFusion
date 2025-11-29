@@ -1134,3 +1134,49 @@
     min-width: 16px;
   }
 }
+.peerfusion-badge-accepted {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  box-shadow: 0 2px 6px rgba(74, 124, 58, 0.3);
+}
+
+.peerfusion-badge-pending {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #92400e;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.peerfusion-notification-pending.unread {
+  border-left: 3px solid #f59e0b !important;
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-accepted.unread {
+  border-left: 3px solid #4a7c3a !important;
+  background: linear-gradient(90deg, #e8efe5 0%, #ffffff 10%) !important;
+}
+
+.peerfusion-notification-item.unread {
+  border-left: 3px solid #4a7c3a;
+  background: linear-gradient(90deg, #f8faf7 0%, #ffffff 10%);
+  position: relative;
+}
+
+.peerfusion-notification-item.unread::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #4a7c3a;
+  border-radius: 3px 0 0 3px;
+}
+
+.peerfusion-notification-pending.unread::before {
+  background: #f59e0b;
+}
+
+.peerfusion-notification-accepted.unread::before {
+  background: #4a7c3a;
+}
