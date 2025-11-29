@@ -357,7 +357,6 @@ const UserAppealPage = () => {
                   <h4>Support</h4>
                   <a href="/support">Help Center</a>
                   <a href="/user-appeal">Appeals</a>
-                  <a href="#contact">Contact</a>
                 </div>
                 <div className="link-group">
                   <h4>Legal</h4>
@@ -841,7 +840,6 @@ const UserAppealPage = () => {
                 <h4>Support</h4>
                 <a href="/support">Help Center</a>
                 <a href="/user-appeal">Appeals</a>
-                <a href="#contact">Contact</a>
               </div>
               <div className="link-group">
                 <h4>Legal</h4>

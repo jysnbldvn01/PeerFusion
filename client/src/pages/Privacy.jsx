@@ -504,7 +504,7 @@ const PrivacyPolicy = () => {
             <p>For privacy-related questions, data access requests, or concerns, please contact:</p>
             <div className="peerfusion-contact-infos">
               <div className="peerfusion-contact-item">
-                <strong>Email:</strong> PeerFusion@gmail.com
+                <strong>Email:</strong> Peerfusion@gmail.com
               </div>
               <div className="peerfusion-contact-item">
                 <strong>Administrator:</strong> PeerFusion Devs
@@ -601,7 +601,6 @@ const PrivacyPolicy = () => {
               <h4>Support</h4>
               <a href="/support">Help Center</a>
               <a href="/user-appeal">Appeals</a>
-              <a href="#contact">Contact</a>
             </div>
             <div className="peerfusion-link-group">
               <h4>Legal</h4>

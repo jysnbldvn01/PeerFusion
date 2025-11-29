@@ -838,15 +838,28 @@ useEffect(() => {
       <footer className="peerfusion-footer">
         <div className="container">
           <div className="footer-content">
-            <div className="footer-brand">
-              <div className="footer-logo">
-                <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
-                <span>PeerFusion</span>
-              </div>
-              <p>
-                Empowering learners through collaborative learning and peer-to-peer skill sharing.
-              </p>
+          <div className="peerfusion-footer-brand">
+            <div className="peerfusion-footer-logo">
+              <img 
+                src="/Logos.png" 
+                alt="PeerFusion" 
+                className="peerfusion-logo-image"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <span>PeerFusion</span>
             </div>
+            <p>
+              Empowering learners through collaborative learning and peer-to-peer skill sharing.
+            </p>
+            <div className="peerfusion-contact-info">
+              <a href="mailto:Peerfusion@gmail.com" className="peerfusion-contact-email">
+                <span className="peerfusion-email-icon-small"></span>
+                Peerfusion@gmail.com
+              </a>
+            </div>
+          </div>
             <div className="footer-links">
               <div className="link-group">
                 <h4>Platform</h4>
@@ -882,7 +895,6 @@ useEffect(() => {
                 <h4>Support</h4>
                 <a href="/support">Help Center</a>
                 <a href="/user-appeal">Appeals</a>
-                <a href="#contact">Contact</a>
               </div>
               <div className="link-group">
                 <h4>Legal</h4>
