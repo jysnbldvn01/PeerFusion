@@ -505,21 +505,21 @@ const TermsOfUse = () => {
       {/* Footer */}
       <footer className="peerfusion-legal-footer">
         <div className="peerfusion-footer-content">
-          <div className="footer-brand">
-            <div className="footer-logo">
-              <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
-              <span>PeerFusion</span>
-            </div>
-            <p>
-              Empowering learners through collaborative learning and peer-to-peer skill sharing.
-            </p>
-            <div className="footer-contact-info">
-              <div className="footer-email-display">
-                <span className="email-icon-small"></span>
-                Peerfusion@gmail.com
+            <div className="footer-brand">
+              <div className="footer-logo">
+                <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
+                <span>PeerFusion</span>
+              </div>
+              <p>
+                Empowering learners through collaborative learning and peer-to-peer skill sharing.
+              </p>
+              <div className="footer-contact-info">
+                <div className="footer-email-display">
+                  <span className="email-icon-small"></span>
+                  Peerfusion@gmail.com
+                </div>
               </div>
             </div>
-          </div>
           <div className="peerfusion-footer-links">
             <div className="peerfusion-link-group">
               <h4>Platform</h4>

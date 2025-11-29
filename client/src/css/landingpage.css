@@ -1270,10 +1270,6 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .footer-contact-info {
-    text-align: center;
-  }
-  
   .footer-email-display {
     justify-content: center;
   }
