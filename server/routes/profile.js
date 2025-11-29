@@ -167,7 +167,7 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// UPDATED: Profile setup with availability
+// Profile setup
 router.post('/setup', authenticateToken, upload.single('avatar'), async (req, res) => {
   try {
     console.log('Received profile setup request - Body:', req.body);
@@ -177,7 +177,7 @@ router.post('/setup', authenticateToken, upload.single('avatar'), async (req, re
     const {
       username, bio, birthday, gender, social_links, 
       contact_number, subject, year_level, role,
-      availability = '[]' // ADDED: availability field
+      availability = '[]'
     } = req.body;
 
     let birthdayValue = null;
@@ -198,11 +198,10 @@ router.post('/setup', authenticateToken, upload.single('avatar'), async (req, re
     const [existingProfiles] = await db.query(checkSql, [userId]);
 
     console.log('Existing profiles found:', existingProfiles.length);
-    console.log('Birthday value being saved:', birthdayValue);
-    console.log('Availability being saved:', availability); // ADDED: log availability
+    console.log('Subject being saved:', subject);
 
     if (existingProfiles.length > 0) {
-      // UPDATED: Include availability in update
+      // Update existing profile
       let sql = `
         UPDATE user_profiles 
         SET username=?, bio=?, birthday=?, gender=?, social_links=?, 
@@ -222,9 +221,20 @@ router.post('/setup', authenticateToken, upload.single('avatar'), async (req, re
       console.log('Update values:', values);
 
       await db.query(sql, values);
-      res.json({ message: 'Profile updated successfully' });
+      
+      // If user removed subjects, clean up subject details
+      if (!subject || subject.trim() === '') {
+        const deleteSql = 'DELETE FROM user_subject_details WHERE user_id = ?';
+        await db.query(deleteSql, [userId]);
+        console.log('Cleaned up subject details for user:', userId);
+      }
+      
+      res.json({ 
+        message: 'Profile updated successfully',
+        has_subjects: !!subject
+      });
     } else {
-      // UPDATED: Include availability in insert
+      // Create new profile
       const sql = `
         INSERT INTO user_profiles 
         (user_id, username, bio, birthday, gender, social_links, 
@@ -243,14 +253,17 @@ router.post('/setup', authenticateToken, upload.single('avatar'), async (req, re
         subject || null, 
         year_level || null, 
         role,
-        availability // ADDED: availability value
+        availability
       ];
 
       console.log('Insert SQL:', sql);
       console.log('Insert values:', insertValues);
 
       await db.query(sql, insertValues);
-      res.json({ message: 'Profile created successfully' });
+      res.json({ 
+        message: 'Profile created successfully',
+        has_subjects: !!subject
+      });
     }
   } catch (err) {
     console.error('Profile setup error details:');
@@ -1892,6 +1905,460 @@ router.get('/account-status', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Account status error:', err);
     res.status(500).json({ error: 'Failed to get account status' });
+  }
+});
+
+// ------------------- User Subject Details --------------------------- //
+
+// Get user's subject details
+router.get('/user-subject-details', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    console.log(`Fetching subject details for user ${userId}`);
+    
+    const sql = `
+      SELECT subject_name, title, about, learning_objectives 
+      FROM user_subject_details 
+      WHERE user_id = ?
+    `;
+    
+    const [results] = await db.query(sql, [userId]);
+    
+    console.log(`Found ${results.length} subject details for user ${userId}`);
+    
+    // Parse learning objectives from JSON string
+    const subjectDetails = results.map(item => {
+      try {
+        return {
+          ...item,
+          learning_objectives: item.learning_objectives ? JSON.parse(item.learning_objectives) : []
+        };
+      } catch (parseError) {
+        console.error('Error parsing learning objectives for subject:', item.subject_name, parseError);
+        return {
+          ...item,
+          learning_objectives: []
+        };
+      }
+    });
+    
+    // Convert to object for easy access by subject name
+    const detailsMap = {};
+    subjectDetails.forEach(detail => {
+      detailsMap[detail.subject_name] = detail;
+    });
+    
+    res.json(detailsMap);
+  } catch (err) {
+    console.error('Get user subject details error:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch subject details',
+      details: err.message 
+    });
+  }
+});
+
+// Save or update subject details
+router.post('/save-subject-details', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subject_name, title, about, learning_objectives } = req.body;
+
+    console.log('Saving subject details for user:', {
+      userId,
+      subject_name,
+      titleLength: title?.length,
+      aboutLength: about?.length,
+      objectivesCount: learning_objectives?.length
+    });
+
+    // Validation
+    if (!subject_name || !title || !about || !learning_objectives) {
+      return res.status(400).json({ 
+        error: 'All fields are required',
+        missing: {
+          subject_name: !subject_name,
+          title: !title,
+          about: !about,
+          learning_objectives: !learning_objectives
+        }
+      });
+    }
+
+    if (title.length > 500) {
+      return res.status(400).json({ error: 'Title must be less than 500 characters' });
+    }
+
+    if (about.length > 2000) {
+      return res.status(400).json({ error: 'About description must be less than 2000 characters' });
+    }
+
+    if (!Array.isArray(learning_objectives)) {
+      return res.status(400).json({ error: 'Learning objectives must be an array' });
+    }
+
+    if (learning_objectives.length === 0) {
+      return res.status(400).json({ error: 'At least one learning objective is required' });
+    }
+
+    if (learning_objectives.length > 10) {
+      return res.status(400).json({ error: 'Maximum 10 learning objectives allowed' });
+    }
+
+    // Validate each learning objective
+    const validObjectives = learning_objectives
+      .filter(obj => obj && obj.trim() !== '')
+      .map(obj => obj.trim());
+
+    if (validObjectives.length === 0) {
+      return res.status(400).json({ error: 'At least one valid learning objective is required' });
+    }
+
+    // Check for objective length
+    for (const objective of validObjectives) {
+      if (objective.length > 200) {
+        return res.status(400).json({ error: 'Each learning objective must be less than 200 characters' });
+      }
+    }
+
+    // Convert learning objectives array to JSON string
+    const learningObjectivesJson = JSON.stringify(validObjectives);
+
+    const sql = `
+      INSERT INTO user_subject_details (user_id, subject_name, title, about, learning_objectives)
+      VALUES (?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        title = VALUES(title),
+        about = VALUES(about),
+        learning_objectives = VALUES(learning_objectives),
+        updated_at = CURRENT_TIMESTAMP
+    `;
+
+    const [result] = await db.query(sql, [userId, subject_name, title, about, learningObjectivesJson]);
+
+    console.log('Subject details saved successfully:', {
+      userId,
+      subject_name,
+      affectedRows: result.affectedRows,
+      insertId: result.insertId
+    });
+
+    res.json({
+      success: true,
+      message: 'Subject details saved successfully',
+      data: {
+        subject_name,
+        title,
+        about,
+        learning_objectives: validObjectives
+      }
+    });
+  } catch (err) {
+    console.error('Save subject details error:', err);
+    
+    if (err.code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ error: 'One or more fields exceed maximum length' });
+    }
+    
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Subject details already exist for this user' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to save subject details',
+      details: err.message 
+    });
+  }
+});
+
+// Get specific subject details
+router.get('/subject-details/:subjectName', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subjectName } = req.params;
+
+    console.log(`Fetching details for subject: ${subjectName}, user: ${userId}`);
+
+    const sql = `
+      SELECT subject_name, title, about, learning_objectives 
+      FROM user_subject_details 
+      WHERE user_id = ? AND subject_name = ?
+    `;
+    
+    const [results] = await db.query(sql, [userId, subjectName]);
+
+    if (results.length === 0) {
+      console.log(`No details found for subject: ${subjectName}`);
+      return res.status(404).json({ 
+        error: 'Subject details not found',
+        subject_name: subjectName
+      });
+    }
+
+    const subjectDetails = results[0];
+    
+    // Parse learning objectives
+    try {
+      subjectDetails.learning_objectives = subjectDetails.learning_objectives 
+        ? JSON.parse(subjectDetails.learning_objectives) 
+        : [];
+    } catch (parseError) {
+      console.error('Error parsing learning objectives:', parseError);
+      subjectDetails.learning_objectives = [];
+    }
+
+    console.log(`Found details for subject: ${subjectName}`);
+    
+    res.json({
+      success: true,
+      data: subjectDetails
+    });
+  } catch (err) {
+    console.error('Get subject details error:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch subject details',
+      details: err.message 
+    });
+  }
+});
+
+// Delete subject details
+router.delete('/subject-details/:subjectName', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subjectName } = req.params;
+
+    console.log(`Deleting subject details for: ${subjectName}, user: ${userId}`);
+
+    const sql = 'DELETE FROM user_subject_details WHERE user_id = ? AND subject_name = ?';
+    const [result] = await db.query(sql, [userId, subjectName]);
+
+    if (result.affectedRows === 0) {
+      console.log(`No subject details found to delete for: ${subjectName}`);
+      return res.status(404).json({ 
+        error: 'Subject details not found',
+        subject_name: subjectName
+      });
+    }
+
+    console.log(`Successfully deleted subject details for: ${subjectName}`);
+    
+    res.json({
+      success: true,
+      message: 'Subject details deleted successfully',
+      subject_name: subjectName
+    });
+  } catch (err) {
+    console.error('Delete subject details error:', err);
+    res.status(500).json({ 
+      error: 'Failed to delete subject details',
+      details: err.message 
+    });
+  }
+});
+
+// Get all subjects with user details (for public profiles)
+router.get('/user-subjects/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    console.log(`Fetching all subjects with details for user: ${userId}`);
+
+    const sql = `
+      SELECT 
+        usd.subject_name,
+        usd.title,
+        usd.about,
+        usd.learning_objectives,
+        up.username,
+        up.avatar,
+        up.role,
+        up.rating
+      FROM user_subject_details usd
+      JOIN user_profiles up ON up.user_id = usd.user_id
+      WHERE usd.user_id = ? AND up.user_id IS NOT NULL
+    `;
+    
+    const [results] = await db.query(sql, [userId]);
+
+    // Parse learning objectives and format response
+    const subjectsWithDetails = results.map(item => {
+      try {
+        return {
+          subject_name: item.subject_name,
+          title: item.title,
+          about: item.about,
+          learning_objectives: item.learning_objectives ? JSON.parse(item.learning_objectives) : [],
+          user_info: {
+            username: item.username,
+            avatar: item.avatar,
+            role: item.role,
+            rating: item.rating
+          }
+        };
+      } catch (parseError) {
+        console.error('Error parsing subject details:', parseError);
+        return {
+          subject_name: item.subject_name,
+          title: item.title,
+          about: item.about,
+          learning_objectives: [],
+          user_info: {
+            username: item.username,
+            avatar: item.avatar,
+            role: item.role,
+            rating: item.rating
+          }
+        };
+      }
+    });
+
+    console.log(`Found ${subjectsWithDetails.length} subjects with details for user: ${userId}`);
+    
+    res.json({
+      success: true,
+      data: subjectsWithDetails
+    });
+  } catch (err) {
+    console.error('Get user subjects error:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch user subjects',
+      details: err.message 
+    });
+  }
+});
+
+// Batch update subject details (for when users update multiple subjects)
+router.post('/batch-update-subject-details', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subjects } = req.body;
+
+    console.log(`Batch updating ${subjects?.length || 0} subjects for user: ${userId}`);
+
+    if (!Array.isArray(subjects)) {
+      return res.status(400).json({ error: 'Subjects must be an array' });
+    }
+
+    if (subjects.length === 0) {
+      return res.status(400).json({ error: 'No subjects provided for update' });
+    }
+
+    if (subjects.length > 20) {
+      return res.status(400).json({ error: 'Maximum 20 subjects allowed per batch update' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    // Process each subject individually
+    for (const subject of subjects) {
+      try {
+        const { subject_name, title, about, learning_objectives } = subject;
+
+        // Validation
+        if (!subject_name || !title || !about || !learning_objectives) {
+          errors.push({
+            subject_name,
+            error: 'Missing required fields'
+          });
+          continue;
+        }
+
+        if (!Array.isArray(learning_objectives) || learning_objectives.length === 0) {
+          errors.push({
+            subject_name,
+            error: 'Learning objectives must be a non-empty array'
+          });
+          continue;
+        }
+
+        const validObjectives = learning_objectives
+          .filter(obj => obj && obj.trim() !== '')
+          .map(obj => obj.trim());
+
+        if (validObjectives.length === 0) {
+          errors.push({
+            subject_name,
+            error: 'At least one valid learning objective is required'
+          });
+          continue;
+        }
+
+        const learningObjectivesJson = JSON.stringify(validObjectives);
+
+        const sql = `
+          INSERT INTO user_subject_details (user_id, subject_name, title, about, learning_objectives)
+          VALUES (?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            title = VALUES(title),
+            about = VALUES(about),
+            learning_objectives = VALUES(learning_objectives),
+            updated_at = CURRENT_TIMESTAMP
+        `;
+
+        const [result] = await db.query(sql, [userId, subject_name, title, about, learningObjectivesJson]);
+        
+        results.push({
+          subject_name,
+          success: true,
+          affectedRows: result.affectedRows
+        });
+
+      } catch (subjectError) {
+        console.error(`Error processing subject ${subject.subject_name}:`, subjectError);
+        errors.push({
+          subject_name: subject.subject_name,
+          error: subjectError.message
+        });
+      }
+    }
+
+    console.log(`Batch update completed. Success: ${results.length}, Errors: ${errors.length}`);
+    
+    res.json({
+      success: true,
+      message: `Batch update completed. ${results.length} successful, ${errors.length} failed.`,
+      results,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (err) {
+    console.error('Batch update subject details error:', err);
+    res.status(500).json({ 
+      error: 'Failed to batch update subject details',
+      details: err.message 
+    });
+  }
+});
+
+// Check if subject details exist
+router.get('/has-subject-details/:subjectName', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subjectName } = req.params;
+
+    const sql = `
+      SELECT COUNT(*) as count 
+      FROM user_subject_details 
+      WHERE user_id = ? AND subject_name = ?
+    `;
+    
+    const [results] = await db.query(sql, [userId, subjectName]);
+
+    const hasDetails = results[0].count > 0;
+    
+    res.json({
+      success: true,
+      has_details: hasDetails,
+      subject_name: subjectName
+    });
+  } catch (err) {
+    console.error('Check subject details error:', err);
+    res.status(500).json({ 
+      error: 'Failed to check subject details',
+      details: err.message 
+    });
   }
 });
 

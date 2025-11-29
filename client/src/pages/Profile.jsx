@@ -1594,6 +1594,9 @@ const Profile = () => {
   const [showAccountStatus, setShowAccountStatus] = useState(false);
   const [accountStatus, setAccountStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [subjectDetails, setSubjectDetails] = useState({});
+  const [editingSubjects, setEditingSubjects] = useState({});
+  const [subjectForms, setSubjectForms] = useState({});
   const [form, setForm] = useState({
     username: '',
     bio: '',
@@ -1604,6 +1607,7 @@ const Profile = () => {
     role: 'Skill Learner',
     year_level: ''
   });
+  
 
   const yearLevels = [
     'First Year',
@@ -1747,7 +1751,17 @@ const Profile = () => {
     fetchProfile();
     fetchSubjects();
     fetchAccountStatus();
-  }, []);
+
+    if (profile) {
+    fetchUserSubjectDetails();
+  }
+}, []);
+
+  useEffect(() => {
+  if (profile && selectedSubjects.length > 0) {
+    fetchUserSubjectDetails();
+  }
+}, [selectedSubjects, profile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -2073,6 +2087,161 @@ const Profile = () => {
     }
   };
 
+  const fetchUserSubjectDetails = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get(
+      `${API_BASE_URL}/api/profile/user-subject-details`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    setSubjectDetails(response.data);
+  } catch (err) {
+    console.error('Error fetching user subject details:', err);
+  }
+};
+
+// Start editing a specific subject
+const startEditSubject = (subjectName) => {
+  const existingDetails = subjectDetails[subjectName] || {
+    title: `${subjectName} - Personalized Learning`,
+    about: `I provide comprehensive ${subjectName} instruction tailored to individual learning styles and goals.`,
+    learning_objectives: [
+      'Master fundamental concepts and principles',
+      'Develop practical problem-solving skills',
+      'Build confidence in applying knowledge',
+      'Achieve specific learning targets'
+    ]
+  };
+  
+  setSubjectForms(prev => ({
+    ...prev,
+    [subjectName]: {
+      title: existingDetails.title,
+      about: existingDetails.about,
+      learning_objectives: [...existingDetails.learning_objectives]
+    }
+  }));
+  
+  setEditingSubjects(prev => ({
+    ...prev,
+    [subjectName]: true
+  }));
+};
+
+// Cancel editing for a specific subject
+const cancelEditSubject = (subjectName) => {
+  setEditingSubjects(prev => ({
+    ...prev,
+    [subjectName]: false
+  }));
+};
+
+// Save details for a specific subject
+const saveSubjectDetails = async (subjectName) => {
+  try {
+    const formData = subjectForms[subjectName];
+    if (!formData) return;
+
+    const token = localStorage.getItem('token');
+    const response = await axios.post(
+      `${API_BASE_URL}/api/profile/save-subject-details`,
+      {
+        subject_name: subjectName,
+        title: formData.title,
+        about: formData.about,
+        learning_objectives: formData.learning_objectives.filter(obj => obj.trim() !== '')
+      },
+      {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (response.data.success) {
+      setSubjectDetails(prev => ({
+        ...prev,
+        [subjectName]: {
+          title: formData.title,
+          about: formData.about,
+          learning_objectives: formData.learning_objectives.filter(obj => obj.trim() !== '')
+        }
+      }));
+      
+      setEditingSubjects(prev => ({
+        ...prev,
+        [subjectName]: false
+      }));
+      
+      alert(`${subjectName} details saved successfully!`);
+    }
+  } catch (err) {
+    console.error('Error saving subject details:', err);
+    alert(`Failed to save ${subjectName} details. Please try again.`);
+  }
+};
+
+// Handle form changes for a specific subject
+const handleSubjectFormChange = (subjectName, field, value) => {
+  setSubjectForms(prev => ({
+    ...prev,
+    [subjectName]: {
+      ...prev[subjectName],
+      [field]: value
+    }
+  }));
+};
+
+// Handle learning objective changes for a specific subject
+const handleLearningObjectiveChange = (subjectName, index, value) => {
+  const currentForm = subjectForms[subjectName];
+  if (!currentForm) return;
+
+  const newObjectives = [...currentForm.learning_objectives];
+  newObjectives[index] = value;
+  
+  setSubjectForms(prev => ({
+    ...prev,
+    [subjectName]: {
+      ...prev[subjectName],
+      learning_objectives: newObjectives
+    }
+  }));
+};
+
+// Add new learning objective for a specific subject
+const addLearningObjective = (subjectName) => {
+  const currentForm = subjectForms[subjectName];
+  if (!currentForm) return;
+
+  setSubjectForms(prev => ({
+    ...prev,
+    [subjectName]: {
+      ...prev[subjectName],
+      learning_objectives: [...prev[subjectName].learning_objectives, '']
+    }
+  }));
+};
+
+// Remove learning objective for a specific subject
+const removeLearningObjective = (subjectName, index) => {
+  const currentForm = subjectForms[subjectName];
+  if (!currentForm || currentForm.learning_objectives.length <= 1) return;
+
+  const newObjectives = currentForm.learning_objectives.filter((_, i) => i !== index);
+  
+  setSubjectForms(prev => ({
+    ...prev,
+    [subjectName]: {
+      ...prev[subjectName],
+      learning_objectives: newObjectives
+    }
+  }));
+};
+
  return (
     <div className="peerfusion-profile-container">
       {/* Header */}
@@ -2244,34 +2413,162 @@ const Profile = () => {
                         <option value="Skill Learner & Sharer">Skill Learner & Sharer</option>
                       </select>
                     </div>
+                      {(form.role !== 'Skill Learner') && (
+                        <div className="peerfusion-form-group">
+                          <label className="peerfusion-form-label">Subjects Expertise</label>
+                          <select name="subject" onChange={handleSubjectSelect} className="peerfusion-subject-select">
+                            <option value="">Add a Subject</option>
+                            {subjectCategories.map(category => (
+                              <optgroup key={category.id} label={category.name}>
+                                {category.subjects.map(subject => (
+                                  !selectedSubjects.includes(subject.name) && (
+                                    <option key={subject.id} value={subject.name}>{subject.name}</option>
+                                  )
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                          
+                          {/* Multiple Subjects with Individual Details */}
+                          <div className="peerfusion-subjects-container">
+                            {selectedSubjects.map((subject, i) => (
+                              <div key={i} className="peerfusion-subject-card">
+                                <div className="peerfusion-subject-card-header">
+                                  <div className="peerfusion-subject-badge">
+                                    <span className="peerfusion-subject-name">{subject}</span>
+                                    <button 
+                                      onClick={() => removeSubject(subject)}
+                                      className="peerfusion-remove-subject"
+                                      title="Remove subject"
+                                    >
+                                      <CloseIcon />
+                                    </button>
+                                  </div>
+                                  
+                                  {!editingSubjects[subject] ? (
+                                    <button 
+                                      className="peerfusion-edit-details-btn"
+                                      onClick={() => startEditSubject(subject)}
+                                    >
+                                      <span className="peerfusion-edit-icon"></span>
+                                      Customize Details
+                                    </button>
+                                  ) : (
+                                    <div className="peerfusion-editing-indicator">
+                                      <span>✏️ Editing {subject} Details...</span>
+                                    </div>
+                                  )}
+                                </div>
 
-                    {(form.role !== 'Skill Learner') && (
-                      <div className="peerfusion-form-group">
-                        <label className="peerfusion-form-label">Subjects</label>
-                        <select name="subject" onChange={handleSubjectSelect} className="peerfusion-subject-select">
-                          <option value="">Select Subject</option>
-                          {subjectCategories.map(category => (
-                            <optgroup key={category.id} label={category.name}>
-                              {category.subjects.map(subject => (
-                                !selectedSubjects.includes(subject.name) && (
-                                  <option key={subject.id} value={subject.name}>{subject.name}</option>
-                                )
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <div className="peerfusion-selected-subjects">
-                          {selectedSubjects.map((subject, i) => (
-                            <span key={i} className="peerfusion-subject-tag">
-                              {subject}
-                              <button onClick={() => removeSubject(subject)} className="peerfusion-remove-subject">
-                                <CloseIcon />
-                              </button>
-                            </span>
-                          ))}
+                                {/* Subject Details Editor */}
+                                {editingSubjects[subject] ? (
+                                  <div className="peerfusion-subject-details-editor">
+                                    <div className="peerfusion-form-group">
+                                      <label className="peerfusion-form-label">Course Title</label>
+                                      <input 
+                                        type="text"
+                                        value={subjectForms[subject]?.title || ''}
+                                        onChange={(e) => handleSubjectFormChange(subject, 'title', e.target.value)}
+                                        className="peerfusion-form-input"
+                                        placeholder={`e.g., Advanced ${subject} Mastery Program`}
+                                      />
+                                    </div>
+                                    
+                                    <div className="peerfusion-form-group">
+                                      <label className="peerfusion-form-label">About This Course</label>
+                                      <textarea 
+                                        value={subjectForms[subject]?.about || ''}
+                                        onChange={(e) => handleSubjectFormChange(subject, 'about', e.target.value)}
+                                        rows="3"
+                                        className="peerfusion-form-textarea"
+                                        placeholder={`Describe your teaching approach for ${subject} and what makes your instruction unique...`}
+                                      />
+                                    </div>
+                                    
+                                    <div className="peerfusion-form-group">
+                                      <label className="peerfusion-form-label">What Students Will Learn</label>
+                                      <div className="peerfusion-learning-objectives-editor">
+                                        {(subjectForms[subject]?.learning_objectives || []).map((objective, index) => (
+                                          <div key={index} className="peerfusion-learning-objective-input">
+                                            <input 
+                                              type="text"
+                                              value={objective}
+                                              onChange={(e) => handleLearningObjectiveChange(subject, index, e.target.value)}
+                                              className="peerfusion-form-input"
+                                              placeholder={`Learning objective ${index + 1}`}
+                                            />
+                                            {(subjectForms[subject]?.learning_objectives.length || 0) > 1 && (
+                                              <button 
+                                                type="button"
+                                                onClick={() => removeLearningObjective(subject, index)}
+                                                className="peerfusion-remove-objective"
+                                                title="Remove this objective"
+                                              >
+                                                <CloseIcon />
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+                                        <button 
+                                          type="button"
+                                          onClick={() => addLearningObjective(subject)}
+                                          className="peerfusion-add-objective"
+                                        >
+                                          <span className="peerfusion-add-icon"></span>
+                                          Add Learning Objective
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="peerfusion-subject-details-actions">
+                                      <button 
+                                        className="peerfusion-save-details-btn"
+                                        onClick={() => saveSubjectDetails(subject)}
+                                      >
+                                        <span className="peerfusion-save-icon"></span>
+                                        Save Details
+                                      </button>
+                                      <button 
+                                        className="peerfusion-cancel-details-btn"
+                                        onClick={() => cancelEditSubject(subject)}
+                                      >
+                                        <span className="peerfusion-cancel-icon"></span>
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Preview of Saved Details */
+                                  subjectDetails[subject] ? (
+                                    <div className="peerfusion-subject-details-preview">
+                                      <h4 className="peerfusion-subject-title">{subjectDetails[subject].title}</h4>
+                                      <p className="peerfusion-subject-about">{subjectDetails[subject].about}</p>
+                                      <div className="peerfusion-learning-objectives-preview">
+                                        <strong>What You'll Learn:</strong>
+                                        <ul>
+                                          {subjectDetails[subject].learning_objectives.map((obj, idx) => (
+                                            <li key={idx}>{obj}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="peerfusion-no-details-message">
+                                      <p>No custom details added yet. Click "Customize Details" to describe your {subject} expertise.</p>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {selectedSubjects.length > 0 && (
+                            <div className="peerfusion-subjects-help">
+                              <p>💡 <strong>Tip:</strong> Customize each subject to showcase your unique teaching approach and expertise!</p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     <div className="peerfusion-form-group">
                       <label className="peerfusion-form-label">Year Level</label>
@@ -2317,16 +2614,50 @@ const Profile = () => {
                       <span className="peerfusion-info-label">Role</span>
                       <span className="peerfusion-info-value">{profile.role}</span>
                     </div>
-                    {(profile.role !== 'Skill Learner') && (
-                      <div className="peerfusion-info-item">
-                        <span className="peerfusion-info-label">Subjects</span>
-                        <div className="peerfusion-info-value">
-                          {profile.subject ? profile.subject.split(',').map((subj, i) => (
-                            <span key={i} className="peerfusion-subject-tag">{subj.trim()}</span>
-                          )) : 'Not specified'}
+                      {(profile.role !== 'Skill Learner') && (
+                        <div className="peerfusion-info-item">
+                          <span className="peerfusion-info-label">Subjects & Expertise</span>
+                          <div className="peerfusion-info-value">
+                            {profile.subject ? (
+                              <div className="peerfusion-subjects-display">
+                                {profile.subject.split(',').map((subj, i) => {
+                                  const subjectName = subj.trim();
+                                  const details = subjectDetails[subjectName];
+                                  
+                                  return (
+                                    <div key={i} className="peerfusion-subject-display-card">
+                                      <div className="peerfusion-subject-header">
+                                        <h4>{subjectName}</h4>
+                                      </div>
+                                      
+                                      {details ? (
+                                        <div className="peerfusion-subject-full-details">
+                                          <h5 className="peerfusion-subject-title">{details.title}</h5>
+                                          <p className="peerfusion-subject-description">{details.about}</p>
+                                          <div className="peerfusion-learning-objectives">
+                                            <h6>What You'll Learn:</h6>
+                                            <ul>
+                                              {details.learning_objectives.map((obj, idx) => (
+                                                <li key={idx}>{obj}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="peerfusion-subject-placeholder">
+                                          <p>No custom details provided for this subject.</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="peerfusion-info-value">No subjects specified</span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                     <div className="peerfusion-info-item">
                       <span className="peerfusion-info-label">Year Level</span>
                       <span className="peerfusion-info-value">{profile.year_level || 'Not specified'}</span>
