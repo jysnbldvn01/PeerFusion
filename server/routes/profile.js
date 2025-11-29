@@ -705,25 +705,115 @@ router.get('/notification-feedback/:notificationId', authenticateToken, async (r
     const { notificationId } = req.params;
     const userId = req.user.id;
     
-    const sql = `
-      SELECT f.rating, f.message as feedback_message, 
-             up.username as sender_name, up.avatar as sender_avatar
-      FROM feedback f
-      JOIN notifications n ON n.sender_id = f.sender_id AND n.receiver_id = f.receiver_id
-      JOIN user_profiles up ON up.user_id = f.sender_id
-      WHERE n.id = ? AND n.receiver_id = ? AND n.type = 'feedback'
+    console.log('Fetching feedback for notification:', notificationId, 'user:', userId);
+    
+    const notificationSql = `
+      SELECT sender_id, receiver_id, message, created_at 
+      FROM notifications 
+      WHERE id = ? AND receiver_id = ? AND type = 'feedback'
     `;
     
-    const [results] = await db.query(sql, [notificationId, userId]);
+    const [notificationResults] = await db.query(notificationSql, [notificationId, userId]);
     
-    if (results.length > 0) {
-      res.json({ success: true, feedback: results[0] });
+    if (notificationResults.length === 0) {
+      console.log('No notification found');
+      return res.json({ success: false, message: 'Notification not found' });
+    }
+    
+    const notification = notificationResults[0];
+    console.log('Found notification:', notification);
+    
+    const ratingMatch = notification.message.match(/(\d)-star/);
+    const expectedRating = ratingMatch ? parseInt(ratingMatch[1]) : null;
+    
+    console.log('Looking for feedback with:', {
+      sender_id: notification.sender_id,
+      receiver_id: notification.receiver_id, 
+      expectedRating: expectedRating,
+      notificationTime: notification.created_at
+    });
+    const feedbackSql = `
+      SELECT f.id, f.rating, f.message as feedback_message, f.created_at, f.is_recommended,
+             up.username as sender_name, up.avatar as sender_avatar
+      FROM feedback f
+      JOIN user_profiles up ON up.user_id = f.sender_id
+      WHERE f.sender_id = ? 
+        AND f.receiver_id = ?
+        AND f.rating = ?
+        AND ABS(TIMESTAMPDIFF(SECOND, f.created_at, ?)) <= 120
+      ORDER BY ABS(TIMESTAMPDIFF(SECOND, f.created_at, ?)) ASC
+      LIMIT 1
+    `;
+    
+    const [feedbackResults] = await db.query(feedbackSql, [
+      notification.sender_id, 
+      notification.receiver_id,
+      expectedRating,
+      notification.created_at,
+      notification.created_at
+    ]);
+    
+    console.log('Feedback query results:', feedbackResults);
+    
+    if (feedbackResults.length > 0) {
+      res.json({ 
+        success: true, 
+        feedback: feedbackResults[0],
+        debug: {
+          notificationId: notificationId,
+          matchedFeedbackId: feedbackResults[0].id
+        }
+      });
     } else {
-      res.json({ success: false, message: 'No feedback found for this notification' });
+      const fallbackSql = `
+        SELECT f.id, f.rating, f.message as feedback_message, f.created_at, f.is_recommended,
+               up.username as sender_name, up.avatar as sender_avatar
+        FROM feedback f
+        JOIN user_profiles up ON up.user_id = f.sender_id
+        WHERE f.sender_id = ? 
+          AND f.receiver_id = ?
+          AND f.rating = ?
+        ORDER BY f.created_at DESC
+        LIMIT 1
+      `;
+      
+      const [fallbackResults] = await db.query(fallbackSql, [
+        notification.sender_id, 
+        notification.receiver_id,
+        expectedRating
+      ]);
+      
+      if (fallbackResults.length > 0) {
+        console.log('Found feedback via fallback:', fallbackResults[0]);
+        res.json({ 
+          success: true, 
+          feedback: fallbackResults[0],
+          debug: {
+            notificationId: notificationId,
+            matchedFeedbackId: fallbackResults[0].id,
+            usedFallback: true
+          }
+        });
+      } else {
+        console.log('No feedback found with fallback');
+        res.json({ 
+          success: false, 
+          message: 'No feedback found for this notification',
+          debug: {
+            notificationId: notificationId,
+            sender_id: notification.sender_id,
+            receiver_id: notification.receiver_id,
+            expectedRating: expectedRating
+          }
+        });
+      }
     }
   } catch (err) {
     console.error('Feedback query error:', err);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ 
+      error: 'Database error',
+      details: err.message 
+    });
   }
 });
 //------------------- End Notification ---------------------------//

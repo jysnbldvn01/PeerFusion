@@ -377,9 +377,6 @@ const handleSubmit = async (e) => {
             >
               Community
             </a>
-            <a href="/support" className="nav-link active">
-              Support
-            </a>
           </div>
 
           {/* Desktop Actions */}
@@ -444,9 +441,6 @@ const handleSubmit = async (e) => {
               }}
             >
               Community
-            </a>
-            <a href="/support" className="mobile-nav-link active">
-              Support
             </a>
           </div>
           <div className="mobile-nav-actions">
