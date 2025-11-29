@@ -448,61 +448,59 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true);
-    setError('');
+const handleGoogleSuccess = async (credentialResponse) => {
+  console.log('Google response:', credentialResponse);
+  setLoading(true);
+  setError('');
+  
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/auth/google-login`, {
+      code: credentialResponse.code,
+    });
     
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/google-login`, {
-        token: credentialResponse.credential,
-      });
-      
-      if (res.data.success) {
-        const { token, user: userData } = res.data;
-        await handleLoginSuccess(token, userData);
-      } else {
-        setError(res.data.error || 'Google login failed');
-        setLoading(false);
-      }
-    } catch (err) {
+    if (res.data.success) {
+      const { token, user: userData } = res.data;
+      await handleLoginSuccess(token, userData);
+    } else {
+      setError(res.data.error || 'Google login failed');
       setLoading(false);
-      
-      // Enhanced error handling for Google login
-      if (err.response?.data) {
-        const errorData = err.response.data;
-        
-        if (errorData.status === 'suspended') {
-          const suspensionMessage = errorData.error || `Your account has been suspended. It will be reactivated in ${errorData.timeLeft} days.`;
-          setAccountStatus('suspended');
-          setUserData({
-            suspended_until: errorData.suspended_until,
-            strike_count: errorData.strike_count
-          });
-          setError(suspensionMessage);
-        } 
-        else if (errorData.status === 'banned') {
-          const banMessage = errorData.error || 'Your account has been permanently banned. Please contact support.';
-          setAccountStatus('banned');
-          setUserData({
-            strike_count: errorData.strike_count
-          });
-          setError(banMessage);
-        }
-        else if (errorData.error) {
-          setError(errorData.error);
-        }
-        else {
-          setError('Google login failed. Please try again.');
-        }
-      } else {
-        setError('Google login failed. Please check your connection and try again.');
-      }
     }
-  };
-
-  const handleGoogleError = () => {
-    setError('Google login failed. Please try again.');
-  };
+  } catch (err) {
+    setLoading(false);
+    console.error('Google login error:', err.response?.data);
+    
+    // Enhanced error handling for Google login
+    if (err.response?.data) {
+      const errorData = err.response.data;
+      
+      if (errorData.status === 'suspended') {
+        const suspensionMessage = errorData.error || `Your account has been suspended. It will be reactivated in ${errorData.timeLeft} days.`;
+        setAccountStatus('suspended');
+        setUserData({
+          suspended_until: errorData.suspended_until,
+          strike_count: errorData.strike_count
+        });
+        setError(suspensionMessage);
+      } 
+      else if (errorData.status === 'banned') {
+        const banMessage = errorData.error || 'Your account has been permanently banned. Please contact support.';
+        setAccountStatus('banned');
+        setUserData({
+          strike_count: errorData.strike_count
+        });
+        setError(banMessage);
+      }
+      else if (errorData.error) {
+        setError(errorData.error);
+      }
+      else {
+        setError('Google login failed. Please try again.');
+      }
+    } else {
+      setError('Google login failed. Please check your connection and try again.');
+    }
+  }
+};
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
