@@ -609,7 +609,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Footer - Exact same as register page */
+/* Footer */
 .peerfusion-legal-footer {
   background: #2d5a27;
   border-top: 1px solid #e2e8f0;
@@ -629,7 +629,7 @@
   max-width: 300px;
 }
 
-.peerfusion-footer-logo {
+.footer-logo {
   font-size: 1.5rem;
   font-weight: 700;
   color: #ffffff;
@@ -639,11 +639,11 @@
   margin-bottom: 1rem;
 }
 
-.peerfusion-footer-logo .peerfusion-logo-image {
+.footer-logo .logo-image {
   height: 35px;
 }
 
-.peerfusion-footer-brand p {
+.footer-brand p {
   color: #eeeeee;
   line-height: 1.6;
 }
