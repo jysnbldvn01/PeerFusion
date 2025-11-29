@@ -3131,3 +3131,65 @@
     font-size: 0.85rem;
   }
 }
+.peerfusion-expertise-icon {
+  width: 20px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232d5a27'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E") no-repeat center;
+}
+
+/* Enhanced Grid System for Responsive Layout */
+.peerfusion-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.peerfusion-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 1024px) {
+  .peerfusion-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .peerfusion-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .peerfusion-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .peerfusion-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Android mobile specific */
+@media (max-width: 480px) and (orientation: portrait) {
+  .peerfusion-profile-container {
+    padding: 0.5rem;
+  }
+  
+  .peerfusion-profile-sidebar,
+  .peerfusion-profile-main {
+    padding: 1rem;
+  }
+}
+
+/* Tablet specific adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .peerfusion-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .peerfusion-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
