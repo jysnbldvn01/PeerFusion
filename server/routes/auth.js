@@ -507,7 +507,6 @@ router.post('/login', async (req, res) => {
 //-------------------------- Google Login Route --------------------------//
 router.post('/google-login', async (req, res) => {
   const { token } = req.body;
-
   console.log('Google login request received with token length:', token?.length);
 
   if (!token) {
@@ -528,12 +527,28 @@ router.post('/google-login', async (req, res) => {
   try {
     console.log('Verifying Google access token...');
     
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
+
+    if (!response.ok) {
+      throw new Error(`Google API responded with status: ${response.status}`);
+    }
+
+    const userInfo = await response.json();
+    console.log('Google user info:', userInfo);
+
+    const { name, email, sub: googleId, picture } = userInfo;
     
-    const { name, email, sub: googleId, picture } = ticket.getPayload();
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not retrieve email from Google'
+      });
+    }
+
     console.log(`Google login successful for: ${email}`);
 
     // Check if user exists
@@ -682,10 +697,10 @@ router.post('/google-login', async (req, res) => {
   } catch (error) {
     console.error('Google login error details:', error);
     
-    if (error.message.includes('Token used too late')) {
+    if (error.message.includes('invalid_token') || error.message.includes('Invalid Credentials')) {
       return res.status(401).json({ 
         success: false,
-        error: 'Google authentication has expired. Please try again.' 
+        error: 'Google authentication failed. Please try again.' 
       });
     }
     
