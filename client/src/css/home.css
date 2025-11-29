@@ -1021,3 +1021,180 @@
 .peerfusion-feedback-list::-webkit-scrollbar-thumb:hover {
   background: #2d5a27;
 }
+.peerfusion-subject-modal {
+  max-width: 600px;
+}
+
+.peerfusion-subject-modal-header {
+  text-align: center;
+  padding: 2.5rem 2rem 1.5rem;
+  background: linear-gradient(135deg, #f8faf7 0%, #e8efe5 100%);
+  border-bottom: 1px solid #e8efe5;
+}
+
+.peerfusion-subject-modal-title {
+  color: #2d5a27;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.peerfusion-subject-modal-subject {
+  color: #4a7c3a;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.peerfusion-subject-modal-instructor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.peerfusion-instructor-label {
+  color: #5a7c55;
+  font-weight: 500;
+}
+
+.peerfusion-instructor-name {
+  color: #2d5a27;
+  font-weight: 600;
+}
+
+.peerfusion-instructor-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Clickable Subject Tags */
+.clickable-subject {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.clickable-subject:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(74, 124, 58, 0.4);
+}
+
+.clickable-subject::after {
+  content: '🔍';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.clickable-subject:hover::after {
+  opacity: 1;
+}
+
+.peerfusion-subject-help-text {
+  color: #5a7c55;
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0 0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Subject About Section */
+.peerfusion-subject-about {
+  color: #5a7c55;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: justify;
+}
+
+/* Learning Objectives */
+.peerfusion-learning-objectives {
+  margin-top: 0.5rem;
+}
+
+.peerfusion-objectives-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.peerfusion-objective-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: #f8faf7;
+  border-radius: 8px;
+  border-left: 3px solid #4a7c3a;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-objective-item:hover {
+  background: #f0f7ed;
+  transform: translateX(5px);
+}
+
+.peerfusion-objective-check {
+  color: #4a7c3a;
+  font-weight: bold;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.peerfusion-objective-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design for Subject Modal */
+@media (max-width: 768px) {
+  .peerfusion-subject-modal {
+    max-width: 95%;
+    margin: 1rem;
+  }
+  
+  .peerfusion-subject-modal-header {
+    padding: 2rem 1.5rem 1rem;
+  }
+  
+  .peerfusion-subject-modal-title {
+    font-size: 1.3rem;
+  }
+  
+  .peerfusion-subject-modal-instructor {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .peerfusion-objective-item {
+    padding: 0.6rem;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .peerfusion-subject-modal-header {
+    padding: 1.5rem 1rem 1rem;
+  }
+  
+  .peerfusion-subject-modal-title {
+    font-size: 1.2rem;
+  }
+  
+  .peerfusion-subject-modal-subject {
+    font-size: 0.9rem;
+  }
+  
+  .peerfusion-objective-item {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+}

@@ -19,6 +19,9 @@ const Home = () => {
   const [showAllFeedback, setShowAllFeedback] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState({});
   const [recommendedUsers, setRecommendedUsers] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [subjectDetails, setSubjectDetails] = useState(null);
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
 
 
   const slides = [
@@ -162,6 +165,42 @@ const Home = () => {
       console.error('Failed to fetch feedback:', err);
       alert('Failed to load feedback. Please try again.');
     }
+  };
+
+    const fetchSubjectDetails = async (userId, subjectName) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/profile/user-subjects/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (response.data.success) {
+        // Find the specific subject details
+        const subjectData = response.data.data.find(
+          subject => subject.subject_name === subjectName
+        );
+        
+        if (subjectData) {
+          setSubjectDetails(subjectData);
+          setShowSubjectModal(true);
+        } else {
+          alert('No detailed information available for this subject.');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching subject details:', err);
+      alert('Failed to load subject details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubjectClick = async (userId, subjectName) => {
+    setSelectedSubject(subjectName);
+    await fetchSubjectDetails(userId, subjectName);
   };
 
   const handleOpenModal = async (user) => {
@@ -430,10 +469,23 @@ const Home = () => {
               <div className="peerfusion-modal-section">
                 <h4 className="peerfusion-modal-section-title">Subject Expertise</h4>
                 <div className="peerfusion-subject-tags">
-                  {selectedUser.subject?.split(',').map((s, i) => (
-                    <span key={i} className="peerfusion-subject-tag">{s.trim()}</span>
-                  )) || 'N/A'}
+                  {selectedUser.subject?.split(',').map((s, i) => {
+                    const subjectName = s.trim();
+                    return (
+                      <span 
+                        key={i} 
+                        className="peerfusion-subject-tag clickable-subject"
+                        onClick={() => handleSubjectClick(selectedUser.id, subjectName)}
+                        title={`Click to view ${subjectName} details`}
+                      >
+                        {subjectName}
+                      </span>
+                    );
+                  }) || 'N/A'}
                 </div>
+                <p className="peerfusion-subject-help-text">
+                  💡 Click on any subject to view detailed course information
+                </p>
               </div>
 
               <div className="peerfusion-modal-section">
@@ -654,6 +706,62 @@ const Home = () => {
                 <button className="peerfusion-schedule-btn" onClick={handleRequestSession}>
                   <span className="peerfusion-calendar-icon"></span>
                   Request Session
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Subject Details Modal */}
+      {showSubjectModal && subjectDetails && (
+        <div className="peerfusion-modal-overlay" onClick={() => setShowSubjectModal(false)}>
+          <div className="peerfusion-modal-content peerfusion-subject-modal" onClick={e => e.stopPropagation()}>
+            <button className="peerfusion-close-modal" onClick={() => setShowSubjectModal(false)}>×</button>
+            
+            <div className="peerfusion-subject-modal-header">
+              <h3 className="peerfusion-subject-modal-title">{subjectDetails.title}</h3>
+              <p className="peerfusion-subject-modal-subject">Subject: {subjectDetails.subject_name}</p>
+              <div className="peerfusion-subject-modal-instructor">
+                <span className="peerfusion-instructor-label">Instructor:</span>
+                <span className="peerfusion-instructor-name">{subjectDetails.user_info?.username}</span>
+                {subjectDetails.user_info?.rating > 0 && (
+                  <div className="peerfusion-instructor-rating">
+                    <RatingDisplay rating={subjectDetails.user_info.rating} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="peerfusion-modal-main">
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">About This Course</h4>
+                <p className="peerfusion-subject-about">{subjectDetails.about}</p>
+              </div>
+
+              <div className="peerfusion-modal-section">
+                <h4 className="peerfusion-modal-section-title">What You'll Learn</h4>
+                <div className="peerfusion-learning-objectives">
+                  <ul className="peerfusion-objectives-list">
+                    {subjectDetails.learning_objectives?.map((objective, index) => (
+                      <li key={index} className="peerfusion-objective-item">
+                        <span className="peerfusion-objective-check">✓</span>
+                        {objective}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="peerfusion-modal-actions">
+                <button 
+                  className="peerfusion-schedule-btn" 
+                  onClick={() => {
+                    setShowSubjectModal(false);
+                    handleRequestSession();
+                  }}
+                >
+                  <span className="peerfusion-calendar-icon"></span>
+                  Request Session for {subjectDetails.subject_name}
                 </button>
               </div>
             </div>
