@@ -506,13 +506,14 @@ router.post('/login', async (req, res) => {
 
 //-------------------------- Google Login Route --------------------------//
 router.post('/google-login', async (req, res) => {
-  const { code } = req.body; // Change from token to code
+  const { token } = req.body;
 
-  // Validate input
-  if (!code) {
+  console.log('Google login request received with token length:', token?.length);
+
+  if (!token) {
     return res.status(400).json({ 
       success: false,
-      error: 'Authorization code is required' 
+      error: 'Google access token is required' 
     });
   }
 
@@ -525,18 +526,15 @@ router.post('/google-login', async (req, res) => {
   }
 
   try {
-    const { tokens } = await client.getToken({
-      code: code,
-      redirect_uri: 'postmessage'
-    });
+    console.log('Verifying Google access token...');
     
     const ticket = await client.verifyIdToken({
-      idToken: tokens.id_token,
+      idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     
     const { name, email, sub: googleId, picture } = ticket.getPayload();
-    console.log(`Google login attempt for: ${email}`);
+    console.log(`Google login successful for: ${email}`);
 
     // Check if user exists
     const findUserSql = 'SELECT * FROM users WHERE email = ?';
@@ -545,7 +543,9 @@ router.post('/google-login', async (req, res) => {
     if (users.length > 0) {
       const existingUser = users[0];
       
+      // Check user status with comprehensive handling
       if (existingUser.status === 'suspended') {
+        // Check if suspension period has ended
         if (existingUser.suspended_until && new Date(existingUser.suspended_until) > new Date()) {
           const timeLeft = Math.ceil((new Date(existingUser.suspended_until) - new Date()) / (1000 * 60 * 60 * 24));
           return res.status(403).json({ 
@@ -558,6 +558,7 @@ router.post('/google-login', async (req, res) => {
           });
         } else {
           // Auto-reactivate if suspension period has passed
+          console.log('Auto-reactivating user:', existingUser.id);
           await db.query(
             'UPDATE users SET status = "active", suspended_until = NULL WHERE id = ?',
             [existingUser.id]
@@ -619,7 +620,7 @@ router.post('/google-login', async (req, res) => {
         { expiresIn: '24h' }
       );
       
-      console.log(`Successful Google login for user: ${email}, status: ${existingUser.status}`);
+      console.log(`Successful Google login for existing user: ${email}, status: ${existingUser.status}`);
       
       return res.json({ 
         success: true,
@@ -642,7 +643,7 @@ router.post('/google-login', async (req, res) => {
     // User doesn't exist - create new user
     console.log(`Creating new user via Google login: ${email}`);
     
-    const insertSql = 'INSERT INTO users (name, email, google_id, status, role) VALUES (?, ?, ?, "active", "user")';
+    const insertSql = 'INSERT INTO users (name, email, google_id, status, role, is_verified, created_at) VALUES (?, ?, ?, "active", "user", true, NOW())';
     const [result] = await db.query(insertSql, [name, email, googleId]);
     
     const newUserId = result.insertId;
@@ -679,18 +680,18 @@ router.post('/google-login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Google login error:', error);
+    console.error('Google login error details:', error);
     
-    if (error.message.includes('Token used too late') || error.message.includes('invalid_grant')) {
+    if (error.message.includes('Token used too late')) {
       return res.status(401).json({ 
         success: false,
-        error: 'Google authorization code has expired. Please try again.' 
+        error: 'Google authentication has expired. Please try again.' 
       });
     }
     
     res.status(401).json({ 
       success: false,
-      error: 'Invalid Google authorization code' 
+      error: 'Google authentication failed: ' + error.message 
     });
   }
 });

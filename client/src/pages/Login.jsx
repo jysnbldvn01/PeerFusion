@@ -230,7 +230,7 @@ const GoogleLoginButton = ({ onSuccess, onError, loading }) => {
   const login = useGoogleLogin({
     onSuccess: onSuccess,
     onError: onError,
-    flow: 'auth-code',
+    flow: 'implicit',
   });
 
   return (
@@ -455,7 +455,7 @@ const handleGoogleSuccess = async (credentialResponse) => {
   
   try {
     const res = await axios.post(`${API_BASE_URL}/api/auth/google-login`, {
-      code: credentialResponse.code,
+      token: credentialResponse.access_token,
     });
     
     if (res.data.success) {
