@@ -505,24 +505,17 @@ const TermsOfUse = () => {
       {/* Footer */}
       <footer className="peerfusion-legal-footer">
         <div className="peerfusion-footer-content">
-          <div className="peerfusion-footer-brand">
-            <div className="peerfusion-footer-logo">
-              <img 
-                src="/Logos.png" 
-                alt="PeerFusion" 
-                className="peerfusion-logo-image"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
+          <div className="footer-brand">
+            <div className="footer-logo">
+              <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
               <span>PeerFusion</span>
             </div>
             <p>
               Empowering learners through collaborative learning and peer-to-peer skill sharing.
             </p>
-            <div className="peerfusion-contact-info">
-              <div className="peerfusion-email-display">
-                <span className="peerfusion-email-icon-small"></span>
+            <div className="footer-contact-info">
+              <div className="footer-email-display">
+                <span className="email-icon-small"></span>
                 Peerfusion@gmail.com
               </div>
             </div>
