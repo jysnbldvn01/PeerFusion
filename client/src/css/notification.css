@@ -265,14 +265,12 @@
   margin: 0;
 }
 
-/* Read notification text colors */
 .peerfusion-notification-item.read .peerfusion-notification-username,
 .peerfusion-notification-item.read .peerfusion-notification-time,
 .peerfusion-notification-item.read .peerfusion-notification-message {
   color: #6b7280 !important;
 }
 
-/* Notification message - Mobile Optimized */
 .peerfusion-notification-message {
   color: #5a7c55;
   margin: 0.5rem 0;
@@ -284,7 +282,6 @@
   line-height: 1.4;
 }
 
-/* Notification Badges - Mobile Optimized */
 .peerfusion-notification-badges {
   display: flex;
   gap: 0.4rem;
@@ -305,7 +302,6 @@
   white-space: nowrap;
 }
 
-/* Read notification badges */
 .peerfusion-notification-item.read .peerfusion-notification-badge {
   background: #f3f4f6 !important;
   color: #6b7280 !important;
@@ -313,7 +309,6 @@
   border: 1px solid #e5e7eb !important;
 }
 
-/* Badge styles remain the same but with smaller font */
 .peerfusion-badge-rating {
   background: linear-gradient(135deg, #4a7c3a, #6ba84f);
   color: white;
@@ -321,9 +316,9 @@
 }
 
 .peerfusion-badge-warning {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  color: #92400e;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #f50b0be0, #f50b0be0);
+  color: white;
+  box-shadow: 0 2px 6px #f50b0b4d;
 }
 
 .peerfusion-badge-suspension {
@@ -1169,6 +1164,5 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #4a7c3a;
   border-radius: 3px 0 0 3px;
 }
