@@ -57,21 +57,20 @@ const InternetIcons = {
       <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
     </svg>
   ),
+  Meeting: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/>
+    </svg>
+  ),
   Clock: () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-    </svg>
-  ),
-  Calendar: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
     </svg>
   )
 };
 
 const Notification = () => {
   const [activeTab, setActiveTab] = useState('all');
-  const [sortFilter, setSortFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,10 +79,79 @@ const Notification = () => {
   const [feedbackDetails, setFeedbackDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptingId, setAcceptingId] = useState(null);
+  const [filterCategory, setFilterCategory] = useState('all');
   const menuRefs = useRef({});
   const unreadCount = notifications.filter(n => !n.is_read).length;
   
   const navigate = useNavigate();
+
+  // Filter categories
+  const filterCategories = [
+    { key: 'all', label: 'All', count: 0 },
+    { key: 'pending', label: 'Pending', count: 0 },
+    { key: 'meetings', label: 'Meetings', count: 0 },
+    { key: 'feedbacks', label: 'Feedbacks', count: 0 },
+    { key: 'system', label: 'System', count: 0 }
+  ];
+
+  // Enhanced debug logging to verify username data
+  useEffect(() => {
+    console.log('Current notifications:', notifications);
+    console.log('Notification usernames:', notifications.map(n => ({
+      id: n.id,
+      type: n.type,
+      sender_id: n.sender_id,
+      sender_name: n.sender_name,
+      sender_role: n.sender_role
+    })));
+  }, [notifications]);
+
+  // Update filter counts
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const updatedCategories = filterCategories.map(category => {
+        let count = 0;
+        switch (category.key) {
+          case 'pending':
+            count = notifications.filter(n => 
+              n.type === 'session_request' && n.status === 'pending'
+            ).length;
+            break;
+          case 'meetings':
+            count = notifications.filter(n => 
+              n.type === 'session_request' || 
+              n.type === 'session_accept' || 
+              n.type === 'meeting' ||
+              n.type === 'meeting_reminder'
+            ).length;
+            break;
+          case 'feedbacks':
+            count = notifications.filter(n => n.type === 'feedback').length;
+            break;
+          case 'system':
+            count = notifications.filter(n => 
+              n.type === 'warning' || 
+              n.type === 'suspension' || 
+              n.type === 'ban' || 
+              n.type === 'penalty' ||
+              n.type === 'appeal_approved' ||
+              n.type === 'appeal_rejected' ||
+              n.type === 'account_reactivated' ||
+              n.type === 'strikes_adjusted' ||
+              n.type === 'account_status'
+            ).length;
+            break;
+          case 'all':
+          default:
+            count = notifications.length;
+            break;
+        }
+        return { ...category, count };
+      });
+      // Update state if counts changed
+      setFilterCategories(updatedCategories);
+    }
+  }, [notifications]);
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
@@ -152,7 +220,6 @@ const Notification = () => {
         : `${API_BASE_URL}/api/profile/notifications`;
 
     try {
-      setIsLoading(true);
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -161,8 +228,6 @@ const Notification = () => {
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to fetch notifications');
-    } finally {
-      setIsLoading(false);
     }
   }, [activeTab]);
 
@@ -200,6 +265,14 @@ const Notification = () => {
 
   // Enhanced helper functions to determine display name and avatar
   const getDisplayName = (notification) => {
+    console.log('Processing notification for display name:', {
+      id: notification.id,
+      type: notification.type,
+      sender_id: notification.sender_id,
+      sender_name: notification.sender_name,
+      sender_role: notification.sender_role
+    });
+
     // ALWAYS show PeerFusion Team for penalty type (from report.js and user management)
     if (notification.type === 'penalty') {
       return 'PeerFusion Team';
@@ -263,18 +336,7 @@ const Notification = () => {
     return displayName.charAt(0)?.toUpperCase() || 'U';
   };
 
-  // Categorize notifications for sorting
-  const categorizeNotifications = (notification) => {
-    if (notification.type === 'session_request' && notification.status === 'pending') {
-      return 'pending';
-    } else if (notification.type === 'feedback') {
-      return 'feedback';
-    } else if (notification.type === 'session_request' && (notification.status === 'accepted' || notification.status === 'completed' || notification.status === 'scheduled')) {
-      return 'meetings';
-    }
-    return 'other';
-  };
-
+  // Rest of your component remains the same...
   const fetchFeedbackDetails = async (notificationId) => {
     const token = localStorage.getItem('token');
     try {
@@ -294,22 +356,10 @@ const Notification = () => {
     }
   };
 
-  // Update local state instead of refetching
-  const updateNotificationInState = (id, updates) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id ? { ...notification, ...updates } : notification
-      )
-    );
-  };
-
   const markNotificationAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      // Optimistically update UI
-      updateNotificationInState(id, { is_read: true });
-      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/read`,
         {},
@@ -317,12 +367,10 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
-      // Revert on error
-      updateNotificationInState(id, { is_read: false });
       console.error('Failed to mark notification as read:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as read');
     }
@@ -332,9 +380,6 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      // Optimistically update UI
-      updateNotificationInState(id, { is_read: false });
-      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/unread`,
         {},
@@ -342,12 +387,10 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
-      // Revert on error
-      updateNotificationInState(id, { is_read: true });
       console.error('Failed to mark notification as unread:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark notification as unread');
     }
@@ -357,9 +400,6 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      // Optimistically update UI
-      updateNotificationInState(id, { is_archived: true });
-      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/archive`,
         {},
@@ -367,12 +407,10 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
-      // Revert on error
-      updateNotificationInState(id, { is_archived: false });
       console.error('Failed to archive notification:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to archive notification');
     }
@@ -382,9 +420,6 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      // Optimistically update UI
-      updateNotificationInState(id, { is_archived: false });
-      
       await axios.put(
         `${API_BASE_URL}/api/profile/notifications/${id}/unarchive`,
         {},
@@ -392,12 +427,10 @@ const Notification = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
-      // Revert on error
-      updateNotificationInState(id, { is_archived: true });
       console.error('Failed to unarchive notification:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to unarchive notification');
     }
@@ -413,15 +446,6 @@ const Notification = () => {
       return;
     }
     try {
-      // Optimistically update all unread notifications
-      setNotifications(prev => 
-        prev.map(notification => 
-          !notification.is_read 
-            ? { ...notification, is_read: true }
-            : notification
-        )
-      );
-      
       await Promise.all(
         unread.map(n =>
           axios.put(
@@ -431,12 +455,10 @@ const Notification = () => {
           )
         )
       );
-      
+      await fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       window.pfToast?.success?.('All notifications marked as read');
     } catch (err) {
-      // Revert on error by refetching
-      fetchNotifications();
       console.error('Failed to mark all as read:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to mark all as read');
     }
@@ -446,21 +468,16 @@ const Notification = () => {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      // Optimistically remove from UI
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
-      
       await axios.delete(
         `${API_BASE_URL}/api/profile/notifications/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
+      fetchNotifications();
       window.dispatchEvent(new Event('notificationsUpdated'));
       setOpenMenuId(null);
     } catch (err) {
-      // Revert on error by refetching
-      fetchNotifications();
       console.error('Failed to delete notification:', err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Failed to delete notification');
     }
@@ -503,14 +520,14 @@ const Notification = () => {
       );
 
       if (res.data.success && res.data.conversationId) {
-        // Remove from UI immediately
-        setNotifications(prev => prev.filter((n) => n.id !== notification.id));
+        setNotifications((prev) =>
+          prev.filter((n) => n.id !== notification.id)
+        );
         closeModal();
         window.pfToast?.success?.('Session request accepted');
         navigate(`/chat?conv=${res.data.conversationId}`);
       } else {
-        // Just update the status if no conversation ID
-        updateNotificationInState(notification.id, { status: 'accepted' });
+        fetchNotifications();
         window.pfToast?.info?.('Session accepted');
       }
     } catch (err) {
@@ -521,13 +538,10 @@ const Notification = () => {
     }
   };
 
-  // Decline session request - Auto delete after rejection
+  // Decline session request
   const handleDecline = async (notification) => {
     const token = localStorage.getItem("token");
     try {
-      // Remove from UI immediately
-      setNotifications(prev => prev.filter((n) => n.id !== notification.id));
-      
       await axios.post(
         `${API_BASE_URL}/api/session/reject`,
         {
@@ -535,20 +549,18 @@ const Notification = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+      setNotifications((prev) =>
+        prev.filter((n) => n.id !== notification.id)
+      );
       closeModal();
       window.pfToast?.success?.('Session request declined');
     } catch (err) {
-      // Revert on error by refetching
-      fetchNotifications();
       console.error("❌ Failed to reject session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error rejecting session request');
     }
   };
 
   const getNotificationBadge = (notification) => {
-    const category = categorizeNotifications(notification);
-    
     switch (notification.type) {
       case 'feedback': {
         const ratingMatch = notification.message.match(/(\d)-star/);
@@ -560,40 +572,30 @@ const Notification = () => {
         );
       }
       case 'session_request': {
-        if (notification.status === 'pending') {
-          return (
-            <span className="peerfusion-notification-badge peerfusion-badge-pending">
-              <InternetIcons.Clock /> Pending
-            </span>
-          );
-        } else if (notification.status === 'accepted') {
-          return (
-            <span className="peerfusion-notification-badge peerfusion-badge-accepted">
-              <InternetIcons.Accepted /> Accepted
-            </span>
-          );
-        } else if (notification.status === 'rejected') {
-          return (
-            <span className="peerfusion-notification-badge peerfusion-badge-rejected">
-              <InternetIcons.Rejected /> Declined
-            </span>
-          );
-        } else if (notification.status === 'completed') {
-          return (
-            <span className="peerfusion-notification-badge peerfusion-badge-completed">
-              <InternetIcons.Calendar /> Completed
-            </span>
-          );
-        } else if (notification.status === 'scheduled') {
-          return (
-            <span className="peerfusion-notification-badge peerfusion-badge-scheduled">
-              <InternetIcons.Calendar /> Scheduled
-            </span>
-          );
-        }
         return notification.status && (
           <span className={`peerfusion-notification-badge peerfusion-badge-${notification.status}`}>
             <InternetIcons.Session /> {notification.status}
+          </span>
+        );
+      }
+      case 'session_accept': {
+        return (
+          <span className="peerfusion-notification-badge peerfusion-badge-approved">
+            <InternetIcons.Accepted /> Accepted
+          </span>
+        );
+      }
+      case 'meeting': {
+        return (
+          <span className="peerfusion-notification-badge peerfusion-badge-meeting">
+            <InternetIcons.Meeting /> Meeting
+          </span>
+        );
+      }
+      case 'meeting_reminder': {
+        return (
+          <span className="peerfusion-notification-badge peerfusion-badge-reminder">
+            <InternetIcons.Clock /> Reminder
           </span>
         );
       }
@@ -701,42 +703,51 @@ const Notification = () => {
     }
   };
 
-  // Filter notifications based on search and sort filter
-  const filteredNotifications = notifications
-    .filter((notification) =>
+  // Filter notifications based on category and search term
+  const filteredNotifications = notifications.filter((notification) => {
+    // First apply category filter
+    let categoryMatch = true;
+    switch (filterCategory) {
+      case 'pending':
+        categoryMatch = notification.type === 'session_request' && notification.status === 'pending';
+        break;
+      case 'meetings':
+        categoryMatch = 
+          notification.type === 'session_request' || 
+          notification.type === 'session_accept' || 
+          notification.type === 'meeting' ||
+          notification.type === 'meeting_reminder';
+        break;
+      case 'feedbacks':
+        categoryMatch = notification.type === 'feedback';
+        break;
+      case 'system':
+        categoryMatch = 
+          notification.type === 'warning' || 
+          notification.type === 'suspension' || 
+          notification.type === 'ban' || 
+          notification.type === 'penalty' ||
+          notification.type === 'appeal_approved' ||
+          notification.type === 'appeal_rejected' ||
+          notification.type === 'account_reactivated' ||
+          notification.type === 'strikes_adjusted' ||
+          notification.type === 'account_status';
+        break;
+      case 'all':
+      default:
+        categoryMatch = true;
+        break;
+    }
+
+    // Then apply search filter
+    const searchMatch = 
       getDisplayName(notification)
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      notification.message?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter(notification => {
-      if (sortFilter === 'all') return true;
-      const category = categorizeNotifications(notification);
-      return category === sortFilter;
-    });
+      notification.message?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  // Get counts for each category
-  const getCategoryCount = (category) => {
-    return notifications.filter(notification => 
-      categorizeNotifications(notification) === category
-    ).length;
-  };
-
-  // Skeleton loading component
-  const NotificationSkeleton = () => (
-    <div className="peerfusion-skeleton-notification">
-      <div className="peerfusion-skeleton-avatar peerfusion-skeleton"></div>
-      <div className="peerfusion-skeleton-content">
-        <div className="peerfusion-skeleton-header">
-          <div className="peerfusion-skeleton-username peerfusion-skeleton"></div>
-          <div className="peerfusion-skeleton-time peerfusion-skeleton"></div>
-        </div>
-        <div className="peerfusion-skeleton-message peerfusion-skeleton"></div>
-        <div className="peerfusion-skeleton-message-short peerfusion-skeleton"></div>
-        <div className="peerfusion-skeleton-badge peerfusion-skeleton"></div>
-      </div>
-    </div>
-  );
+    return categoryMatch && searchMatch;
+  });
 
   return (
     <div className="peerfusion-notification-container">
@@ -759,25 +770,17 @@ const Notification = () => {
         </div>
       </div>
 
-      {/* Main Tabs */}
+      {/* Tabs */}
       <div className="peerfusion-notification-tabs">
         <button
           className={`peerfusion-notification-tab ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('all');
-            setSortFilter('all');
-            fetchNotifications();
-          }}
+          onClick={() => setActiveTab('all')}
         >
           All Notifications
         </button>
         <button
           className={`peerfusion-notification-tab ${activeTab === 'archived' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('archived');
-            setSortFilter('all');
-            fetchNotifications();
-          }}
+          onClick={() => setActiveTab('archived')}
         >
           Archived
         </button>
@@ -792,79 +795,65 @@ const Notification = () => {
         </button>
       </div>
 
-      {/* Sorting Filters - Available in both All and Archived tabs */}
-      <div className="peerfusion-notification-sorting-filters">
-        <button
-          className={`peerfusion-sorting-filter ${sortFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setSortFilter('all')}
-        >
-          All ({notifications.length})
-        </button>
-        <button
-          className={`peerfusion-sorting-filter ${sortFilter === 'pending' ? 'active' : ''}`}
-          onClick={() => setSortFilter('pending')}
-        >
-          <InternetIcons.Clock /> Pending ({getCategoryCount('pending')})
-        </button>
-        <button
-          className={`peerfusion-sorting-filter ${sortFilter === 'feedback' ? 'active' : ''}`}
-          onClick={() => setSortFilter('feedback')}
-        >
-          <InternetIcons.Rating /> Feedback ({getCategoryCount('feedback')})
-        </button>
-        <button
-          className={`peerfusion-sorting-filter ${sortFilter === 'meetings' ? 'active' : ''}`}
-          onClick={() => setSortFilter('meetings')}
-        >
-          <InternetIcons.Calendar /> Meetings ({getCategoryCount('meetings')})
-        </button>
+      {/* Filter Categories */}
+      <div className="peerfusion-notification-filters">
+        {filterCategories.map((category) => (
+          <button
+            key={category.key}
+            className={`peerfusion-notification-filter ${filterCategory === category.key ? 'active' : ''}`}
+            onClick={() => setFilterCategory(category.key)}
+          >
+            {category.label}
+            {category.count > 0 && (
+              <span className="peerfusion-filter-count">{category.count}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Single Row Notifications List */}
       <div className="peerfusion-notification-list">
-        {isLoading ? (
-          // Initial loading skeleton
-          <>
-            {[...Array(5)].map((_, index) => (
-              <NotificationSkeleton key={index} />
-            ))}
-          </>
-        ) : filteredNotifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <div className="peerfusion-notification-empty">
-            <div className="peerfusion-notification-empty-icon">
-              {sortFilter === 'pending' ? '⏰' : 
-               sortFilter === 'feedback' ? '⭐' : 
-               sortFilter === 'meetings' ? '📅' : '📭'}
-            </div>
-            <h3>
-              {sortFilter === 'pending' ? 'No pending requests' : 
-               sortFilter === 'feedback' ? 'No feedback received' : 
-               sortFilter === 'meetings' ? 'No meeting notifications' : 
-               'No notifications found'}
-            </h3>
+            <div className="peerfusion-notification-empty-icon">📭</div>
+            <h3>No notifications found</h3>
             <p>
               {activeTab === 'archived' 
                 ? 'Your archived notifications will appear here' 
-                : sortFilter !== 'all'
-                ? `No ${sortFilter} notifications found`
+                : searchTerm || filterCategory !== 'all'
+                ? 'No notifications match your current filters'
                 : 'You\'re all caught up!'}
             </p>
+            {(searchTerm || filterCategory !== 'all') && (
+              <button 
+                className="peerfusion-notification-clear-filters"
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterCategory('all');
+                }}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
           filteredNotifications.map((notification) => (
             <div
               className={`peerfusion-notification-item ${notification.is_read ? 'read' : 'unread'} ${
-                notification.type === 'appeal_approved' || 
-                notification.type === 'account_reactivated' || 
-                notification.status === 'accepted' ||
-                notification.status === 'completed' ||
-                notification.status === 'scheduled'
+                (notification.type === 'warning' || 
+                 notification.type === 'suspension' || 
+                 notification.type === 'ban' || 
+                 notification.type === 'penalty' ||
+                 notification.type === 'appeal_approved' ||
+                 notification.type === 'appeal_rejected' ||
+                 notification.type === 'account_reactivated') 
+                  ? 'peerfusion-notification-important' 
+                  : ''
+              } ${
+                notification.type === 'appeal_approved' || notification.type === 'account_reactivated' || notification.status === 'accepted'
                   ? 'peerfusion-notification-approved'
-                  : notification.type === 'appeal_rejected' || 
-                    notification.status === 'rejected'
+                  : notification.type === 'appeal_rejected' || notification.status === 'rejected'
                   ? 'peerfusion-notification-rejected'
-                  : categorizeNotifications(notification) === 'pending'
-                  ? 'peerfusion-notification-pending'
                   : ''
               }`}
               key={notification.id}
@@ -1030,6 +1019,12 @@ const Notification = () => {
                   ? 'Rating Received'
                   : selectedNotification.type === 'session_request'
                   ? 'Session Request'
+                  : selectedNotification.type === 'session_accept'
+                  ? 'Session Accepted'
+                  : selectedNotification.type === 'meeting'
+                  ? 'Meeting Scheduled'
+                  : selectedNotification.type === 'meeting_reminder'
+                  ? 'Meeting Reminder'
                   : selectedNotification.type === 'warning'
                   ? 'Account Warning'
                   : selectedNotification.type === 'suspension'
@@ -1073,23 +1068,6 @@ const Notification = () => {
                       onClick={() => handleDecline(selectedNotification)}
                     >
                       <InternetIcons.Rejected /> Decline
-                    </button>
-                  </div>
-                )}
-
-              {/* Rate and Feedback button for completed sessions */}
-              {selectedNotification.type === 'session_request' &&
-                selectedNotification.status === 'completed' && (
-                  <div className="peerfusion-notification-session-actions">
-                    <button
-                      className="peerfusion-notification-btn peerfusion-notification-btn-primary"
-                      onClick={() => {
-                        // Navigate to rating page or open rating modal
-                        navigate(`/rate-user?session=${selectedNotification.session_request_id}`);
-                        closeModal();
-                      }}
-                    >
-                      <InternetIcons.Rating /> Rate and Feedback
                     </button>
                   </div>
                 )}
