@@ -469,7 +469,6 @@ const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(false);
     console.error('Google login error:', err.response?.data);
     
-    // Enhanced error handling for Google login
     if (err.response?.data) {
       const errorData = err.response.data;
       
@@ -498,9 +497,13 @@ const handleGoogleSuccess = async (credentialResponse) => {
       }
     } else {
       setError('Google login failed. Please check your connection and try again.');
+      }
     }
-  }
-};
+  };
+
+  const handleGoogleError = () => {
+    setError('Google login failed. Please try again.');
+  };
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
