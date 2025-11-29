@@ -1359,9 +1359,6 @@ const SettingsDropdown = ({
             <span className="peerfusion-eye-icon"></span>
             View As Public
           </button>
-
-          {/* Account Control Section */}
-          <div className="peerfusion-settings-divider"></div>
           
           {!accountStatus?.is_deactivated && !accountStatus?.is_pending_deletion && (
             <button 
@@ -1399,33 +1396,6 @@ const SettingsDropdown = ({
               <span className="peerfusion-delete-icon"></span>
               Delete Account
             </button>
-          )}
-
-          {editMode && (
-            <>
-              <div className="peerfusion-settings-divider"></div>
-              <button 
-                className="peerfusion-settings-item"
-                onClick={() => {
-                  handleSave(new Event('click'));
-                  setShowSettings(false);
-                }}
-              >
-                <span className="peerfusion-save-icon"></span>
-                Save Changes
-              </button>
-              <button 
-                className="peerfusion-settings-item"
-                onClick={() => {
-                  resetForm();
-                  setEditMode(false);
-                  setShowSettings(false);
-                }}
-              >
-                <span className="peerfusion-cancel-icon"></span>
-                Cancel Edit
-              </button>
-            </>
           )}
         </div>
       )}
@@ -2173,7 +2143,14 @@ const Profile = () => {
                   </button>
                 </div>
               )}
-
+                {profile && (
+                  <div className="peerfusion-sidebar-rating">
+                    <RatingDisplay 
+                      rating={profile.rating} 
+                      totalReviews={profile.total_reviews} 
+                    />
+                  </div>
+                )}
               <div className="peerfusion-user-info">
                 <h2 className="peerfusion-username">{profile?.username || 'User'}</h2>
                 <p className="peerfusion-user-bio">{profile?.bio || 'No bio yet'}</p>
@@ -2441,6 +2418,28 @@ const Profile = () => {
                   </div>
                 )}
               </div>
+              {/* Edit Action Buttons */}
+                {editMode && (
+                  <div className="peerfusion-edit-actions">
+                    <button 
+                      className="peerfusion-save-btn"
+                      onClick={handleSave}
+                    >
+                      <span className="peerfusion-save-icon"></span>
+                      Save Changes
+                    </button>
+                    <button 
+                      className="peerfusion-cancel-btn"
+                      onClick={() => {
+                        resetForm();
+                        setEditMode(false);
+                      }}
+                    >
+                      <span className="peerfusion-cancel-icon"></span>
+                      Cancel Edit
+                    </button>
+                  </div>
+                )}
             </div>
           )}
         </div>

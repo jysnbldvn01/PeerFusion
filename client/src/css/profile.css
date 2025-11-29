@@ -2545,3 +2545,98 @@
     min-width: 180px;
   }
 }
+
+.peerfusion-sidebar-rating {
+  margin: 1rem 0 1.5rem 0;
+  text-align: center;
+}
+
+.peerfusion-rating-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  color: #f39c12;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
+  border: 1px solid #fef3c7;
+}
+
+.peerfusion-reviews-count {
+  color: #5a7c55;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-left: 0.25rem;
+}
+.peerfusion-edit-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e8efe5;
+  flex-wrap: wrap;
+}
+
+.peerfusion-save-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  box-shadow: 0 4px 15px rgba(74, 124, 58, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.peerfusion-save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(74, 124, 58, 0.4);
+}
+
+.peerfusion-cancel-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 1rem 1.5rem;
+  border: 2px solid #e8efe5;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  color: #5a7c55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.peerfusion-cancel-btn:hover {
+  background: #f8faf7;
+  border-color: #4a7c3a;
+  color: #4a7c3a;
+  transform: translateY(-1px);
+}
+
+/* Mobile responsiveness for buttons */
+@media (max-width: 768px) {
+  .peerfusion-edit-actions {
+    flex-direction: column;
+  }
+  
+  .peerfusion-save-btn,
+  .peerfusion-cancel-btn {
+    min-width: 100%;
+  }
+}
