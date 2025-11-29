@@ -2199,11 +2199,7 @@
 }
 
 /* Mobile responsiveness */
-@media (max-width: 768px) {
-  .footer-contact-info {
-    text-align: center;
-  }
-  
+@media (max-width: 768px) { 
   .footer-email-display {
     justify-content: center;
   }
