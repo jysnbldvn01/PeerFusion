@@ -86,13 +86,13 @@ const Notification = () => {
   const navigate = useNavigate();
 
   // Filter categories
-  const filterCategories = [
-    { key: 'all', label: 'All', count: 0 },
-    { key: 'pending', label: 'Pending', count: 0 },
-    { key: 'meetings', label: 'Meetings', count: 0 },
-    { key: 'feedbacks', label: 'Feedbacks', count: 0 },
-    { key: 'system', label: 'System', count: 0 }
-  ];
+const [filterCategories, setFilterCategories] = useState([
+  { key: 'all', label: 'All', count: 0 },
+  { key: 'pending', label: 'Pending', count: 0 },
+  { key: 'meetings', label: 'Meetings', count: 0 },
+  { key: 'feedbacks', label: 'Feedbacks', count: 0 },
+  { key: 'system', label: 'System', count: 0 }
+]);
 
   // Enhanced debug logging to verify username data
   useEffect(() => {
@@ -107,51 +107,55 @@ const Notification = () => {
   }, [notifications]);
 
   // Update filter counts
-  useEffect(() => {
-    if (notifications.length > 0) {
-      const updatedCategories = filterCategories.map(category => {
-        let count = 0;
-        switch (category.key) {
-          case 'pending':
-            count = notifications.filter(n => 
-              n.type === 'session_request' && n.status === 'pending'
-            ).length;
-            break;
-          case 'meetings':
-            count = notifications.filter(n => 
-              n.type === 'session_request' || 
-              n.type === 'session_accept' || 
-              n.type === 'meeting' ||
-              n.type === 'meeting_reminder'
-            ).length;
-            break;
-          case 'feedbacks':
-            count = notifications.filter(n => n.type === 'feedback').length;
-            break;
-          case 'system':
-            count = notifications.filter(n => 
-              n.type === 'warning' || 
-              n.type === 'suspension' || 
-              n.type === 'ban' || 
-              n.type === 'penalty' ||
-              n.type === 'appeal_approved' ||
-              n.type === 'appeal_rejected' ||
-              n.type === 'account_reactivated' ||
-              n.type === 'strikes_adjusted' ||
-              n.type === 'account_status'
-            ).length;
-            break;
-          case 'all':
-          default:
-            count = notifications.length;
-            break;
-        }
-        return { ...category, count };
-      });
-      // Update state if counts changed
-      setFilterCategories(updatedCategories);
-    }
-  }, [notifications]);
+useEffect(() => {
+  if (notifications.length > 0) {
+    const updatedCategories = [
+      { key: 'all', label: 'All', count: notifications.length },
+      { 
+        key: 'pending', 
+        label: 'Pending', 
+        count: notifications.filter(n => 
+          n.type === 'session_request' && n.status === 'pending'
+        ).length 
+      },
+      { 
+        key: 'meetings', 
+        label: 'Meetings', 
+        count: notifications.filter(n => 
+          n.type === 'session_request' || 
+          n.type === 'session_accept' || 
+          n.type === 'meeting' ||
+          n.type === 'meeting_reminder'
+        ).length 
+      },
+      { 
+        key: 'feedbacks', 
+        label: 'Feedbacks', 
+        count: notifications.filter(n => n.type === 'feedback').length 
+      },
+      { 
+        key: 'system', 
+        label: 'System', 
+        count: notifications.filter(n => 
+          n.type === 'warning' || 
+          n.type === 'suspension' || 
+          n.type === 'ban' || 
+          n.type === 'penalty' ||
+          n.type === 'appeal_approved' ||
+          n.type === 'appeal_rejected' ||
+          n.type === 'account_reactivated' ||
+          n.type === 'strikes_adjusted' ||
+          n.type === 'account_status'
+        ).length 
+      }
+    ];
+    
+    setFilterCategories(updatedCategories);
+  } else {
+    // Reset counts when no notifications
+    setFilterCategories(prev => prev.map(cat => ({ ...cat, count: 0 })));
+  }
+}, [notifications]);
 
   const formatNotificationMessage = (message) => {
     if (!message) return '';
