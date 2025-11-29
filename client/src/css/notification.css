@@ -1172,11 +1172,3 @@
   background: #4a7c3a;
   border-radius: 3px 0 0 3px;
 }
-
-.peerfusion-notification-pending.unread::before {
-  background: #f59e0b;
-}
-
-.peerfusion-notification-accepted.unread::before {
-  background: #4a7c3a;
-}
