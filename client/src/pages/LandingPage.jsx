@@ -854,10 +854,10 @@ useEffect(() => {
               Empowering learners through collaborative learning and peer-to-peer skill sharing.
             </p>
             <div className="peerfusion-contact-info">
-              <a href="mailto:Peerfusion@gmail.com" className="peerfusion-contact-email">
+              <div className="peerfusion-email-display">
                 <span className="peerfusion-email-icon-small"></span>
                 Peerfusion@gmail.com
-              </a>
+              </div>
             </div>
           </div>
             <div className="footer-links">

@@ -737,6 +737,12 @@ const handleSubmit = async (e) => {
               <p>
                 Empowering learners through collaborative learning and peer-to-peer skill sharing.
               </p>
+              <div className="footer-contact-info">
+                <div className="footer-email-display">
+                  <span className="email-icon-small"></span>
+                  Peerfusion@gmail.com
+                </div>
+              </div>
             </div>
             <div className="footer-links">
               <div className="link-group">

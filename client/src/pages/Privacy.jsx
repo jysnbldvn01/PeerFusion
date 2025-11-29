@@ -544,7 +544,7 @@ const PrivacyPolicy = () => {
         </div>
       </main>
 
-      {/* Footer - Exact same as register page */}
+      {/* Footer */}
       <footer className="peerfusion-legal-footer">
         <div className="peerfusion-footer-content">
           <div className="peerfusion-footer-brand">
@@ -560,8 +560,14 @@ const PrivacyPolicy = () => {
               <span>PeerFusion</span>
             </div>
             <p>
-              Committed to protecting your privacy and data rights under Philippine law.
+              Empowering learners through collaborative learning and peer-to-peer skill sharing.
             </p>
+            <div className="peerfusion-contact-info">
+              <div className="peerfusion-email-display">
+                <span className="peerfusion-email-icon-small"></span>
+                Peerfusion@gmail.com
+              </div>
+            </div>
           </div>
           <div className="peerfusion-footer-links">
             <div className="peerfusion-link-group">
