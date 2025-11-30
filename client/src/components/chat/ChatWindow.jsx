@@ -1011,6 +1011,10 @@ const openReportMessage = (message) => {
   const groups = [];
   for (let i = 0; i < filteredMessages.length; i++) {
     const m = filteredMessages[i];
+
+    if ((m.hiddenFor || []).map(String).includes(String(currentUser?.user_id))) {
+      continue;
+    }
     if (groups.length === 0 || String(groups[groups.length - 1].senderId) !== String(m.senderId)) {
       groups.push({ senderId: m.senderId, msgs: [m] });
     } else {
@@ -1367,6 +1371,10 @@ const handleUnsendForEveryone = async (message) => {
                         </div>
                       ) : (
                         <>
+                         {/* Sender label */}
+                          <div className="peerfusion-chat-bubble-text" style={{ fontWeight: 600, marginBottom: m.fileType ? 4 : 2 }}>
+                            {sentByMe ? 'You:' : `${otherUser?.username || m.senderName || 'User'}:`}
+                          </div>
                           {/* Render inline image */}
                           {m.fileType === "image" && m.content ? (
                             <img src={m.content} alt="uploaded" className="peerfusion-chat-image" />

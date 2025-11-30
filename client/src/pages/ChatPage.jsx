@@ -153,13 +153,14 @@ const ensureAvatarUrl = (avatar) => {
 
   // Subscribe to messages for media/files
   useEffect(() => {
-    if (!activeConversation?.id) {
+    if (!activeConversation?.id || !user?.user_id) {
       setMediaItems([]);
       setFileItems([]);
       return;
     }
 
     const convId = activeConversation.id;
+    const currentUserId = String(user.user_id);
     const q = query(
       collection(db, "conversations", convId, "messages"),
       orderBy("createdAt", "desc")
@@ -173,6 +174,16 @@ const ensureAvatarUrl = (avatar) => {
 
         snapshot.docs.forEach((d) => {
           const m = { id: d.id, ...d.data() };
+
+          // Skip messages that were unsent for everyone
+          if (m.unsentForEveryone) {
+            return;
+          }
+
+          // Skip messages that are hidden for the current user
+          if ((m.hiddenFor || []).map(String).includes(currentUserId)) {
+            return;
+          }
           const ft = (m.fileType || "").toString().toLowerCase();
 
           if (ft === "image" && m.content) {
@@ -207,7 +218,7 @@ const ensureAvatarUrl = (avatar) => {
     );
 
     return () => unsubscribe();
-  }, [activeConversation?.id]);
+  }, [activeConversation?.id, user?.user_id]);
 
   // Track unread messages
   useEffect(() => {
