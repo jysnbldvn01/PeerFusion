@@ -10,44 +10,33 @@ const CloseIcon = () => (
   </svg>
 );
 
-const generateAvatarWithInitials = (username, size = 120) => {
-  if (!username) return null;
-  
-  const initials = username
-    .split(' ')
-    .map(name => name.charAt(0).toUpperCase())
-    .join('')
-    .slice(0, 2);
-
-  const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-    '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2', '#F9E79F'
-  ];
-  
-  const colorIndex = username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-  const backgroundColor = colors[colorIndex];
-
+const generateDefaultAvatar = (size = 120) => {
   return (
     <div 
-      className="peerfusion-avatar-initials"
+      className="peerfusion-default-avatar"
       style={{
-        backgroundColor,
         width: size,
         height: size,
         borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'white',
-        fontSize: size * 0.4,
-        fontWeight: 'bold',
-        fontFamily: 'Arial, sans-serif'
+        backgroundColor: '#22c55e', // Green color
+        color: 'white'
       }}
     >
-      {initials}
+      <svg 
+        width={size * 0.6} 
+        height={size * 0.6} 
+        viewBox="0 0 24 24" 
+        fill="currentColor"
+      >
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+      </svg>
     </div>
   );
 };
+
 // Skeleton Loading Components
 const SkeletonSidebar = () => (
   <div className="peerfusion-skeleton-sidebar">
@@ -2315,7 +2304,7 @@ const removeLearningObjective = (subjectName, index) => {
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Profile" className="peerfusion-avatar" />
                 ) : (
-                  generateAvatarWithInitials(profile?.username || 'User')
+                  generateDefaultAvatar()
                 )}
                 {showAvatarEdit && (
                   <label className="peerfusion-avatar-edit">
@@ -2829,7 +2818,7 @@ const removeLearningObjective = (subjectName, index) => {
               <CloseIcon />
             </button>
 
-              <div className="peerfusion-modal-avatar-container">
+            <div className="peerfusion-modal-avatar-container">
                 {profile.avatar ? (
                   <img
                     src={`${API_BASE_URL}/uploads/${profile.avatar}`}
@@ -2837,7 +2826,7 @@ const removeLearningObjective = (subjectName, index) => {
                     className="peerfusion-modal-avatar"
                   />
                 ) : (
-                  generateAvatarWithInitials(profile.username, 80)
+                  generateDefaultAvatar(80)
                 )}
               <div className="peerfusion-modal-rating">
                 <RatingDisplay rating={profile.rating} />
