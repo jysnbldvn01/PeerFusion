@@ -13,15 +13,23 @@ const pool = mysql.createPool({
     rejectUnauthorized: false
   },
   connectTimeout: 60000,
+  timezone: '+08:00',
+  dateStrings: true,
+  charset: 'utf8mb4'
 });
 
 pool.getConnection()
   .then(conn => {
-    console.log(' MySQL connected successfully using connection pool.');
-    conn.release();
+    console.log('MySQL connected successfully using connection pool.');
+    
+    return conn.execute(`SET time_zone = '+08:00'`)
+      .then(() => {
+        console.log('Database timezone set to +08:00 (Asia/Shanghai)');
+        conn.release();
+      });
   })
   .catch(err => {
-    console.error(' MySQL connection pool failed:', err.message);
+    console.error('MySQL connection pool failed:', err.message);
   });
 
 module.exports = pool;

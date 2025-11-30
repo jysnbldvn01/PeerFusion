@@ -392,7 +392,7 @@ useEffect(() => {
                   <CalendarIcon />
                 </div>
                 <h3>Session Scheduling</h3>
-                <p>Easily plan and manage learning sessions with built-in calendar integration</p>
+                <p>Easily plan learning sessions</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">
