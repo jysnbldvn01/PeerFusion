@@ -516,7 +516,7 @@ const handleRequestSession = async () => {
                           onClick={hasCustomDetails ? () => handleSubjectClick(subjectName) : undefined}
                           style={{ 
                             cursor: hasCustomDetails ? 'pointer' : 'default',
-                            opacity: hasCustomDetails ? 1 : 0.6
+                            opacity: hasCustomDetails ? 1 : 1
                           }}
                           title={hasCustomDetails ? `Click to view ${subjectName} details` : 'No custom details available'}
                         >
@@ -755,13 +755,13 @@ const handleRequestSession = async () => {
                 Select Subjects for Session
               </h4>
               <div className="peerfusion-subject-selection">
+              <small className="peerfusion-selection-note">Choose the subjects you want to learn</small>
                 {selectedUser.subject.split(',').map((subject, i) => {
                   const subjectName = subject.trim();
                   const hasCustomDetails = subjectDetails[subjectName];
                   
                   return (
                     <label key={i} className="peerfusion-subject-checkbox">
-                    <small className="peerfusion-selection-note">Choose the subjects you want to learn</small>
                       <input
                         type="checkbox"
                         checked={selectedSubjectsForRequest.includes(subjectName)}
@@ -817,7 +817,7 @@ const handleRequestSession = async () => {
 
             <div className="peerfusion-modal-main">
               <div className="peerfusion-modal-section">
-                <h4 className="peerfusion-modal-section-title">About This Course</h4>
+                <h4 className="peerfusion-modal-section-title">About This Subject</h4>
                 <p className="peerfusion-subject-about">{selectedSubject.about}</p>
               </div>
 
