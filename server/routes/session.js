@@ -15,7 +15,7 @@ router.post("/request", async (req, res) => {
 
     console.log("📨 Creating chat request:", requester_id, "→", receiver_id);
 
-    // Insert chat request in PlanetScale
+    // Insert chat request in database
     const [insertResult] = await db.query(
       "INSERT INTO chat_requests (requester_id, receiver_id, status) VALUES (?, ?, 'pending')",
       [requester_id, receiver_id]

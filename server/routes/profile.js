@@ -2165,39 +2165,25 @@ router.get('/user-subjects/:userId', async (req, res) => {
 
     console.log(`Fetching all subjects with details for user: ${userId}`);
 
-    // First, get the user's basic profile and subjects
-    const userProfileSql = `
-      SELECT username, avatar, role, rating, subject 
-      FROM user_profiles 
-      WHERE user_id = ?
-    `;
-    
-    const [userResults] = await db.query(userProfileSql, [userId]);
-
-    if (userResults.length === 0) {
-      return res.status(404).json({ 
-        success: false,
-        error: 'User not found' 
-      });
-    }
-
-    const userProfile = userResults[0];
-    
-    // Get detailed subject information if available
-    const subjectDetailsSql = `
+    const sql = `
       SELECT 
         usd.subject_name,
         usd.title,
         usd.about,
-        usd.learning_objectives
+        usd.learning_objectives,
+        up.username,
+        up.avatar,
+        up.role,
+        up.rating
       FROM user_subject_details usd
-      WHERE usd.user_id = ?
+      JOIN user_profiles up ON up.user_id = usd.user_id
+      WHERE usd.user_id = ? AND up.user_id IS NOT NULL
     `;
     
-    const [subjectResults] = await db.query(subjectDetailsSql, [userId]);
+    const [results] = await db.query(sql, [userId]);
 
     // Parse learning objectives and format response
-    const subjectsWithDetails = subjectResults.map(item => {
+    const subjectsWithDetails = results.map(item => {
       try {
         return {
           subject_name: item.subject_name,
@@ -2205,10 +2191,10 @@ router.get('/user-subjects/:userId', async (req, res) => {
           about: item.about,
           learning_objectives: item.learning_objectives ? JSON.parse(item.learning_objectives) : [],
           user_info: {
-            username: userProfile.username,
-            avatar: userProfile.avatar,
-            role: userProfile.role,
-            rating: userProfile.rating
+            username: item.username,
+            avatar: item.avatar,
+            role: item.role,
+            rating: item.rating
           }
         };
       } catch (parseError) {
@@ -2219,49 +2205,24 @@ router.get('/user-subjects/:userId', async (req, res) => {
           about: item.about,
           learning_objectives: [],
           user_info: {
-            username: userProfile.username,
-            avatar: userProfile.avatar,
-            role: userProfile.role,
-            rating: userProfile.rating
+            username: item.username,
+            avatar: item.avatar,
+            role: item.role,
+            rating: item.rating
           }
         };
       }
     });
 
-    // If no detailed subject info exists, create basic entries from user's subjects
-    let allSubjects = subjectsWithDetails;
-    
-    if (subjectsWithDetails.length === 0 && userProfile.subject) {
-      const userSubjects = userProfile.subject.split(',').map(s => s.trim());
-      allSubjects = userSubjects.map(subjectName => ({
-        subject_name: subjectName,
-        title: `${subjectName} - Personalized Learning`,
-        about: `Comprehensive ${subjectName} instruction tailored to individual learning styles and goals.`,
-        learning_objectives: [
-          'Master fundamental concepts and principles',
-          'Develop practical problem-solving skills',
-          'Build confidence in applying knowledge',
-          'Achieve specific learning targets'
-        ],
-        user_info: {
-          username: userProfile.username,
-          avatar: userProfile.avatar,
-          role: userProfile.role,
-          rating: userProfile.rating
-        }
-      }));
-    }
-
-    console.log(`Found ${allSubjects.length} subjects for user: ${userId}`);
+    console.log(`Found ${subjectsWithDetails.length} subjects with details for user: ${userId}`);
     
     res.json({
       success: true,
-      data: allSubjects
+      data: subjectsWithDetails
     });
   } catch (err) {
     console.error('Get user subjects error:', err);
     res.status(500).json({ 
-      success: false,
       error: 'Failed to fetch user subjects',
       details: err.message 
     });

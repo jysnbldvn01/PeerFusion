@@ -20,8 +20,9 @@ const Home = () => {
   const [expandedUsers, setExpandedUsers] = useState({});
   const [recommendedUsers, setRecommendedUsers] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
-  const [subjectDetails, setSubjectDetails] = useState(null);
+  const [subjectDetails, setSubjectDetails] = useState({});
   const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [selectedSubjectsForRequest, setSelectedSubjectsForRequest] = useState([]);
 
 
   const slides = [
@@ -133,6 +134,25 @@ const Home = () => {
     );
   });
 
+    const fetchSubjectDetails = async (userId) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/profile/user-subjects/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        const detailsMap = {};
+        response.data.data.forEach(subject => {
+          detailsMap[subject.subject_name] = subject;
+        });
+        setSubjectDetails(detailsMap);
+      }
+    } catch (err) {
+      console.error('Error fetching subject details:', err);
+    }
+  };
+
   const fetchFeedback = async (userId) => {
     try {
       const res = await axios.get(
@@ -167,51 +187,17 @@ const Home = () => {
     }
   };
 
-    const fetchSubjectDetails = async (userId, subjectName) => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get(
-        `${API_BASE_URL}/api/profile/user-subjects/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        // Find the specific subject details
-        const subjectData = response.data.data.find(
-          subject => subject.subject_name === subjectName
-        );
-        
-        if (subjectData) {
-          setSubjectDetails(subjectData);
-          setShowSubjectModal(true);
-        } else {
-          alert('No detailed information available for this subject.');
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching subject details:', err);
-      alert('Failed to load subject details. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubjectClick = async (userId, subjectName) => {
-    setSelectedSubject(subjectName);
-    await fetchSubjectDetails(userId, subjectName);
-  };
-
-  const handleOpenModal = async (user) => {
-    setSelectedUser({
-      ...user,
-      rating: user.rating || 0,
-      total_reviews: user.total_reviews || 0,
-    });
-    setShowAllFeedback(false);
-    setExpandedUsers({});
-    fetchFeedback(user.id);
+const handleOpenModal = async (user) => {
+  setSelectedUser({
+    ...user,
+    rating: user.rating || 0,
+    total_reviews: user.total_reviews || 0,
+  });
+  setShowAllFeedback(false);
+  setExpandedUsers({});
+  setSelectedSubjectsForRequest([]);
+  fetchFeedback(user.id);
+  fetchSubjectDetails(user.id);
 
     try {
       const countRes = await axios.get(
@@ -227,44 +213,78 @@ const Home = () => {
     }
   };
 
-  const handleRequestSession = async () => {
-    if (!selectedUser) { alert("⚠️ Please select a user first."); return; }
-
-    try {
-      const { data: me } = await axios.get(
-        `${API_BASE_URL}/api/profile`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!me.user_id) { alert("❌ Error: Could not fetch your user ID."); return; }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/session/request`,
-        { requester_id: me.user_id, receiver_id: selectedUser.id },
-        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-      );
-
-      if (response.data.success) {
-        alert("Session request sent successfully!");
-        setNotifications(prev => [
-          {
-            id: Date.now(),
-            sender_id: me.user_id,
-            receiver_id: selectedUser.id,
-            session_request_id: response.data.requestId,
-            message: "You have a new session request",
-            type: "session_request",
-            status: "pending",
-            created_at: new Date().toISOString(),
-          },
-          ...prev
-        ]);
-      } else { alert("Failed to send request."); }
-    } catch (err) {
-      console.error("Request session error:", err);
-      alert(`Error: ${err.response?.data?.error || err.message}`);
-    }
+  
+    const handleSubjectClick = (subjectName) => {
+    setSelectedSubject(subjectDetails[subjectName]);
+    setShowSubjectModal(true);
   };
+
+  // Add function to handle subject selection for session request
+  const handleSubjectSelection = (subjectName) => {
+    setSelectedSubjectsForRequest(prev => {
+      if (prev.includes(subjectName)) {
+        return prev.filter(subj => subj !== subjectName);
+      } else {
+        return [...prev, subjectName];
+      }
+    });
+  };
+const handleRequestSession = async () => {
+  if (!selectedUser) { 
+    alert("⚠️ Please select a user first."); 
+    return; 
+  }
+
+  if (selectedSubjectsForRequest.length === 0) {
+    alert("⚠️ Please select at least one subject for the session.");
+    return;
+  }
+
+  try {
+    const { data: me } = await axios.get(
+      `${API_BASE_URL}/api/profile`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!me.user_id) { 
+      alert("❌ Error: Could not fetch your user ID."); 
+      return; 
+    }
+
+    const response = await axios.post(
+      `${API_BASE_URL}/api/session/request`,
+      { 
+        requester_id: me.user_id, 
+        receiver_id: selectedUser.id,
+        selected_subjects: selectedSubjectsForRequest
+      },
+      { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+    );
+
+    if (response.data.success) {
+      alert("Session request sent successfully!");
+      setSelectedSubjectsForRequest([]);
+      setNotifications(prev => [
+        {
+          id: Date.now(),
+          sender_id: me.user_id,
+          receiver_id: selectedUser.id,
+          session_request_id: response.data.requestId,
+          message: "You have a new session request",
+          type: "session_request",
+          status: "pending",
+          created_at: new Date().toISOString(),
+        },
+        ...prev
+      ]);
+    } else { 
+      alert("Failed to send request."); 
+    }
+  } catch (err) {
+    console.error("Request session error:", err);
+    alert(`Error: ${err.response?.data?.error || err.message}`);
+  }
+};
 
   const RatingDisplay = ({ rating }) => {
     const numericRating = Number(rating) || 0;
@@ -467,25 +487,36 @@ const Home = () => {
               <p className="peerfusion-modal-bio">{selectedUser.bio || 'No bio provided'}</p>
               
               <div className="peerfusion-modal-section">
-                <h4 className="peerfusion-modal-section-title">Subject Expertise</h4>
-                <div className="peerfusion-subject-tags">
-                  {selectedUser.subject?.split(',').map((s, i) => {
-                    const subjectName = s.trim();
-                    return (
-                      <span 
-                        key={i} 
-                        className="peerfusion-subject-tag clickable-subject"
-                        onClick={() => handleSubjectClick(selectedUser.id, subjectName)}
-                        title={`Click to view ${subjectName} details`}
-                      >
-                        {subjectName}
-                      </span>
-                    );
-                  }) || 'N/A'}
-                </div>
-                <p className="peerfusion-subject-help-text">
-                  💡 Click on any subject to view detailed course information
-                </p>
+                <h4 className="peerfusion-modal-section-title">
+                  <span className="peerfusion-expertise-icon"></span>
+                  Subject Expertise
+                  <small className="peerfusion-subject-note">
+                    💡 Click on any subject to see detailed overview
+                  </small>
+                </h4>
+                {selectedUser.subject ? (
+                  <div className="peerfusion-subject-tags">
+                    {selectedUser.subject.split(',').map((subject, i) => {
+                      const subjectName = subject.trim();
+                      const hasDetails = subjectDetails[subjectName];
+                      
+                      return (
+                        <span 
+                          key={i} 
+                          className={`peerfusion-subject-tag ${hasDetails ? 'clickable' : ''}`}
+                          onClick={hasDetails ? () => handleSubjectClick(subjectName) : undefined}
+                          style={{ 
+                            cursor: hasDetails ? 'pointer' : 'default',
+                            opacity: hasDetails ? 1 : 0.7
+                          }}
+                        >
+                          {subjectName}
+                          {hasDetails && <span className="peerfusion-info-badge">ℹ</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : <p>N/A</p>}
               </div>
 
               <div className="peerfusion-modal-section">
@@ -713,55 +744,44 @@ const Home = () => {
         </div>
       )}
       {/* Subject Details Modal */}
-      {showSubjectModal && subjectDetails && (
+      {showSubjectModal && selectedSubject && (
         <div className="peerfusion-modal-overlay" onClick={() => setShowSubjectModal(false)}>
           <div className="peerfusion-modal-content peerfusion-subject-modal" onClick={e => e.stopPropagation()}>
             <button className="peerfusion-close-modal" onClick={() => setShowSubjectModal(false)}>×</button>
             
             <div className="peerfusion-subject-modal-header">
-              <h3 className="peerfusion-subject-modal-title">{subjectDetails.title}</h3>
-              <p className="peerfusion-subject-modal-subject">Subject: {subjectDetails.subject_name}</p>
-              <div className="peerfusion-subject-modal-instructor">
-                <span className="peerfusion-instructor-label">Instructor:</span>
-                <span className="peerfusion-instructor-name">{subjectDetails.user_info?.username}</span>
-                {subjectDetails.user_info?.rating > 0 && (
-                  <div className="peerfusion-instructor-rating">
-                    <RatingDisplay rating={subjectDetails.user_info.rating} />
-                  </div>
-                )}
-              </div>
+              <h3 className="peerfusion-subject-modal-title">{selectedSubject.title}</h3>
+              <p className="peerfusion-subject-modal-subject">Subject: {selectedSubject.subject_name}</p>
             </div>
 
             <div className="peerfusion-modal-main">
               <div className="peerfusion-modal-section">
                 <h4 className="peerfusion-modal-section-title">About This Course</h4>
-                <p className="peerfusion-subject-about">{subjectDetails.about}</p>
+                <p className="peerfusion-subject-about">{selectedSubject.about}</p>
               </div>
 
               <div className="peerfusion-modal-section">
                 <h4 className="peerfusion-modal-section-title">What You'll Learn</h4>
-                <div className="peerfusion-learning-objectives">
-                  <ul className="peerfusion-objectives-list">
-                    {subjectDetails.learning_objectives?.map((objective, index) => (
-                      <li key={index} className="peerfusion-objective-item">
-                        <span className="peerfusion-objective-check">✓</span>
-                        {objective}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="peerfusion-learning-objectives-list">
+                  {selectedSubject.learning_objectives.map((objective, index) => (
+                    <li key={index} className="peerfusion-learning-objective">
+                      <span className="peerfusion-check-icon"></span>
+                      {objective}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               <div className="peerfusion-modal-actions">
                 <button 
-                  className="peerfusion-schedule-btn" 
+                  className="peerfusion-schedule-btn"
                   onClick={() => {
+                    handleSubjectSelection(selectedSubject.subject_name);
                     setShowSubjectModal(false);
-                    handleRequestSession();
                   }}
                 >
                   <span className="peerfusion-calendar-icon"></span>
-                  Request Session for {subjectDetails.subject_name}
+                  Request Session for {selectedSubject.subject_name}
                 </button>
               </div>
             </div>
