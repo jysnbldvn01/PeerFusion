@@ -2205,6 +2205,10 @@ const addLearningObjective = (subjectName) => {
   const currentForm = subjectForms[subjectName];
   if (!currentForm) return;
 
+  if (currentForm.learning_objectives.length >= 10) {
+    alert('Maximum 10 learning objectives allowed');
+    return;
+  }
   setSubjectForms(prev => ({
     ...prev,
     [subjectName]: {
@@ -2533,9 +2537,15 @@ const removeLearningObjective = (subjectName, index) => {
                                 </div>
                                 
                                 <div className="peerfusion-form-group">
-                                  <label className="peerfusion-form-label">What Students Will Learn</label>
-                                  <div className="peerfusion-learning-objectives-editor">
-                                    {(subjectForms[subject]?.learning_objectives || []).map((objective, index) => (
+                                    <div className="peerfusion-learning-objectives-editor">
+                                      <div className="peerfusion-objectives-header">
+                                        <label className="peerfusion-form-label">What Students Will Learn</label>
+                                        <span className="peerfusion-objectives-counter">
+                                          {subjectForms[subject]?.learning_objectives?.length || 0}/10
+                                        </span>
+                                      </div>
+                                      
+                                      {(subjectForms[subject]?.learning_objectives || []).map((objective, index) => (
                                       <div key={index} className="peerfusion-learning-objective-input">
                                         <input 
                                           type="text"
@@ -2560,9 +2570,12 @@ const removeLearningObjective = (subjectName, index) => {
                                       type="button"
                                       onClick={() => addLearningObjective(subject)}
                                       className="peerfusion-add-objective"
+                                      disabled={(subjectForms[subject]?.learning_objectives?.length || 0) >= 10}
                                     >
                                       <span className="peerfusion-add-icon"></span>
                                       Add Learning Objective
+                                      {(subjectForms[subject]?.learning_objectives?.length || 0) >= 10 && 
+                                        ' (Maximum reached)'}
                                     </button>
                                   </div>
                                 </div>
