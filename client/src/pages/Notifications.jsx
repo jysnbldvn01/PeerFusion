@@ -535,7 +535,7 @@ useEffect(() => {
         window.pfToast?.info?.('Session accepted');
       }
     } catch (err) {
-      console.error("❌ Failed to accept session request:", err);
+      console.error("Failed to accept session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error accepting session request');
     } finally {
       setAcceptingId(null);
@@ -559,7 +559,7 @@ useEffect(() => {
       closeModal();
       window.pfToast?.success?.('Session request declined');
     } catch (err) {
-      console.error("❌ Failed to reject session request:", err);
+      console.error("Failed to reject session request:", err);
       window.pfToast?.error?.(err?.response?.data?.message || 'Error rejecting session request');
     }
   };

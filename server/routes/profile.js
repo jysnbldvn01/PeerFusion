@@ -428,7 +428,7 @@ router.get('/recommended', authenticateToken, async (req, res) => {
       count: recommendedUsers.length
     });
   } catch (err) {
-    console.error('❌ DATABASE ERROR in /recommended route:', err.message);
+    console.error('DATABASE ERROR in /recommended route:', err.message);
     res.status(500).json({
       success: false,
       error: 'Database query failed',

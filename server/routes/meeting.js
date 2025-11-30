@@ -103,7 +103,7 @@ router.post("/schedule", async (req, res) => {
       message: "Meeting scheduled successfully",
     });
   } catch (err) {
-    console.error("❌ Error scheduling meeting:", err);
+    console.error("Error scheduling meeting:", err);
     res.status(500).json({ error: "Failed to schedule meeting" });
   }
 });
@@ -123,7 +123,7 @@ router.get("/user/:userId", async (req, res) => {
 
     res.json({ success: true, meetings: rows });
   } catch (err) {
-    console.error("❌ Error fetching user meetings:", err);
+    console.error("Error fetching user meetings:", err);
     res.status(500).json({ error: "Failed to fetch meetings" });
   }
 });
@@ -149,7 +149,7 @@ router.get("/conversation/:conversationId", async (req, res) => {
 
     res.json({ success: true, meeting: rows[0] });
   } catch (err) {
-    console.error("❌ Error fetching conversation meeting:", err);
+    console.error("Error fetching conversation meeting:", err);
     res.status(500).json({ error: "Failed to fetch meeting" });
   }
 });
@@ -179,7 +179,7 @@ router.post("/update-status", async (req, res) => {
 
     res.json({ success: true, message: "Meeting status updated" });
   } catch (err) {
-    console.error("❌ Error updating meeting status:", err);
+    console.error("Error updating meeting status:", err);
     res.status(500).json({ error: "Failed to update meeting" });
   }
 });

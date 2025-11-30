@@ -19,7 +19,7 @@ router.get("/:conversationId", async (req, res) => {
 
     res.json({ messages });
   } catch (err) {
-    console.error("❌ Error fetching messages:", err);
+    console.error("Error fetching messages:", err);
     res.status(500).json({ error: "Failed to fetch messages" });
   }
 });

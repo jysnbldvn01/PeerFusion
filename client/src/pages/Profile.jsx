@@ -694,7 +694,7 @@ const ChangeEmailModal = ({ isOpen, onClose, onEmailChange }) => {
         }
       }
     } catch (err) {
-      console.error('❌ Email change failed:', {
+      console.error('Email change failed:', {
         message: err.message,
         code: err.code,
         status: err.response?.status,

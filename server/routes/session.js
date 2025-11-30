@@ -7,20 +7,29 @@ router.post("/request", async (req, res) => {
   try {
     const db = req.app.get("db");
     const emitToUser = req.app.get("emitToUser");
-    const { requester_id, receiver_id } = req.body;
+    const { requester_id, receiver_id, selected_subjects } = req.body;
 
     if (!requester_id || !receiver_id) {
       return res.status(400).json({ error: "Missing requester_id or receiver_id" });
     }
 
-    console.log("📨 Creating chat request:", requester_id, "→", receiver_id);
+    console.log("📨 Creating chat request:", requester_id, "→", receiver_id, "Subjects:", selected_subjects);
 
-    // Insert chat request in database
     const [insertResult] = await db.query(
-      "INSERT INTO chat_requests (requester_id, receiver_id, status) VALUES (?, ?, 'pending')",
-      [requester_id, receiver_id]
+      "INSERT INTO chat_requests (requester_id, receiver_id, status, selected_subjects) VALUES (?, ?, 'pending', ?)",
+      [requester_id, receiver_id, selected_subjects ? JSON.stringify(selected_subjects) : null]
     );
     const requestId = insertResult.insertId;
+    const [userResults] = await db.query(
+      "SELECT username FROM user_profiles WHERE user_id = ?",
+      [requester_id]
+    );
+    const requesterName = userResults[0]?.username || 'A user';
+
+    let notificationMessage = "📅 You have a new session request";
+    if (selected_subjects && selected_subjects.length > 0) {
+      notificationMessage = `📅 ${requesterName} requested a session for: ${selected_subjects.join(', ')}`;
+    }
 
     // Insert notification
     await db.query(
@@ -32,21 +41,21 @@ router.post("/request", async (req, res) => {
         receiver_id,
         requestId,
         requestId,
-        "📅 You have a new session request",
+        notificationMessage,
       ]
     );
-
     // Notify the receiver via Socket.IO
     if (emitToUser) {
       emitToUser(receiver_id, "sessionRequested", {
         requestId,
         requester_id,
+        selected_subjects: selected_subjects || []
       });
     }
 
     res.json({ success: true, requestId });
   } catch (err) {
-    console.error("❌ Error creating request:", err);
+    console.error("Error creating request:", err);
     res.status(500).json({ error: "Failed to create request" });
   }
 });
@@ -175,7 +184,7 @@ router.post("/accept", async (req, res) => {
 
     res.json({ success: true, conversationId });
   } catch (err) {
-    console.error("❌ Error accepting request:", err);
+    console.error("Error accepting request:", err);
     res.status(500).json({ error: "Failed to accept request" });
   }
 });
@@ -198,7 +207,7 @@ router.post("/reject", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("❌ Error rejecting request:", err);
+    console.error("Error rejecting request:", err);
     res.status(500).json({ error: "Failed to reject request" });
   }
 });
@@ -231,7 +240,7 @@ router.get("/unique-partners/:userId", async (req, res) => {
 
     res.json({ count: uniquePartners.size });
   } catch (err) {
-    console.error("❌ Error fetching unique partners count:", err);
+    console.error("Error fetching unique partners count:", err);
     res.status(500).json({ error: "Failed to fetch unique partners count" });
   }
 });
@@ -267,7 +276,7 @@ router.get("/can-schedule/:conversationId/:userId", async (req, res) => {
     // For conversations without session request data, allow both users to schedule
     res.json({ canSchedule: true, userRole: 'both' });
   } catch (err) {
-    console.error("❌ Error checking schedule permission:", err);
+    console.error("Error checking schedule permission:", err);
     res.status(500).json({ error: "Failed to check schedule permission" });
   }
 });

@@ -243,6 +243,7 @@ const handleOpenModal = async (user) => {
       }
     });
   };
+  
 const handleRequestSession = async () => {
   if (!selectedUser) { 
     alert("⚠️ Please select a user first."); 
@@ -278,19 +279,9 @@ const handleRequestSession = async () => {
     if (response.data.success) {
       alert("Session request sent successfully!");
       setSelectedSubjectsForRequest([]);
-      setNotifications(prev => [
-        {
-          id: Date.now(),
-          sender_id: me.user_id,
-          receiver_id: selectedUser.id,
-          session_request_id: response.data.requestId,
-          message: "You have a new session request",
-          type: "session_request",
-          status: "pending",
-          created_at: new Date().toISOString(),
-        },
-        ...prev
-      ]);
+      setSelectedUser(null);
+      
+      window.dispatchEvent(new Event('notificationsUpdated'));
     } else { 
       alert("Failed to send request."); 
     }

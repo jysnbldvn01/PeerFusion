@@ -113,7 +113,7 @@ useEffect(() => {
       setLoading(false);
     },
     (error) => {
-      console.error("❌ Firestore error:", error);
+      console.error("Firestore error:", error);
       setLoading(false);
     }
   );

@@ -1207,15 +1207,6 @@
   background: #4a7c3a;
   border-radius: 10px;
 }
-.peerfusion-subject-tag.has-details {
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  border: 2px solid #4a7c3a;
-}
-
-.peerfusion-subject-tag.no-details {
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  border: 2px solid #4a7c3a;
-}
 
 .peerfusion-no-details-badge {
   margin-left: 0.3rem;

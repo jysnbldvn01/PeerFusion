@@ -54,7 +54,7 @@ router.get("/:conversationId", async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    console.error("❌ Error fetching conversation:", err);
+    console.error("Error fetching conversation:", err);
     res.status(500).json({ error: "Failed to fetch conversation" });
   }
 });
