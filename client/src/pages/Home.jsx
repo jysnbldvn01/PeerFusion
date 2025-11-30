@@ -526,14 +526,15 @@ const handleRequestSession = async () => {
                         </span>
                       );
                     })}
-                <small className="peerfusion-subject-note">
+                  </div>
+                ) : <p>N/A</p>}
+                 <small className="peerfusion-subject-note">
                     {Object.keys(subjectDetails).length > 0 
                       ? "💡 Click on any subject to see detailed overview" 
                       : "📝 This user hasn't customized their subject details yet"}
                 </small>
-                  </div>
-                ) : <p>N/A</p>}
               </div>
+              
 
               <div className="peerfusion-modal-section">
                 <h4 className="peerfusion-modal-section-title">Year Level</h4>
@@ -751,11 +752,7 @@ const handleRequestSession = async () => {
             {selectedUser.subject && selectedUser.subject.split(',').length > 0 && (
             <div className="peerfusion-modal-section">
               <h4 className="peerfusion-modal-section-title">
-                <span className="peerfusion-checkbox-icon"></span>
                 Select Subjects for Session
-                <small className="peerfusion-selection-note">
-                  Choose the subjects you want to learn
-                </small>
               </h4>
               <div className="peerfusion-subject-selection">
                 {selectedUser.subject.split(',').map((subject, i) => {
@@ -764,6 +761,7 @@ const handleRequestSession = async () => {
                   
                   return (
                     <label key={i} className="peerfusion-subject-checkbox">
+                    <small className="peerfusion-selection-note">Choose the subjects you want to learn</small>
                       <input
                         type="checkbox"
                         checked={selectedSubjectsForRequest.includes(subjectName)}
@@ -777,7 +775,7 @@ const handleRequestSession = async () => {
                         title={hasCustomDetails ? `View ${subjectName} details` : ''}
                       >
                         {subjectName}
-                        {hasCustomDetails && <span className="peerfusion-info-small">ℹ️</span>}
+                        {hasCustomDetails && <span className="peerfusion-info-small">ℹ</span>}
                       </span>
                     </label>
                   );

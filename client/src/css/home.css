@@ -1186,7 +1186,6 @@
   text-align: center;
 }
 
-/* Icons */
 .peerfusion-checkbox-icon {
   width: 18px;
   height: 18px;
@@ -1194,11 +1193,6 @@
   margin-right: 0.5rem;
 }
 
-.peerfusion-checkbox-icon {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232d5a27'%3E%3Cpath d='M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") no-repeat center;
-}
-
-/* Scrollbar for subject selection */
 .peerfusion-subject-selection::-webkit-scrollbar {
   width: 6px;
 }
@@ -1218,9 +1212,8 @@
 }
 
 .peerfusion-subject-tag.no-details {
-  background: #f0f0f0;
-  color: #666;
-  border: 2px solid #ddd;
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  border: 2px solid #4a7c3a;
 }
 
 .peerfusion-no-details-badge {
@@ -1235,7 +1228,8 @@
 }
 
 .peerfusion-subject-label:not(.has-details) {
-  color: #666;
+  color: #2d5a27;
+  font-weight: 600;
 }
 
 .peerfusion-selection-note,
