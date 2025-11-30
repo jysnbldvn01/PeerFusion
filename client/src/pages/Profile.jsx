@@ -94,18 +94,6 @@ const AccountDeactivationModal = ({ isOpen, onClose, onDeactivate }) => {
         <div className="account-action-content">
           <form onSubmit={handleSubmit} className="deactivation-form">
             <div className="account-action-field">
-              <label className="account-action-label">Why are you taking a break? (Optional)</label>
-              <textarea 
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="account-action-textarea deactivation-textarea"
-                placeholder="We'd love to know how we can improve..."
-                rows="3"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="account-action-field">
               <label className="account-action-label">
                 Confirm by typing: <strong>DEACTIVATE MY ACCOUNT</strong>
               </label>
@@ -2523,7 +2511,7 @@ const removeLearningObjective = (subjectName, index) => {
                             {editingSubjects[subject] ? (
                               <div className="peerfusion-subject-details-editor">
                                 <div className="peerfusion-form-group">
-                                  <label className="peerfusion-form-label">Course Title</label>
+                                  <label className="peerfusion-form-label">Title</label>
                                   <input 
                                     type="text"
                                     value={subjectForms[subject]?.title || ''}
@@ -2534,7 +2522,7 @@ const removeLearningObjective = (subjectName, index) => {
                                 </div>
                                 
                                 <div className="peerfusion-form-group">
-                                  <label className="peerfusion-form-label">About This Course</label>
+                                  <label className="peerfusion-form-label">About This Subject</label>
                                   <textarea 
                                     value={subjectForms[subject]?.about || ''}
                                     onChange={(e) => handleSubjectFormChange(subject, 'about', e.target.value)}

@@ -2634,14 +2634,463 @@
     min-width: 100%;
   }
 }
+/* Learning Objectives Editor - Mobile Responsive Fix */
+.peerfusion-learning-objectives-editor {
+  margin-top: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
 
-.peerfusion-subjects-container {
+.peerfusion-learning-objective-input {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.peerfusion-learning-objective-input input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e8efe5;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
+  min-height: 48px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.peerfusion-learning-objective-input input:focus {
+  border-color: #4a7c3a;
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.15);
+}
+
+.peerfusion-remove-objective {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  min-width: 48px;
+  box-sizing: border-box;
+}
+
+.peerfusion-remove-objective:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.peerfusion-add-objective {
+  background: none;
+  border: 2px dashed #4a7c3a;
+  color: #4a7c3a;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+}
+
+.peerfusion-add-objective:hover {
+  background: #f0f9f0;
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+/* Subject Details Actions */
+.peerfusion-subject-details-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e8efe5;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.peerfusion-save-details-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  min-height: 48px;
+}
+
+.peerfusion-save-details-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.4);
+}
+
+.peerfusion-cancel-details-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: 2px solid #e8efe5;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  color: #5a7c55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  min-height: 48px;
+}
+
+.peerfusion-cancel-details-btn:hover {
+  background: #f8faf7;
+  border-color: #4a7c3a;
+  color: #4a7c3a;
+  transform: translateY(-1px);
+}
+
+/* Subject Details Preview */
+.peerfusion-subject-details-preview {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: #f8faf7;
+  border-radius: 12px;
+  border-left: 4px solid #4a7c3a;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.peerfusion-subject-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  color: #2d5a27;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.peerfusion-subject-about {
+  margin: 0 0 1.25rem 0;
+  color: #5a7c55;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.peerfusion-learning-objectives-preview {
   margin-top: 1rem;
 }
 
+.peerfusion-learning-objectives-preview strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #2d5a27;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.peerfusion-learning-objectives-preview ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.peerfusion-learning-objectives-preview li {
+  margin-bottom: 0.5rem;
+  color: #5a7c55;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.peerfusion-learning-objectives-preview li::before {
+  content: "•";
+  color: #4a7c3a;
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+/* No Details Message */
+.peerfusion-no-details-message {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px dashed #dee2e6;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Subjects Help */
+.peerfusion-subjects-help {
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: #e7f4ff;
+  border-radius: 12px;
+  border-left: 4px solid #1890ff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.peerfusion-subjects-help p {
+  margin: 0;
+  color: #2d5a27;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.peerfusion-subjects-help strong {
+  color: #2d5a27;
+}
+
+/* View Mode Styles */
+.peerfusion-subjects-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.peerfusion-subject-display-card {
+  background: #ffffff;
+  border: 1px solid #e8efe5;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
+  box-sizing: border-box;
+}
+
+.peerfusion-subject-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e8efe5;
+}
+
+.peerfusion-subject-header h4 {
+  margin: 0;
+  color: #2d5a27;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2d5a27 0%, #4a7c3a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.peerfusion-subject-full-details {
+  padding: 1.5rem;
+  background: #f8faf7;
+  border-radius: 12px;
+  border-left: 4px solid #4a7c3a;
+  box-sizing: border-box;
+}
+
+.peerfusion-subject-description {
+  margin: 0.75rem 0 1.5rem 0;
+  color: #5a7c55;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.peerfusion-learning-objectives {
+  margin-top: 1.5rem;
+}
+
+.peerfusion-learning-objectives h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #2d5a27;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.peerfusion-learning-objectives h6::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #4a7c3a;
+  border-radius: 50%;
+}
+
+.peerfusion-learning-objectives ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.peerfusion-learning-objectives li {
+  margin-bottom: 0.75rem;
+  color: #5a7c55;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.peerfusion-learning-objectives li::before {
+  content: "•";
+  color: #4a7c3a;
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+.peerfusion-subject-placeholder {
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.9rem;
+  border: 1px dashed #dee2e6;
+  box-sizing: border-box;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .peerfusion-subject-card-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .peerfusion-edit-details-btn {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .peerfusion-subject-details-actions {
+    flex-direction: column;
+  }
+  
+  .peerfusion-subject-details-editor .peerfusion-form-input,
+  .peerfusion-subject-details-editor .peerfusion-form-textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .peerfusion-learning-objective-input {
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .peerfusion-remove-objective {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    align-self: center;
+  }
+  
+  .peerfusion-learning-objective-input input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  
+  .peerfusion-save-details-btn,
+  .peerfusion-cancel-details-btn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .peerfusion-subject-card {
+    padding: 1rem;
+  }
+  
+  .peerfusion-subject-details-editor {
+    padding: 1rem;
+  }
+  
+  .peerfusion-subject-details-preview {
+    padding: 1rem;
+  }
+  
+  .peerfusion-subject-full-details {
+    padding: 1rem;
+  }
+  
+  .peerfusion-subject-badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .peerfusion-learning-objective-input {
+    gap: 0.375rem;
+  }
+  
+  .peerfusion-learning-objective-input input {
+    padding: 0.625rem 0.875rem;
+    min-height: 42px;
+  }
+  
+  .peerfusion-remove-objective {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0.375rem;
+  }
+  
+  .peerfusion-subject-details-editor {
+    padding: 1rem;
+  }
+  
+  .peerfusion-subject-details-editor .peerfusion-form-group {
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .peerfusion-learning-objective-input {
+    flex-wrap: nowrap;
+  }
+  
+  .peerfusion-learning-objective-input input {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  
+  .peerfusion-remove-objective {
+    flex: 0 0 auto;
+  }
+}
+
+/* Ensure consistent alignment in the subject card */
 .peerfusion-subject-card {
   background: #ffffff;
   border: 1px solid #e8efe5;
@@ -2649,6 +3098,7 @@
   padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .peerfusion-subject-card:hover {
@@ -2719,10 +3169,15 @@
   background: #f8faf7;
   border-radius: 12px;
   border: 1px solid #e8efe5;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .peerfusion-subject-details-editor .peerfusion-form-group {
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .peerfusion-subject-details-editor .peerfusion-form-label {
@@ -2730,11 +3185,12 @@
   font-weight: 600;
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
+  width: 100%;
 }
 
 .peerfusion-subject-details-editor .peerfusion-form-input,
 .peerfusion-subject-details-editor .peerfusion-form-textarea {
-  width: 95%;
+  width: 100%;
   padding: 0.875rem 1rem;
   border: 2px solid #e8efe5;
   border-radius: 8px;
@@ -2743,6 +3199,8 @@
   transition: all 0.3s ease;
   outline: none;
   box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
+  box-sizing: border-box;
+  margin: 0;
 }
 
 .peerfusion-subject-details-editor .peerfusion-form-input:focus,
@@ -2756,381 +3214,15 @@
   resize: vertical;
 }
 
-/* Learning Objectives Editor */
-.peerfusion-learning-objectives-editor {
-  margin-top: 0.5rem;
-}
-
-.peerfusion-learning-objective-input {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  align-items: center;
-}
-
-.peerfusion-learning-objective-input input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e8efe5;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  background: #ffffff;
-  transition: all 0.3s ease;
-  outline: none;
-  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
-}
-
-.peerfusion-learning-objective-input input:focus {
-  border-color: #4a7c3a;
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.15);
-}
-
-.peerfusion-remove-objective {
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.peerfusion-remove-objective:hover {
-  background: #dc2626;
-  transform: scale(1.05);
-}
-
-.peerfusion-add-objective {
-  background: none;
-  border: 2px dashed #4a7c3a;
-  color: #4a7c3a;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-top: 0.5rem;
-  transition: all 0.3s ease;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-add-objective:hover {
-  background: #f0f9f0;
-  border-style: solid;
-  transform: translateY(-1px);
-}
-
-/* Subject Details Actions */
-.peerfusion-subject-details-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e8efe5;
-}
-
-.peerfusion-save-details-btn {
-  flex: 1;
-  padding: 0.875rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
-  color: white;
-  box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-save-details-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.4);
-}
-
-.peerfusion-cancel-details-btn {
-  flex: 1;
-  padding: 0.875rem 1.5rem;
-  border: 2px solid #e8efe5;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-  color: #5a7c55;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-cancel-details-btn:hover {
-  background: #f8faf7;
-  border-color: #4a7c3a;
-  color: #4a7c3a;
-  transform: translateY(-1px);
-}
-
-/* Subject Details Preview */
-.peerfusion-subject-details-preview {
-  margin-top: 1rem;
-  padding: 1.5rem;
-  background: #f8faf7;
-  border-radius: 12px;
-  border-left: 4px solid #4a7c3a;
-}
-
-.peerfusion-subject-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
-  color: #2d5a27;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.peerfusion-subject-about {
-  margin: 0 0 1.25rem 0;
-  color: #5a7c55;
-  line-height: 1.6;
-  font-size: 0.95rem;
-}
-
-.peerfusion-learning-objectives-preview {
-  margin-top: 1rem;
-}
-
-.peerfusion-learning-objectives-preview strong {
-  display: block;
-  margin-bottom: 0.75rem;
-  color: #2d5a27;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.peerfusion-learning-objectives-preview ul {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-
-.peerfusion-learning-objectives-preview li {
-  margin-bottom: 0.5rem;
-  color: #5a7c55;
-  line-height: 1.5;
-  font-size: 0.9rem;
-  position: relative;
-}
-
-.peerfusion-learning-objectives-preview li::before {
-  content: "•";
-  color: #4a7c3a;
-  font-weight: bold;
-  display: inline-block;
-  width: 1em;
-  margin-left: -1em;
-}
-
-/* No Details Message */
-.peerfusion-no-details-message {
-  margin-top: 1rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 1px dashed #dee2e6;
-  text-align: center;
-  color: #6c757d;
-  font-style: italic;
-  font-size: 0.9rem;
-}
-
-/* Subjects Help */
-.peerfusion-subjects-help {
-  margin-top: 1.5rem;
-  padding: 1rem 1.5rem;
-  background: #e7f4ff;
-  border-radius: 12px;
-  border-left: 4px solid #1890ff;
-}
-
-.peerfusion-subjects-help p {
-  margin: 0;
-  color: #2d5a27;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.peerfusion-subjects-help strong {
-  color: #2d5a27;
-}
-
-/* View Mode Styles */
-.peerfusion-subjects-display {
+.peerfusion-subjects-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  margin-top: 1rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.peerfusion-subject-display-card {
-  background: #ffffff;
-  border: 1px solid #e8efe5;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
-}
-
-.peerfusion-subject-header {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e8efe5;
-}
-
-.peerfusion-subject-header h4 {
-  margin: 0;
-  color: #2d5a27;
-  font-size: 1.2rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #2d5a27 0%, #4a7c3a 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.peerfusion-subject-full-details {
-  padding: 1.5rem;
-  background: #f8faf7;
-  border-radius: 12px;
-  border-left: 4px solid #4a7c3a;
-}
-
-.peerfusion-subject-description {
-  margin: 0.75rem 0 1.5rem 0;
-  color: #5a7c55;
-  line-height: 1.6;
-  font-size: 0.95rem;
-}
-
-.peerfusion-learning-objectives {
-  margin-top: 1.5rem;
-}
-
-.peerfusion-learning-objectives h6 {
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
-  color: #2d5a27;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.peerfusion-learning-objectives h6::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: #4a7c3a;
-  border-radius: 50%;
-}
-
-.peerfusion-learning-objectives ul {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-
-.peerfusion-learning-objectives li {
-  margin-bottom: 0.75rem;
-  color: #5a7c55;
-  line-height: 1.5;
-  font-size: 0.9rem;
-  position: relative;
-}
-
-.peerfusion-learning-objectives li::before {
-  content: "•";
-  color: #4a7c3a;
-  font-weight: bold;
-  display: inline-block;
-  width: 1em;
-  margin-left: -1em;
-}
-
-.peerfusion-subject-placeholder {
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  text-align: center;
-  color: #6c757d;
-  font-style: italic;
-  font-size: 0.9rem;
-  border: 1px dashed #dee2e6;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .peerfusion-subject-card-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .peerfusion-edit-details-btn {
-    align-self: stretch;
-    justify-content: center;
-  }
-  
-  .peerfusion-subject-details-actions {
-    flex-direction: column;
-  }
-  
-  .peerfusion-subject-details-editor .peerfusion-form-input,
-  .peerfusion-subject-details-editor .peerfusion-form-textarea {
-    width: 90%;
-  }
-  
-  .peerfusion-learning-objective-input {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .peerfusion-remove-objective {
-    align-self: flex-end;
-  }
-}
-
-@media (max-width: 480px) {
-  .peerfusion-subject-card {
-    padding: 1rem;
-  }
-  
-  .peerfusion-subject-details-editor {
-    padding: 1rem;
-  }
-  
-  .peerfusion-subject-details-preview {
-    padding: 1rem;
-  }
-  
-  .peerfusion-subject-full-details {
-    padding: 1rem;
-  }
-  
-  .peerfusion-subject-badge {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-  }
-}
 .peerfusion-expertise-icon {
   width: 20px;
   height: 20px;
