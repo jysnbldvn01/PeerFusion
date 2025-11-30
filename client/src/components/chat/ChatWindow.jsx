@@ -1391,11 +1391,24 @@ const handleUnsendForEveryone = async (message) => {
                             >
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <FileIcon />
-                                <div>
-                                  <div style={{ fontWeight: 600 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ 
+                                    fontWeight: 600, 
+                                    fontSize: '0.9rem',
+                                    color: '#4a7c3a',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}>
                                     {m.fileName || "File"}
                                   </div>
-                                  <div style={{ fontSize: 12, color: "#666" }}>{m.fileType?.toUpperCase()}</div>
+                                  <div style={{ 
+                                    fontSize: '0.75rem', 
+                                    color: "#5d8c51",
+                                    opacity: 0.8 
+                                  }}>
+                                    {m.fileType?.toUpperCase()} • {m.fileSize || ''}
+                                  </div>
                                 </div>
                               </div>
                             </a>
