@@ -2229,6 +2229,59 @@ router.get('/user-subjects/:userId', async (req, res) => {
   }
 });
 
+router.get('/user-subjects-with-details/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    console.log(`Checking which subjects have custom details for user: ${userId}`);
+
+    const profileSql = `SELECT subject FROM user_profiles WHERE user_id = ?`;
+    const [profileResults] = await db.query(profileSql, [userId]);
+
+    if (profileResults.length === 0 || !profileResults[0].subject) {
+      return res.json({
+        success: true,
+        data: [],
+        subjectsWithDetails: []
+      });
+    }
+
+    const userSubjects = profileResults[0].subject.split(',').map(s => s.trim());
+    
+    // Get subjects that have custom details
+    const detailsSql = `
+      SELECT subject_name 
+      FROM user_subject_details 
+      WHERE user_id = ? 
+        AND title IS NOT NULL 
+        AND title != ''
+        AND about IS NOT NULL 
+        AND about != ''
+        AND learning_objectives IS NOT NULL 
+        AND learning_objectives != '[]'
+        AND learning_objectives != '""'
+    `;
+    
+    const [detailsResults] = await db.query(detailsSql, [userId]);
+    const subjectsWithDetails = detailsResults.map(row => row.subject_name);
+
+    console.log(`User ${userId} has ${subjectsWithDetails.length} subjects with custom details out of ${userSubjects.length} total subjects`);
+    
+    res.json({
+      success: true,
+      data: subjectsWithDetails,
+      allSubjects: userSubjects,
+      hasCustomDetails: subjectsWithDetails.length > 0
+    });
+  } catch (err) {
+    console.error('Check subjects with details error:', err);
+    res.status(500).json({ 
+      error: 'Failed to check subjects with details',
+      details: err.message 
+    });
+  }
+});
+
 // Batch update subject details (for when users update multiple subjects)
 router.post('/batch-update-subject-details', authenticateToken, async (req, res) => {
   try {

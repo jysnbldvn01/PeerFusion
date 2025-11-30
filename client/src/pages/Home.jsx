@@ -134,24 +134,38 @@ const Home = () => {
     );
   });
 
-    const fetchSubjectDetails = async (userId) => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/profile/user-subjects/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+ const fetchSubjectDetails = async (userId) => {
+  try {
+    const checkResponse = await axios.get(
+      `${API_BASE_URL}/api/profile/user-subjects-with-details/${userId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    if (checkResponse.data.success) {
+      const subjectsWithDetails = checkResponse.data.data;
       
-      if (response.data.success) {
-        const detailsMap = {};
-        response.data.data.forEach(subject => {
-          detailsMap[subject.subject_name] = subject;
-        });
-        setSubjectDetails(detailsMap);
+      if (subjectsWithDetails.length > 0) {
+        const detailsResponse = await axios.get(
+          `${API_BASE_URL}/api/profile/user-subjects/${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (detailsResponse.data.success) {
+          const detailsMap = {};
+          detailsResponse.data.data.forEach(subject => {
+            detailsMap[subject.subject_name] = subject;
+          });
+          setSubjectDetails(detailsMap);
+        }
+      } else {
+        setSubjectDetails({});
       }
-    } catch (err) {
-      console.error('Error fetching subject details:', err);
     }
-  };
+  } catch (err) {
+    console.error('Error fetching subject details:', err);
+    setSubjectDetails({});
+  }
+};
 
   const fetchFeedback = async (userId) => {
     try {
@@ -488,33 +502,35 @@ const handleRequestSession = async () => {
               
               <div className="peerfusion-modal-section">
                 <h4 className="peerfusion-modal-section-title">
-                  <span className="peerfusion-expertise-icon"></span>
                   Subject Expertise
-                  <small className="peerfusion-subject-note">
-                    💡 Click on any subject to see detailed overview
-                  </small>
                 </h4>
                 {selectedUser.subject ? (
                   <div className="peerfusion-subject-tags">
                     {selectedUser.subject.split(',').map((subject, i) => {
                       const subjectName = subject.trim();
-                      const hasDetails = subjectDetails[subjectName];
-                      
+                      const hasCustomDetails = subjectDetails[subjectName];
                       return (
                         <span 
                           key={i} 
-                          className={`peerfusion-subject-tag ${hasDetails ? 'clickable' : ''}`}
-                          onClick={hasDetails ? () => handleSubjectClick(subjectName) : undefined}
+                          className={`peerfusion-subject-tag ${hasCustomDetails ? 'clickable has-details' : 'no-details'}`}
+                          onClick={hasCustomDetails ? () => handleSubjectClick(subjectName) : undefined}
                           style={{ 
-                            cursor: hasDetails ? 'pointer' : 'default',
-                            opacity: hasDetails ? 1 : 0.7
+                            cursor: hasCustomDetails ? 'pointer' : 'default',
+                            opacity: hasCustomDetails ? 1 : 0.6
                           }}
+                          title={hasCustomDetails ? `Click to view ${subjectName} details` : 'No custom details available'}
                         >
                           {subjectName}
-                          {hasDetails && <span className="peerfusion-info-badge">ℹ</span>}
+                          {hasCustomDetails && <span className="peerfusion-info-badge">ℹ</span>}
+                          {!hasCustomDetails && <span className="peerfusion-no-details-badge">⋯</span>}
                         </span>
                       );
                     })}
+                <small className="peerfusion-subject-note">
+                    {Object.keys(subjectDetails).length > 0 
+                      ? "💡 Click on any subject to see detailed overview" 
+                      : "📝 This user hasn't customized their subject details yet"}
+                </small>
                   </div>
                 ) : <p>N/A</p>}
               </div>
@@ -732,6 +748,53 @@ const handleRequestSession = async () => {
                 )}
               </div>
             </div>
+            {selectedUser.subject && selectedUser.subject.split(',').length > 0 && (
+            <div className="peerfusion-modal-section">
+              <h4 className="peerfusion-modal-section-title">
+                <span className="peerfusion-checkbox-icon"></span>
+                Select Subjects for Session
+                <small className="peerfusion-selection-note">
+                  Choose the subjects you want to learn
+                </small>
+              </h4>
+              <div className="peerfusion-subject-selection">
+                {selectedUser.subject.split(',').map((subject, i) => {
+                  const subjectName = subject.trim();
+                  const hasCustomDetails = subjectDetails[subjectName];
+                  
+                  return (
+                    <label key={i} className="peerfusion-subject-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedSubjectsForRequest.includes(subjectName)}
+                        onChange={() => handleSubjectSelection(subjectName)}
+                      />
+                      <span className="peerfusion-checkbox-custom"></span>
+                      <span 
+                        className={`peerfusion-subject-label ${hasCustomDetails ? 'has-details' : ''}`}
+                        onClick={hasCustomDetails ? () => handleSubjectClick(subjectName) : undefined}
+                        style={{ cursor: hasCustomDetails ? 'pointer' : 'default' }}
+                        title={hasCustomDetails ? `View ${subjectName} details` : ''}
+                      >
+                        {subjectName}
+                        {hasCustomDetails && <span className="peerfusion-info-small">ℹ️</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {selectedSubjectsForRequest.length > 0 && (
+                <p className="peerfusion-selection-summary">
+                  Selected: {selectedSubjectsForRequest.join(', ')}
+                </p>
+              )}
+              {selectedSubjectsForRequest.length === 0 && (
+                <p className="peerfusion-selection-hint">
+                  ⚠️ Please select at least one subject to request a session
+                </p>
+              )}
+            </div>
+          )}
 
               <div className="peerfusion-modal-actions">
                 <button className="peerfusion-schedule-btn" onClick={handleRequestSession}>
@@ -762,14 +825,18 @@ const handleRequestSession = async () => {
 
               <div className="peerfusion-modal-section">
                 <h4 className="peerfusion-modal-section-title">What You'll Learn</h4>
-                <ul className="peerfusion-learning-objectives-list">
-                  {selectedSubject.learning_objectives.map((objective, index) => (
-                    <li key={index} className="peerfusion-learning-objective">
-                      <span className="peerfusion-check-icon"></span>
-                      {objective}
-                    </li>
-                  ))}
-                </ul>
+                {selectedSubject.learning_objectives && selectedSubject.learning_objectives.length > 0 ? (
+                  <ul className="peerfusion-learning-objectives-list">
+                    {selectedSubject.learning_objectives.map((objective, index) => (
+                      <li key={index} className="peerfusion-learning-objective">
+                        <span className="peerfusion-check-icon"></span>
+                        {objective}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="peerfusion-no-objectives">No specific learning objectives provided yet.</p>
+                )}
               </div>
 
               <div className="peerfusion-modal-actions">
