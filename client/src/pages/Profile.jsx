@@ -10,6 +10,44 @@ const CloseIcon = () => (
   </svg>
 );
 
+const generateAvatarWithInitials = (username, size = 120) => {
+  if (!username) return null;
+  
+  const initials = username
+    .split(' ')
+    .map(name => name.charAt(0).toUpperCase())
+    .join('')
+    .slice(0, 2);
+
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
+    '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2', '#F9E79F'
+  ];
+  
+  const colorIndex = username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  const backgroundColor = colors[colorIndex];
+
+  return (
+    <div 
+      className="peerfusion-avatar-initials"
+      style={{
+        backgroundColor,
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: size * 0.4,
+        fontWeight: 'bold',
+        fontFamily: 'Arial, sans-serif'
+      }}
+    >
+      {initials}
+    </div>
+  );
+};
 // Skeleton Loading Components
 const SkeletonSidebar = () => (
   <div className="peerfusion-skeleton-sidebar">
@@ -2277,9 +2315,7 @@ const removeLearningObjective = (subjectName, index) => {
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Profile" className="peerfusion-avatar" />
                 ) : (
-                  <div className="peerfusion-avatar-placeholder">
-                    <span className="peerfusion-user-icon"></span>
-                  </div>
+                  generateAvatarWithInitials(profile?.username || 'User')
                 )}
                 {showAvatarEdit && (
                   <label className="peerfusion-avatar-edit">
@@ -2793,14 +2829,16 @@ const removeLearningObjective = (subjectName, index) => {
               <CloseIcon />
             </button>
 
-            <div className="peerfusion-modal-avatar-container">
-              {profile.avatar && (
-                <img
-                  src={`${API_BASE_URL}/uploads/${profile.avatar}`}
-                  alt="Avatar"
-                  className="peerfusion-modal-avatar"
-                />
-              )}
+              <div className="peerfusion-modal-avatar-container">
+                {profile.avatar ? (
+                  <img
+                    src={`${API_BASE_URL}/uploads/${profile.avatar}`}
+                    alt="Avatar"
+                    className="peerfusion-modal-avatar"
+                  />
+                ) : (
+                  generateAvatarWithInitials(profile.username, 80)
+                )}
               <div className="peerfusion-modal-rating">
                 <RatingDisplay rating={profile.rating} />
                 <span>({profile.total_reviews || 0} reviews)</span>
