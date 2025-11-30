@@ -1011,6 +1011,12 @@ const openReportMessage = (message) => {
   const groups = [];
   for (let i = 0; i < filteredMessages.length; i++) {
     const m = filteredMessages[i];
+
+    // Skip messages that are removed for the current user
+    if ((m.hiddenFor || []).map(String).includes(String(currentUser?.user_id))) {
+      continue;
+    }
+
     if (groups.length === 0 || String(groups[groups.length - 1].senderId) !== String(m.senderId)) {
       groups.push({ senderId: m.senderId, msgs: [m] });
     } else {
@@ -1219,9 +1225,6 @@ const handleUnsendForEveryone = async (message) => {
             groups.map((g, gIdx) => {
               const isMeGroup = String(g.senderId) === String(currentUser?.user_id);
               return g.msgs.map((m, idx) => {
-                if ((m.hiddenFor || []).map(String).includes(String(currentUser?.user_id))) {
-                  return null;
-                }
                 const isLastInGroup = idx === g.msgs.length - 1;
                 const showTailAvatar = !isMeGroup && isLastInGroup;
 
@@ -1367,6 +1370,11 @@ const handleUnsendForEveryone = async (message) => {
                         </div>
                       ) : (
                         <>
+                          {/* Sender label */}
+                          <div className="peerfusion-chat-bubble-text" style={{ fontWeight: 600, marginBottom: m.fileType ? 4 : 2 }}>
+                            {sentByMe ? 'You:' : `${otherUser?.username || m.senderName || 'User'}:`}
+                          </div>
+
                           {/* Render inline image */}
                           {m.fileType === "image" && m.content ? (
                             <img src={m.content} alt="uploaded" className="peerfusion-chat-image" />
