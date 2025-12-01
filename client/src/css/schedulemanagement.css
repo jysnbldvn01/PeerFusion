@@ -401,10 +401,11 @@
   min-height: 40px;
 }
 
-.fc .fc-daygrid-event,
-.fc .fc-timegrid-event {
-  pointer-events: auto !important;
-  cursor: pointer !important;
+.fc .fc-daygrid-event {
+  position: relative !important;
+  z-index: 10 !important;
+  margin: 1px 1px !important;
+  touch-action: manipulation;
 }
 
 .fc .fc-daygrid-day-frame {
@@ -475,7 +476,6 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   height: 100%;
   font-size: 0.8rem;
-  pointer-events: auto !important;
 }
 
 .custom-calendar-event:hover {
@@ -1189,7 +1189,6 @@
   }
 }
 
-/* Landscape Mode for Mobile */
 @media (max-height: 500px) and (orientation: landscape) {
   .schedule-modal-container {
     max-height: 90vh;
@@ -1230,7 +1229,6 @@
   }
 }
 
-/* iOS Safari Specific Fixes */
 @supports (-webkit-touch-callout: none) {
   .schedule-modal-container {
     height: -webkit-fill-available;
@@ -1250,7 +1248,6 @@
   }
 }
 
-/* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
   .view-btn,
   .schedule-close-btn,
@@ -1275,7 +1272,6 @@
   }
 }
 
-/* Smooth scrolling */
 .calendar-wrapper,
 .event-details-content {
   scroll-behavior: smooth;
@@ -1307,7 +1303,6 @@
   background: #3a6c2a;
 }
 
-/* Prevent text selection on interactive elements */
 .view-btn,
 .schedule-close-btn,
 .cancel-btn,
@@ -1320,7 +1315,6 @@
   -ms-user-select: none;
 }
 
-/* Focus styles for accessibility */
 .view-btn:focus,
 .schedule-close-btn:focus,
 .cancel-btn:focus,
@@ -1331,129 +1325,161 @@
   outline-offset: 2px;
 }
 
-/* Loading state improvements */
 .schedule-loading .loading-spinner {
   width: 50px;
   height: 50px;
   border-width: 4px;
 }
 
-/* Empty state improvements */
 .no-schedule,
 .no-event-selected {
   padding: 40px 20px;
 }
 
-/* Ensure calendar is horizontally scrollable on mobile */
+
 .fc .fc-view-harness-active > .fc-view {
   overflow-x: auto !important;
 }
 
-/* Mobile event tap improvements */
 @media (max-width: 768px) {
-  .details-section {
-    display: none !important;
+  .custom-calendar-event {
+    touch-action: manipulation;
   }
   
-  .calendar-details-container {
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .calendar-section {
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  /* Ensure calendar takes full width on mobile */
-  .calendar-wrapper {
-    width: 100%;
-    min-height: 350px;
-    padding: 10px;
-  }
-  
-  /* Fix calendar scrolling on mobile */
-  .fc .fc-view {
-    min-width: 100% !important;
-  }
-  
-  .fc .fc-scrollgrid {
-    min-width: 100% !important;
-  }
-  
-  /* Mobile event details modal specific styles */
-  .event-details-mobile-header {
-    background: linear-gradient(135deg, #4a7c3a 0%, #6ba84f 100%);
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-  }
-  
-  .event-details-mobile-header h3 {
-    color: white;
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-  }
-  
-  .event-details-mobile-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-  }
-  
-  .event-details-mobile-content {
-    padding: 20px;
-    overflow-y: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .event-details-mobile-actions {
-    padding: 20px;
-    border-top: 2px solid #e8efe5;
-    flex-shrink: 0;
-  }
-}
-
-@media (min-width: 769px) {
-  /* Ensure desktop details panel is visible */
-  .details-section {
-    display: flex !important;
-  }
-  
-  /* Fix calendar event click on desktop */
-  .fc .fc-daygrid-event,
   .fc .fc-timegrid-event {
-    cursor: pointer !important;
+    margin: 0.5px 1px !important;
   }
   
-  .custom-calendar-event:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(74, 124, 58, 0.35);
+  .event-title {
+    -webkit-line-clamp: 1;
+    line-height: 1.1;
   }
 }
 
-/* Fix event selection styling */
-.fc-event-selected {
-  border: 2px solid #ffd166 !important;
-  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3) !important;
+.custom-calendar-event,
+.fc-event,
+.fc-daygrid-event {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: pointer !important;
 }
 
-/* Ensure cancel button is always visible */
-.cancel-btn {
-  position: relative !important;
-  z-index: 100 !important;
+.fc-event {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+@media (max-width: 768px) {
+  .calendar-details-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: visible !important;
+  }
+  
+  .details-section {
+    position: relative !important;
+    z-index: 10 !important;
+    min-height: 300px !important;
+    max-height: none !important;
+  }
+  
+  .details-wrapper {
+    position: relative !important;
+    height: auto !important;
+    min-height: 300px !important;
+    overflow: visible !important;
+    margin-top: 20px;
+  }
+  
+  .event-details-panel {
+    height: auto !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .event-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding: 15px 0 10px 0 !important;
+    margin-top: auto !important;
+    z-index: 100 !important;
+    border-top: 2px solid #e8efe5 !important;
+  }
+  
+  .cancel-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    position: relative !important;
+    z-index: 101 !important;
+  }
+  
+  .calendar-wrapper {
+    margin-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .details-wrapper {
+    min-height: 280px !important;
+    max-height: 350px !important;
+  }
+  
+  .event-details-panel {
+    max-height: 320px !important;
+  }
+  
+  .event-details-content {
+    padding-bottom: 70px !important;
+  }
+}
+
+.fc-event-selected .custom-calendar-event {
+  border: 3px solid #ffd166 !important;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px);
+  z-index: 1000 !important;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .fc-event {
+    min-height: 44px !important;
+  }
+  
+  .custom-calendar-event {
+    padding: 12px 10px !important;
+    min-height: 50px !important;
+  }
+}
+
+.event-details-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-right: 10px;
+  margin-right: -10px;
+  padding-bottom: 80px;
+}
+
+.calendar-section,
+.details-section {
+  position: relative;
+  z-index: 1;
+}
+
+.details-section {
+  z-index: 2;
+}
+
+button.cancel-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }

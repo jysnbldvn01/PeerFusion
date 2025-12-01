@@ -24,23 +24,10 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [calendarApi, setCalendarApi] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isCalendarReady, setIsCalendarReady] = useState(false);
-  const [showMobileDetails, setShowMobileDetails] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   
   const calendarRef = useRef(null);
   const detailsPanelRef = useRef(null);
-
-  // Check if mobile
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-    
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+  const selectedEventRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -50,7 +37,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     } else {
       setEvents([]);
       setSelectedEvent(null);
-      setShowMobileDetails(false);
       setHasLoaded(false);
       setIsCalendarReady(false);
     }
@@ -79,6 +65,13 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       }
     }
   }, [viewType, calendarApi, isOpen]);
+
+  // Clear selection when view changes
+  useEffect(() => {
+    if (calendarApi) {
+      clearEventSelection();
+    }
+  }, [viewType]);
 
   const fetchUserMeetings = async () => {
     try {
@@ -143,7 +136,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             backgroundColor: eventColor,
             borderColor: eventColor,
             textColor: '#ffffff',
-            classNames: [`fc-event-${meeting.id}`, meeting.status],
+            classNames: [meeting.status],
             allDay: false
           };
         });
@@ -182,22 +175,39 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   };
 
-  const handleEventClick = (clickInfo) => {
-    // Clear any existing selection
+  const clearEventSelection = () => {
     if (calendarApi) {
-      calendarApi.unselect();
+      // Remove selected class from all events
+      const allEvents = calendarApi.getEvents();
+      allEvents.forEach(event => {
+        const el = event.el;
+        if (el) {
+          el.classList.remove('fc-event-selected');
+        }
+      });
+    }
+    setSelectedEvent(null);
+  };
+
+  const handleEventClick = (clickInfo) => {
+    // Prevent any default behavior
+    clickInfo.jsEvent.preventDefault();
+    clickInfo.jsEvent.stopPropagation();
+    
+    // Clear previous selection
+    clearEventSelection();
+    
+    // Mark this event as selected
+    const clickedEvent = clickInfo.event;
+    const eventElement = clickedEvent.el;
+    
+    if (eventElement) {
+      eventElement.classList.add('fc-event-selected');
+      selectedEventRef.current = eventElement;
     }
     
-    // Clear previous event selection
-    document.querySelectorAll('.fc-event-selected').forEach(el => {
-      el.classList.remove('fc-event-selected');
-    });
-    
-    // Mark the clicked event as selected
-    clickInfo.el.classList.add('fc-event-selected');
-    
-    const meeting = clickInfo.event.extendedProps.originalData;
-    const participantNames = clickInfo.event.extendedProps.participantNames || [];
+    const meeting = clickedEvent.extendedProps.originalData;
+    const participantNames = clickedEvent.extendedProps.participantNames || [];
     
     setSelectedEvent({
       ...meeting,
@@ -205,28 +215,14 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       displayParticipants: meeting.participants || []
     });
     
-    // On mobile, show popup modal
-    if (isMobile) {
-      setShowMobileDetails(true);
-    } else {
-      // On desktop, scroll to top of details panel
-      if (detailsPanelRef.current) {
-        detailsPanelRef.current.scrollTop = 0;
-      }
+    // Scroll details panel to top
+    if (detailsPanelRef.current) {
+      detailsPanelRef.current.scrollTop = 0;
     }
   };
 
   const handleDateClick = (info) => {
-    setSelectedEvent(null);
-    setShowMobileDetails(false);
-    if (calendarApi) {
-      calendarApi.unselect();
-    }
-    
-    // Clear event selection
-    document.querySelectorAll('.fc-event-selected').forEach(el => {
-      el.classList.remove('fc-event-selected');
-    });
+    clearEventSelection();
   };
 
   const handleDatesSet = (info) => {
@@ -255,8 +251,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       if (response.data.success) {
         await fetchUserMeetings();
         setShowCancelModal(false);
-        setShowMobileDetails(false);
-        setSelectedEvent(null);
+        clearEventSelection();
         alert('Session cancelled successfully!');
       } else {
         throw new Error(response.data.error);
@@ -315,16 +310,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleCloseDetails = () => {
-    setSelectedEvent(null);
-    setShowMobileDetails(false);
-    if (calendarApi) {
-      calendarApi.unselect();
-    }
-    
-    // Clear event selection
-    document.querySelectorAll('.fc-event-selected').forEach(el => {
-      el.classList.remove('fc-event-selected');
-    });
+    clearEventSelection();
   };
 
   const handleCalendarReady = (api) => {
@@ -338,25 +324,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
   const handleViewChange = (newViewType) => {
     setViewType(newViewType);
-    setSelectedEvent(null);
-    setShowMobileDetails(false);
-    if (calendarApi) {
-      calendarApi.unselect();
-    }
-    
-    // Clear event selection
-    document.querySelectorAll('.fc-event-selected').forEach(el => {
-      el.classList.remove('fc-event-selected');
-    });
-  };
-
-  const closeMobileDetails = () => {
-    setShowMobileDetails(false);
-    
-    // Clear event selection
-    document.querySelectorAll('.fc-event-selected').forEach(el => {
-      el.classList.remove('fc-event-selected');
-    });
+    clearEventSelection();
   };
 
   if (!isOpen) return null;
@@ -416,6 +384,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               </div>
             </div>
 
+            {/* This is the main fix - ensure proper layout structure */}
             <div className="calendar-details-container">
               <div className="calendar-section">
                 <div className="calendar-wrapper">
@@ -519,6 +488,17 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                             info.el.style.position = 'relative';
                             info.el.style.margin = '1px 0';
                             
+                            // Prevent right-click context menu
+                            info.el.addEventListener('contextmenu', (e) => {
+                              e.preventDefault();
+                              return false;
+                            });
+                            
+                            // Improve touch/click handling
+                            info.el.style.cursor = 'pointer';
+                            info.el.style.webkitTapHighlightColor = 'transparent';
+                            
+                            // Highlight if this is the selected event
                             if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
                               info.el.classList.add('fc-event-selected');
                             }
@@ -542,9 +522,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                               calendarApi.gotoDate(weekStart);
                             }
                             jsEvent.preventDefault();
-                          }}
-                          moreLinkClick={(info) => {
-                            // Handle more link click if needed
                           }}
                           moreLinkContent={(args) => {
                             return `+${args.num} more`;
@@ -577,6 +554,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                           stickyHeaderDates={true}
                           stickyFooterScrollbar={true}
                           themeSystem="standard"
+                          datesRender={() => {
+                            // Clear selection when dates change
+                            if (selectedEvent && calendarApi) {
+                              const event = calendarApi.getEventById(selectedEvent.id.toString());
+                              if (event && event.el) {
+                                event.el.classList.add('fc-event-selected');
+                              }
+                            }
+                          }}
                         />
                       )}
                     </div>
@@ -584,90 +570,88 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                 </div>
               </div>
 
-              {/* Desktop Details Panel - Only show on desktop */}
-              {!isMobile && (
-                <div className="details-section">
-                  <div className="details-wrapper">
-                    {selectedEvent ? (
-                      <div className="event-details-panel" ref={detailsPanelRef}>
-                        <div className="event-details-header">
-                          <h3>Meeting Details</h3>
-                          <button 
-                            className="close-details-btn"
-                            onClick={handleCloseDetails}
-                          >
-                            <CloseIcon />
-                          </button>
+              {/* Details Section - Fixed for mobile */}
+              <div className="details-section">
+                <div className="details-wrapper" ref={detailsPanelRef}>
+                  {selectedEvent ? (
+                    <div className="event-details-panel">
+                      <div className="event-details-header">
+                        <h3>Meeting Details</h3>
+                        <button 
+                          className="close-details-btn"
+                          onClick={handleCloseDetails}
+                        >
+                          <CloseIcon />
+                        </button>
+                      </div>
+                      
+                      <div className="event-details-content">
+                        <div className="detail-item">
+                          <span className="detail-label">Meeting ID:</span>
+                          <span className="detail-value">#{selectedEvent.id}</span>
                         </div>
                         
-                        <div className="event-details-content">
-                          <div className="detail-item">
-                            <span className="detail-label">Meeting ID:</span>
-                            <span className="detail-value">#{selectedEvent.id}</span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <span className="detail-label">Status:</span>
-                            <span className={`status-badge status-${selectedEvent.status}`}>
-                              {getStatusText(selectedEvent.status)}
-                            </span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <span className="detail-label">Date:</span>
-                            <span className="detail-value">
-                              {formatDateTime(selectedEvent.scheduled_at).date}
-                            </span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <span className="detail-label">Time:</span>
-                            <span className="detail-value">
-                              {formatDateTime(selectedEvent.scheduled_at).time}
-                            </span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <span className="detail-label">Participants:</span>
-                            <span className="detail-value">
-                              {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
-                            </span>
-                          </div>
-                          
-                          {selectedEvent.conversation_id && (
-                            <div className="detail-item">
-                              <span className="detail-label">Conversation:</span>
-                              <span className="detail-value conversation-id">
-                                #{selectedEvent.conversation_id}
-                              </span>
-                            </div>
-                          )}
+                        <div className="detail-item">
+                          <span className="detail-label">Status:</span>
+                          <span className={`status-badge status-${selectedEvent.status}`}>
+                            {getStatusText(selectedEvent.status)}
+                          </span>
                         </div>
-
-                        {selectedEvent.status === 'scheduled' && (
-                          <div className="event-actions">
-                            <button 
-                              className="cancel-btn"
-                              onClick={() => setShowCancelModal(true)}
-                              disabled={cancellingMeeting}
-                            >
-                              {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
-                            </button>
+                        
+                        <div className="detail-item">
+                          <span className="detail-label">Date:</span>
+                          <span className="detail-value">
+                            {formatDateTime(selectedEvent.scheduled_at).date}
+                          </span>
+                        </div>
+                        
+                        <div className="detail-item">
+                          <span className="detail-label">Time:</span>
+                          <span className="detail-value">
+                            {formatDateTime(selectedEvent.scheduled_at).time}
+                          </span>
+                        </div>
+                        
+                        <div className="detail-item">
+                          <span className="detail-label">Participants:</span>
+                          <span className="detail-value">
+                            {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
+                          </span>
+                        </div>
+                        
+                        {selectedEvent.conversation_id && (
+                          <div className="detail-item">
+                            <span className="detail-label">Conversation:</span>
+                            <span className="detail-value conversation-id">
+                              #{selectedEvent.conversation_id}
+                            </span>
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="no-event-selected">
-                        <div className="selection-guide">
-                          <div className="guide-icon">👆</div>
-                          <h4>Select a Meeting</h4>
-                          <p>Click on any meeting in the calendar to view details</p>
+
+                      {selectedEvent.status === 'scheduled' && (
+                        <div className="event-actions">
+                          <button 
+                            className="cancel-btn"
+                            onClick={() => setShowCancelModal(true)}
+                            disabled={cancellingMeeting}
+                          >
+                            {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
+                          </button>
                         </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="no-event-selected">
+                      <div className="selection-guide">
+                        <div className="guide-icon">👆</div>
+                        <h4>Select a Meeting</h4>
+                        <p>Click on any meeting in the calendar to view details</p>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -697,80 +681,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         </div>
       </div>
 
-      {/* Mobile Event Details Popup */}
-      {showMobileDetails && selectedEvent && (
-        <div className="event-details-mobile-popup" onClick={closeMobileDetails}>
-          <div className="event-details-mobile-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="event-details-mobile-header">
-              <h3>Meeting Details</h3>
-              <button 
-                className="event-details-mobile-close"
-                onClick={closeMobileDetails}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            
-            <div className="event-details-mobile-content">
-              <div className="detail-item">
-                <span className="detail-label">Meeting ID:</span>
-                <span className="detail-value">#{selectedEvent.id}</span>
-              </div>
-              
-              <div className="detail-item">
-                <span className="detail-label">Status:</span>
-                <span className={`status-badge status-${selectedEvent.status}`}>
-                  {getStatusText(selectedEvent.status)}
-                </span>
-              </div>
-              
-              <div className="detail-item">
-                <span className="detail-label">Date:</span>
-                <span className="detail-value">
-                  {formatDateTime(selectedEvent.scheduled_at).date}
-                </span>
-              </div>
-              
-              <div className="detail-item">
-                <span className="detail-label">Time:</span>
-                <span className="detail-value">
-                  {formatDateTime(selectedEvent.scheduled_at).time}
-                </span>
-              </div>
-              
-              <div className="detail-item">
-                <span className="detail-label">Participants:</span>
-                <span className="detail-value">
-                  {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
-                </span>
-              </div>
-              
-              {selectedEvent.conversation_id && (
-                <div className="detail-item">
-                  <span className="detail-label">Conversation:</span>
-                  <span className="detail-value conversation-id">
-                    #{selectedEvent.conversation_id}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {selectedEvent.status === 'scheduled' && (
-              <div className="event-details-mobile-actions">
-                <button 
-                  className="cancel-btn"
-                  onClick={() => setShowCancelModal(true)}
-                  disabled={cancellingMeeting}
-                >
-                  {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Cancel Confirmation Modal */}
       {showCancelModal && (
         <div className="confirm-modal-overlay" onClick={() => setShowCancelModal(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
