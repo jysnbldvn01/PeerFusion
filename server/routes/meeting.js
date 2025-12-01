@@ -117,10 +117,11 @@ router.get("/user/:userId", async (req, res) => {
     const [rows] = await db.query(
       `SELECT * FROM meetings
        WHERE JSON_CONTAINS(participants, JSON_ARRAY(?))
-       AND status IN ('scheduled', 'pending')
        ORDER BY scheduled_at DESC`,
       [userId]
     );
+
+    console.log(`Found ${rows.length} meetings for user ${userId}`);
 
     const allParticipantIds = [...new Set(
       rows.flatMap(meeting => {
@@ -135,9 +136,12 @@ router.get("/user/:userId", async (req, res) => {
           console.error('Error parsing participants:', err);
         }
         return participants;
-      })
+      }).filter(id => id)
     )];
 
+    console.log('All participant IDs:', allParticipantIds);
+
+    // Fetch profiles in batch
     let profiles = {};
     if (allParticipantIds.length > 0) {
       const placeholders = allParticipantIds.map(() => '?').join(',');
@@ -153,15 +157,20 @@ router.get("/user/:userId", async (req, res) => {
           avatar: row.avatar
         };
       });
+      console.log(`Fetched ${profileRows.length} user profiles`);
     }
 
+    // Enhance meetings with participant names
     const enhancedMeetings = rows.map(meeting => {
       let participants = [];
+      let rawParticipants = [];
       try {
         if (typeof meeting.participants === 'string') {
           participants = JSON.parse(meeting.participants);
+          rawParticipants = participants;
         } else if (Array.isArray(meeting.participants)) {
           participants = meeting.participants;
+          rawParticipants = participants;
         }
       } catch (err) {
         console.error('Error parsing participants for meeting:', meeting.id, err);
@@ -176,11 +185,15 @@ router.get("/user/:userId", async (req, res) => {
       return {
         ...meeting,
         participants: participantDetails,
-        rawParticipants: participants
+        rawParticipants: rawParticipants
       };
     });
 
-    res.json({ success: true, meetings: enhancedMeetings });
+    res.json({ 
+      success: true, 
+      meetings: enhancedMeetings,
+      total: enhancedMeetings.length
+    });
   } catch (err) {
     console.error("Error fetching user meetings:", err);
     res.status(500).json({ error: "Failed to fetch meetings" });

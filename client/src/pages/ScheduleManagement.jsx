@@ -29,7 +29,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      console.log('Fetching meetings for user ID:', userId);
+      console.log('🔄 Fetching meetings for user ID:', userId);
       
       const response = await axios.get(
         `${API_BASE_URL}/api/meeting/user/${userId}`,
@@ -38,35 +38,73 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         }
       );
 
-      console.log('Meetings API response:', response.data);
+      console.log('📊 Meetings API response:', response.data);
 
       if (response.data.success) {
-        const meetings = response.data.meetings;
-        console.log('Enhanced meetings data:', meetings);
+        const meetings = response.data.meetings || [];
+        console.log(`📅 Found ${meetings.length} total meetings:`, meetings);
         
-        // Format events with participant names from backend
+        // Format ALL meetings including cancelled/completed
         const formattedEvents = meetings.map(meeting => {
-          // Use the enhanced participant data from backend
-          const otherParticipants = meeting.participants
-            .filter(p => p.id && String(p.id) !== String(userId))
-            .map(p => p.username);
+          console.log('Processing meeting:', meeting);
+          
+          // Handle participant data - support both new and old format
+          let participants = [];
+          let participantNames = [];
+          
+          if (meeting.participants && Array.isArray(meeting.participants)) {
+            // New format with participant objects
+            participants = meeting.participants.map(p => {
+              if (typeof p === 'object' && p.id) {
+                return {
+                  id: p.id,
+                  username: p.username || `User ${p.id}`
+                };
+              }
+              return {
+                id: p,
+                username: `User ${p}`
+              };
+            });
+            
+            participantNames = participants
+              .filter(p => p.id && String(p.id) !== String(userId))
+              .map(p => p.username);
+          } else {
+            // Fallback to rawParticipants or parse JSON
+            let rawParts = meeting.rawParticipants;
+            if (!rawParts && typeof meeting.participants === 'string') {
+              try {
+                rawParts = JSON.parse(meeting.participants);
+              } catch (e) {
+                console.error('Error parsing participants:', e);
+                rawParts = [];
+              }
+            }
+            
+            if (rawParts && Array.isArray(rawParts)) {
+              participantNames = rawParts
+                .filter(id => id && String(id) !== String(userId))
+                .map(id => `User ${id}`);
+            }
+          }
 
-          const title = otherParticipants.length > 0 
-            ? `Meeting with ${otherParticipants.join(', ')}`
+          const title = participantNames.length > 0 
+            ? `Meeting with ${participantNames.join(', ')}`
             : 'Scheduled Meeting';
 
           const eventColor = getEventColor(meeting.status);
           
-          return {
+          const eventData = {
             id: meeting.id.toString(),
             title: title,
             start: meeting.scheduled_at,
-            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000),
+            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000), // 1 hour duration
             extendedProps: {
               meetingId: meeting.id,
               conversationId: meeting.conversation_id,
-              participants: meeting.rawParticipants || meeting.participants.map(p => p.id),
-              participantNames: otherParticipants,
+              participants: meeting.rawParticipants || (meeting.participants ? meeting.participants.map(p => p.id || p) : []),
+              participantNames: participantNames,
               status: meeting.status,
               originalData: meeting
             },
@@ -75,17 +113,21 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             textColor: '#ffffff',
             classNames: [meeting.status]
           };
+          
+          console.log('Formatted event:', eventData);
+          return eventData;
         });
 
-        console.log('Formatted events:', formattedEvents);
+        console.log('🎉 Final formatted events:', formattedEvents);
         setEvents(formattedEvents);
       } else {
-        console.error('API returned success: false');
+        console.error('❌ API returned success: false');
+        alert('Failed to load meetings: ' + (response.data.error || 'Unknown error'));
       }
     } catch (err) {
-      console.error('Error fetching meetings:', err);
+      console.error('❌ Error fetching meetings:', err);
       console.error('Error details:', err.response?.data);
-      alert('Failed to load schedule');
+      alert('Failed to load schedule: ' + (err.response?.data?.error || err.message));
     } finally {
       setIsLoading(false);
     }
@@ -107,13 +149,13 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleEventClick = (clickInfo) => {
+    console.log('Event clicked:', clickInfo.event);
     const meeting = clickInfo.event.extendedProps.originalData;
     const participantNames = clickInfo.event.extendedProps.participantNames || [];
     
     setSelectedEvent({
       ...meeting,
       participantNames: participantNames,
-      // Use the enhanced participant data for display
       displayParticipants: meeting.participants || []
     });
   };
@@ -224,6 +266,12 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   <div className="peerfusion-loading-spinner"></div>
                   <p>Loading your schedule...</p>
                 </div>
+              ) : events.length === 0 ? (
+                <div className="peerfusion-schedule-loading">
+                  <div className="peerfusion-placeholder-icon">📅</div>
+                  <h4>No Meetings Found</h4>
+                  <p>You don't have any scheduled meetings yet.</p>
+                </div>
               ) : (
                 <FullCalendar
                   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -262,6 +310,9 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       <div className="peerfusion-event-title">{eventInfo.event.title}</div>
                       <div className="peerfusion-event-time">
                         {eventInfo.timeText}
+                      </div>
+                      <div className="peerfusion-event-status-badge">
+                        {getStatusText(eventInfo.event.extendedProps.status)}
                       </div>
                     </div>
                   )}
@@ -360,6 +411,12 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                 </span>
                 <span className="peerfusion-stat-label">Cancelled</span>
               </div>
+              <div className="peerfusion-stat-item">
+                <span className="peerfusion-stat-number">
+                  {events.filter(e => e.extendedProps.status === 'completed').length}
+                </span>
+                <span className="peerfusion-stat-label">Completed</span>
+              </div>
             </div>
 
             <div className="peerfusion-schedule-legend">
@@ -370,6 +427,14 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               <div className="peerfusion-legend-item">
                 <span className="peerfusion-legend-color" style={{ backgroundColor: '#F59E0B' }}></span>
                 <span>Pending</span>
+              </div>
+              <div className="peerfusion-legend-item">
+                <span className="peerfusion-legend-color" style={{ backgroundColor: '#EF4444' }}></span>
+                <span>Cancelled</span>
+              </div>
+              <div className="peerfusion-legend-item">
+                <span className="peerfusion-legend-color" style={{ backgroundColor: '#6B7280' }}></span>
+                <span>Completed</span>
               </div>
             </div>
           </div>

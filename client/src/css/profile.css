@@ -4268,3 +4268,142 @@
   height: 16px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E") no-repeat center;
 }
+/* FullCalendar Responsive Fixes */
+.peerfusion-calendar-container .fc {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  height: 100%;
+  min-height: 500px;
+}
+
+.peerfusion-calendar-container .fc-view-harness {
+  min-height: 400px;
+  background: white;
+}
+
+.peerfusion-calendar-container .fc .fc-toolbar {
+  padding: 1rem;
+  margin: 0;
+  background: #f8faf7;
+  border-bottom: 1px solid #e8efe5;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.peerfusion-calendar-container .fc .fc-toolbar-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2d5a27;
+  margin: 0;
+  word-break: break-word;
+}
+
+.peerfusion-calendar-container .fc .fc-button {
+  background: white;
+  border: 2px solid #e8efe5;
+  color: #5a7c55;
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  min-height: 44px;
+  transition: all 0.3s ease;
+}
+
+.peerfusion-calendar-container .fc .fc-button:hover {
+  background: #f8faf7;
+  border-color: #4a7c3a;
+  color: #4a7c3a;
+  transform: translateY(-1px);
+}
+
+.peerfusion-calendar-container .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  border-color: #4a7c3a;
+  color: white;
+}
+
+/* Calendar grid fixes */
+.peerfusion-calendar-container .fc .fc-daygrid-day-frame {
+  min-height: 80px;
+  padding: 4px;
+}
+
+.peerfusion-calendar-container .fc .fc-daygrid-day-number {
+  font-weight: 600;
+  color: #2d5a27;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.peerfusion-calendar-container .fc .fc-day-today {
+  background-color: #f0f9f0 !important;
+}
+
+.peerfusion-calendar-container .fc .fc-day-today .fc-daygrid-day-number {
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+}
+
+/* Event styling fixes */
+.peerfusion-calendar-container .fc-event {
+  border: none;
+  border-radius: 6px;
+  margin: 1px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.peerfusion-calendar-container .fc-event .fc-event-main {
+  padding: 2px 4px;
+}
+
+/* Ensure calendar takes full height */
+.peerfusion-schedule-main {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  height: calc(100% - 120px);
+  min-height: 500px;
+}
+
+.peerfusion-calendar-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e8efe5;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .peerfusion-schedule-main {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 1rem;
+  }
+  
+  .peerfusion-calendar-container {
+    min-height: 400px;
+    height: 400px;
+  }
+  
+  .peerfusion-calendar-container .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .peerfusion-calendar-container .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  .peerfusion-calendar-container .fc .fc-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
+}
