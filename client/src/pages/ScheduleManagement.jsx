@@ -33,6 +33,8 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       
       if (uniqueIds.length === 0) return;
 
+      console.log('Fetching profiles for user IDs:', uniqueIds);
+
       const response = await axios.post(
         `${API_BASE_URL}/api/profile/batch-profiles`,
         { userIds: uniqueIds },
@@ -42,6 +44,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       );
 
       if (response.data.success) {
+        console.log('Received profiles:', response.data.profiles);
         setUserProfiles(prev => ({
           ...prev,
           ...response.data.profiles
@@ -56,6 +59,8 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
+      console.log('Fetching meetings for user ID:', userId);
+      
       const response = await axios.get(
         `${API_BASE_URL}/api/meeting/user/${userId}`,
         {
@@ -63,50 +68,94 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         }
       );
 
+      console.log('Meetings API response:', response.data);
+
       if (response.data.success) {
         const meetings = response.data.meetings;
+        console.log('Raw meetings data:', meetings);
         
-        const allParticipantIds = meetings.flatMap(meeting => 
-          Array.isArray(meeting.participants) ? meeting.participants : []
+        // Filter out completed meetings and only show scheduled/pending
+        const activeMeetings = meetings.filter(meeting => 
+          meeting.status === 'scheduled' || meeting.status === 'pending'
         );
         
+        console.log('Active meetings:', activeMeetings);
+
+        // Collect all participant IDs for batch profile fetching
+        const allParticipantIds = activeMeetings.flatMap(meeting => {
+          let participants = [];
+          try {
+            if (typeof meeting.participants === 'string') {
+              participants = JSON.parse(meeting.participants);
+            } else if (Array.isArray(meeting.participants)) {
+              participants = meeting.participants;
+            }
+          } catch (err) {
+            console.error('Error parsing participants:', err);
+          }
+          return participants.filter(id => id && String(id) !== String(userId));
+        });
+
+        console.log('Participant IDs to fetch:', allParticipantIds);
+
         if (allParticipantIds.length > 0) {
           await fetchUserProfiles(allParticipantIds);
         }
 
-        const formattedEvents = meetings.map(meeting => {
-          const otherParticipants = (meeting.participants || [])
-            .filter(id => String(id) !== String(userId))
-            .map(id => userProfiles[id]?.username || `User ${id}`);
-          
+        // Format events after profiles are fetched
+        const formattedEvents = activeMeetings.map(meeting => {
+          let participants = [];
+          try {
+            if (typeof meeting.participants === 'string') {
+              participants = JSON.parse(meeting.participants);
+            } else if (Array.isArray(meeting.participants)) {
+              participants = meeting.participants;
+            }
+          } catch (err) {
+            console.error('Error parsing participants for meeting:', meeting.id, err);
+          }
+
+          const otherParticipants = participants
+            .filter(id => id && String(id) !== String(userId))
+            .map(id => {
+              const profile = userProfiles[id];
+              return profile?.username || `User ${id}`;
+            });
+
           const title = otherParticipants.length > 0 
             ? `Meeting with ${otherParticipants.join(', ')}`
             : 'Scheduled Meeting';
 
+          const eventColor = getEventColor(meeting.status);
+          
           return {
             id: meeting.id.toString(),
             title: title,
             start: meeting.scheduled_at,
-            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000),
+            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000), // 1 hour duration
             extendedProps: {
               meetingId: meeting.id,
               conversationId: meeting.conversation_id,
-              participants: meeting.participants,
+              participants: participants,
               participantNames: otherParticipants,
               status: meeting.status,
               originalData: meeting
             },
-            backgroundColor: getEventColor(meeting.status),
-            borderColor: getEventColor(meeting.status),
+            backgroundColor: eventColor,
+            borderColor: eventColor,
             textColor: '#ffffff',
             classNames: [meeting.status]
           };
         });
-        
+
+        console.log('Formatted events:', formattedEvents);
         setEvents(formattedEvents);
+      } else {
+        console.error('API returned success: false');
       }
     } catch (err) {
       console.error('Error fetching meetings:', err);
+      console.error('Error details:', err.response?.data);
       alert('Failed to load schedule');
     } finally {
       setIsLoading(false);
@@ -144,7 +193,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     setCancellingMeeting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE_URL}/api/meeting/update-status`,
         {
           meetingId: selectedEvent.id,
@@ -156,21 +205,27 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         }
       );
 
-      // Refresh events
-      await fetchUserMeetings();
-      setShowCancelModal(false);
-      setSelectedEvent(null);
-      alert('Meeting cancelled successfully! All participants have been notified.');
+      if (response.data.success) {
+        // Refresh events
+        await fetchUserMeetings();
+        setShowCancelModal(false);
+        setSelectedEvent(null);
+        alert('Meeting cancelled successfully! All participants have been notified.');
+      } else {
+        throw new Error(response.data.error);
+      }
     } catch (err) {
       console.error('Error cancelling meeting:', err);
-      alert('Failed to cancel meeting');
+      alert('Failed to cancel meeting: ' + (err.response?.data?.error || err.message));
     } finally {
       setCancellingMeeting(false);
     }
   };
 
   const formatParticipants = (participants, participantNames = []) => {
-    if (!participants || !Array.isArray(participants)) return 'Unknown';
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+      return 'No participants';
+    }
     
     return participants.map(p => {
       const userName = userProfiles[p]?.username || 
@@ -216,190 +271,192 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     };
   };
 
+  // Refresh user profiles when selected event changes
+  useEffect(() => {
+    if (selectedEvent && selectedEvent.participants) {
+      const participantIds = selectedEvent.participants.filter(id => 
+        id && String(id) !== String(userId) && !userProfiles[id]
+      );
+      if (participantIds.length > 0) {
+        fetchUserProfiles(participantIds);
+      }
+    }
+  }, [selectedEvent]);
+
+  if (!isOpen) return null;
+
   return (
     <>
       {/* Main Schedule Modal */}
-      {isOpen && (
-        <div className="peerfusion-modal-overlay" onClick={onClose}>
-          <div className="peerfusion-modal-content peerfusion-schedule-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="peerfusion-close-modal" onClick={onClose}>
-              <CloseIcon />
-            </button>
+      <div className="peerfusion-modal-overlay" onClick={onClose}>
+        <div className="peerfusion-modal-content peerfusion-schedule-modal" onClick={(e) => e.stopPropagation()}>
+          <button className="peerfusion-close-modal" onClick={onClose}>
+            <CloseIcon />
+          </button>
 
-            <div className="peerfusion-schedule-header">
-              <h3 className="peerfusion-schedule-title">Session Schedule</h3>
-              <p className="peerfusion-schedule-subtitle">Manage your upcoming sessions and meetings</p>
+          <div className="peerfusion-schedule-header">
+            <h3 className="peerfusion-schedule-title">Session Schedule</h3>
+            <p className="peerfusion-schedule-subtitle">Manage your upcoming sessions and meetings</p>
+          </div>
+
+          <div className="peerfusion-schedule-main">
+            <div className="peerfusion-calendar-container">
+              {isLoading ? (
+                <div className="peerfusion-schedule-loading">
+                  <div className="peerfusion-loading-spinner"></div>
+                  <p>Loading your schedule...</p>
+                </div>
+              ) : (
+                <FullCalendar
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                  }}
+                  events={events}
+                  eventClick={handleEventClick}
+                  height="auto"
+                  eventDisplay="block"
+                  eventTimeFormat={{
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  }}
+                  dayMaxEvents={3}
+                  views={{
+                    dayGridMonth: {
+                      dayMaxEvents: 3,
+                      titleFormat: { year: 'numeric', month: 'long' }
+                    },
+                    timeGridWeek: {
+                      titleFormat: { year: 'numeric', month: 'short', day: 'numeric' },
+                      allDaySlot: false
+                    },
+                    timeGridDay: {
+                      titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
+                      allDaySlot: false
+                    }
+                  }}
+                  eventContent={(eventInfo) => (
+                    <div className="peerfusion-calendar-event">
+                      <div className="peerfusion-event-title">{eventInfo.event.title}</div>
+                      <div className="peerfusion-event-time">
+                        {eventInfo.timeText}
+                      </div>
+                    </div>
+                  )}
+                />
+              )}
             </div>
 
-            <div className="peerfusion-schedule-main">
-              <div className="peerfusion-calendar-container">
-                {isLoading ? (
-                  <div className="peerfusion-schedule-loading">
-                    <div className="peerfusion-loading-spinner"></div>
-                    <p>Loading your schedule...</p>
+            {/* Event Details Panel */}
+            {selectedEvent ? (
+              <div className="peerfusion-event-details">
+                <div className="peerfusion-event-details-header">
+                  <h4>Meeting Details</h4>
+                  <button 
+                    className="peerfusion-close-details"
+                    onClick={() => setSelectedEvent(null)}
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+                <div className="peerfusion-event-info">
+                  <div className="peerfusion-event-item">
+                    <span className="peerfusion-event-label">Meeting ID:</span>
+                    <span className="peerfusion-event-value">#{selectedEvent.id}</span>
                   </div>
-                ) : (
-                  <FullCalendar
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                    initialView="dayGridMonth"
-                    headerToolbar={{
-                      left: 'prev,next today',
-                      center: 'title',
-                      right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                    }}
-                    events={events}
-                    eventClick={handleEventClick}
-                    height="auto"
-                    eventDisplay="block"
-                    eventTimeFormat={{
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    }}
-                    dayMaxEvents={true}
-                    views={{
-                      dayGridMonth: {
-                        dayMaxEvents: 3,
-                        titleFormat: { year: 'numeric', month: 'long' }
-                      },
-                      timeGridWeek: {
-                        titleFormat: { year: 'numeric', month: 'short', day: 'numeric' },
-                        allDaySlot: false
-                      },
-                      timeGridDay: {
-                        titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
-                        allDaySlot: false
-                      }
-                    }}
-                    eventContent={(eventInfo) => (
-                      <div className="peerfusion-calendar-event">
-                        <div className="peerfusion-event-title">{eventInfo.event.title}</div>
-                        <div className="peerfusion-event-time">
-                          {eventInfo.timeText}
-                        </div>
-                      </div>
-                    )}
-                  />
-                )}
-              </div>
-
-              {/* Event Details Panel */}
-              {selectedEvent && (
-                <div className="peerfusion-event-details">
-                  <div className="peerfusion-event-details-header">
-                    <h4>Meeting Details</h4>
-                    <button 
-                      className="peerfusion-close-details"
-                      onClick={() => setSelectedEvent(null)}
+                  <div className="peerfusion-event-item">
+                    <span className="peerfusion-event-label">Status:</span>
+                    <span 
+                      className={`peerfusion-event-status peerfusion-status-${selectedEvent.status}`}
                     >
-                      <CloseIcon />
-                    </button>
+                      {getStatusText(selectedEvent.status)}
+                    </span>
                   </div>
-                  <div className="peerfusion-event-info">
-                    <div className="peerfusion-event-item">
-                      <span className="peerfusion-event-label">Meeting ID:</span>
-                      <span className="peerfusion-event-value">#{selectedEvent.id}</span>
-                    </div>
-                    <div className="peerfusion-event-item">
-                      <span className="peerfusion-event-label">Status:</span>
-                      <span 
-                        className={`peerfusion-event-status peerfusion-status-${selectedEvent.status}`}
-                      >
-                        {getStatusText(selectedEvent.status)}
-                      </span>
-                    </div>
-                    <div className="peerfusion-event-item">
-                      <span className="peerfusion-event-label">Date & Time:</span>
-                      <span className="peerfusion-event-value">
-                        {formatDateTime(selectedEvent.scheduled_at).full}
-                      </span>
-                    </div>
-                    <div className="peerfusion-event-item">
-                      <span className="peerfusion-event-label">Participants:</span>
-                      <span className="peerfusion-event-value">
-                        {formatParticipants(selectedEvent.participants, selectedEvent.participantNames)}
-                      </span>
-                    </div>
-                    {selectedEvent.conversation_id && (
-                      <div className="peerfusion-event-item">
-                        <span className="peerfusion-event-label">Conversation ID:</span>
-                        <span className="peerfusion-event-value">
-                          {selectedEvent.conversation_id}
-                        </span>
-                      </div>
-                    )}
+                  <div className="peerfusion-event-item">
+                    <span className="peerfusion-event-label">Date & Time:</span>
+                    <span className="peerfusion-event-value">
+                      {formatDateTime(selectedEvent.scheduled_at).full}
+                    </span>
                   </div>
-
-                  {selectedEvent.status === 'scheduled' && (
-                    <div className="peerfusion-event-actions">
-                      <button 
-                        className="peerfusion-cancel-meeting-btn"
-                        onClick={() => setShowCancelModal(true)}
-                        disabled={isLoading}
-                      >
-                        <span className="peerfusion-cancel-icon"></span>
-                        Cancel Meeting
-                      </button>
+                  <div className="peerfusion-event-item">
+                    <span className="peerfusion-event-label">Participants:</span>
+                    <span className="peerfusion-event-value">
+                      {formatParticipants(selectedEvent.participants, selectedEvent.participantNames)}
+                    </span>
+                  </div>
+                  {selectedEvent.conversation_id && (
+                    <div className="peerfusion-event-item">
+                      <span className="peerfusion-event-label">Conversation ID:</span>
+                      <span className="peerfusion-event-value">
+                        {selectedEvent.conversation_id}
+                      </span>
                     </div>
                   )}
                 </div>
-              )}
 
-              {!selectedEvent && (
-                <div className="peerfusion-event-details-placeholder">
-                  <div className="peerfusion-placeholder-content">
-                    <div className="peerfusion-placeholder-icon">📅</div>
-                    <h4>No Meeting Selected</h4>
-                    <p>Click on a meeting in the calendar to view details and manage your session.</p>
+                {selectedEvent.status === 'scheduled' && (
+                  <div className="peerfusion-event-actions">
+                    <button 
+                      className="peerfusion-cancel-meeting-btn"
+                      onClick={() => setShowCancelModal(true)}
+                      disabled={isLoading}
+                    >
+                      <span className="peerfusion-cancel-icon"></span>
+                      Cancel Meeting
+                    </button>
                   </div>
-                </div>
-              )}
-            </div>
-
-            <div className="peerfusion-schedule-footer">
-              <div className="peerfusion-schedule-stats">
-                <div className="peerfusion-stat-item">
-                  <span className="peerfusion-stat-number">
-                    {events.filter(e => e.extendedProps.status === 'scheduled').length}
-                  </span>
-                  <span className="peerfusion-stat-label">Upcoming</span>
-                </div>
-                <div className="peerfusion-stat-item">
-                  <span className="peerfusion-stat-number">
-                    {events.filter(e => e.extendedProps.status === 'completed').length}
-                  </span>
-                  <span className="peerfusion-stat-label">Completed</span>
-                </div>
-                <div className="peerfusion-stat-item">
-                  <span className="peerfusion-stat-number">
-                    {events.filter(e => e.extendedProps.status === 'cancelled').length}
-                  </span>
-                  <span className="peerfusion-stat-label">Cancelled</span>
+                )}
+              </div>
+            ) : (
+              <div className="peerfusion-event-details-placeholder">
+                <div className="peerfusion-placeholder-content">
+                  <div className="peerfusion-placeholder-icon">📅</div>
+                  <h4>No Meeting Selected</h4>
+                  <p>Click on a meeting in the calendar to view details and manage your session.</p>
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="peerfusion-schedule-legend">
-                <div className="peerfusion-legend-item">
-                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#10B981' }}></span>
-                  <span>Scheduled</span>
-                </div>
-                <div className="peerfusion-legend-item">
-                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#F59E0B' }}></span>
-                  <span>Pending</span>
-                </div>
-                <div className="peerfusion-legend-item">
-                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#6B7280' }}></span>
-                  <span>Completed</span>
-                </div>
-                <div className="peerfusion-legend-item">
-                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#EF4444' }}></span>
-                  <span>Cancelled</span>
-                </div>
+          <div className="peerfusion-schedule-footer">
+            <div className="peerfusion-schedule-stats">
+              <div className="peerfusion-stat-item">
+                <span className="peerfusion-stat-number">
+                  {events.filter(e => e.extendedProps.status === 'scheduled').length}
+                </span>
+                <span className="peerfusion-stat-label">Upcoming</span>
+              </div>
+              <div className="peerfusion-stat-item">
+                <span className="peerfusion-stat-number">
+                  {events.filter(e => e.extendedProps.status === 'pending').length}
+                </span>
+                <span className="peerfusion-stat-label">Pending</span>
+              </div>
+              <div className="peerfusion-stat-item">
+                <span className="peerfusion-stat-number">
+                  {events.filter(e => e.extendedProps.status === 'cancelled').length}
+                </span>
+                <span className="peerfusion-stat-label">Cancelled</span>
+              </div>
+            </div>
+
+            <div className="peerfusion-schedule-legend">
+              <div className="peerfusion-legend-item">
+                <span className="peerfusion-legend-color" style={{ backgroundColor: '#10B981' }}></span>
+                <span>Scheduled</span>
+              </div>
+              <div className="peerfusion-legend-item">
+                <span className="peerfusion-legend-color" style={{ backgroundColor: '#F59E0B' }}></span>
+                <span>Pending</span>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Cancel Confirmation Modal */}
       {showCancelModal && (
