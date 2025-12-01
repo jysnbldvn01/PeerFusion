@@ -2918,10 +2918,9 @@ const removeLearningObjective = (subjectName, index) => {
       <ScheduleManagement 
         isOpen={showSchedule}
         onClose={() => setShowSchedule(false)}
-        userId={profile?.user_id || profile?.id} // Use appropriate user ID field
+        userId={profile?.user_id || profile?.id}
       />
     </div>
-    
   );
 };
 

@@ -30,7 +30,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       setIsLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${API_BASE_URL}/api/meetings/user/${userId}`,
+        `${API_BASE_URL}/api/meeting/user/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -90,7 +90,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `${API_BASE_URL}/api/meetings/update-status`,
+        `${API_BASE_URL}/api/meeting/update-status`,
         {
           meetingId: selectedEvent.id,
           status: 'cancelled',
