@@ -4,7 +4,6 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import axios from 'axios';
-import './ScheduleManagement.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
