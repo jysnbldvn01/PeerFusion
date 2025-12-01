@@ -164,10 +164,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     switch (status) {
       case 'scheduled':
         return '#10B981';
-      case 'pending':
-        return '#F59E0B';
-      case 'completed':
-        return '#6B7280';
       case 'cancelled':
         return '#EF4444';
       default:
@@ -177,7 +173,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
   const clearEventSelection = () => {
     if (calendarApi) {
-      // Remove selected class from all events
       const allEvents = calendarApi.getEvents();
       allEvents.forEach(event => {
         const el = event.el;
@@ -190,14 +185,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleEventClick = (clickInfo) => {
-    // Prevent any default behavior
-    clickInfo.jsEvent.preventDefault();
-    clickInfo.jsEvent.stopPropagation();
+    console.log('Event clicked:', clickInfo.event.title);
     
-    // Clear previous selection
+    if (clickInfo.jsEvent) {
+      clickInfo.jsEvent.preventDefault();
+      clickInfo.jsEvent.stopPropagation();
+    }
+    
     clearEventSelection();
     
-    // Mark this event as selected
     const clickedEvent = clickInfo.event;
     const eventElement = clickedEvent.el;
     
@@ -215,10 +211,11 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       displayParticipants: meeting.participants || []
     });
     
-    // Scroll details panel to top
     if (detailsPanelRef.current) {
       detailsPanelRef.current.scrollTop = 0;
     }
+    
+    return false;
   };
 
   const handleDateClick = (info) => {
@@ -276,8 +273,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 'scheduled': return 'Scheduled';
-      case 'pending': return 'Pending';
-      case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
       default: return status;
     }
@@ -375,16 +370,9 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   </span>
                   <span className="stat-label">Upcoming</span>
                 </div>
-                <div className="stat-badge pending">
-                  <span className="stat-count">
-                    {events.filter(e => e.extendedProps.status === 'pending').length}
-                  </span>
-                  <span className="stat-label">Pending</span>
-                </div>
               </div>
             </div>
 
-            {/* This is the main fix - ensure proper layout structure */}
             <div className="calendar-details-container">
               <div className="calendar-section">
                 <div className="calendar-wrapper">
@@ -488,20 +476,49 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                             info.el.style.position = 'relative';
                             info.el.style.margin = '1px 0';
                             
-                            // Prevent right-click context menu
+                            // Make event clickable on desktop
+                            info.el.style.pointerEvents = 'auto';
+                            info.el.style.cursor = 'pointer';
+                            
+                            const handleDirectClick = (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              if (calendarApi) {
+                                const event = calendarApi.getEventById(info.event.id);
+                                if (event) {
+                                  const clickInfo = {
+                                    event: event,
+                                    jsEvent: e,
+                                    view: calendarApi.view
+                                  };
+                                  handleEventClick(clickInfo);
+                                }
+                              }
+                            };
+                            
+                            info.el.addEventListener('click', handleDirectClick);
+                            
+                            const eventContent = info.el.querySelector('.fc-event-main');
+                            if (eventContent) {
+                              eventContent.addEventListener('click', handleDirectClick);
+                            }
+                            
                             info.el.addEventListener('contextmenu', (e) => {
                               e.preventDefault();
                               return false;
                             });
                             
-                            // Improve touch/click handling
-                            info.el.style.cursor = 'pointer';
-                            info.el.style.webkitTapHighlightColor = 'transparent';
-                            
-                            // Highlight if this is the selected event
                             if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
                               info.el.classList.add('fc-event-selected');
                             }
+                            
+                            return () => {
+                              info.el.removeEventListener('click', handleDirectClick);
+                              if (eventContent) {
+                                eventContent.removeEventListener('click', handleDirectClick);
+                              }
+                            };
                           }}
                           eventOverlap={false}
                           slotEventOverlap={false}
@@ -554,15 +571,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                           stickyHeaderDates={true}
                           stickyFooterScrollbar={true}
                           themeSystem="standard"
-                          datesRender={() => {
-                            // Clear selection when dates change
-                            if (selectedEvent && calendarApi) {
-                              const event = calendarApi.getEventById(selectedEvent.id.toString());
-                              if (event && event.el) {
-                                event.el.classList.add('fc-event-selected');
-                              }
-                            }
-                          }}
                         />
                       )}
                     </div>
@@ -570,7 +578,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                 </div>
               </div>
 
-              {/* Details Section - Fixed for mobile */}
               <div className="details-section">
                 <div className="details-wrapper" ref={detailsPanelRef}>
                   {selectedEvent ? (
@@ -662,14 +669,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                 <div className="legend-item">
                   <span className="legend-dot scheduled"></span>
                   <span>Scheduled</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-dot pending"></span>
-                  <span>Pending</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-dot completed"></span>
-                  <span>Completed</span>
                 </div>
                 <div className="legend-item">
                   <span className="legend-dot cancelled"></span>

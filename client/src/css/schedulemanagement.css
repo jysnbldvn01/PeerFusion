@@ -1189,6 +1189,7 @@
   }
 }
 
+/* Landscape Mode for Mobile */
 @media (max-height: 500px) and (orientation: landscape) {
   .schedule-modal-container {
     max-height: 90vh;
@@ -1229,6 +1230,7 @@
   }
 }
 
+/* iOS Safari Specific Fixes */
 @supports (-webkit-touch-callout: none) {
   .schedule-modal-container {
     height: -webkit-fill-available;
@@ -1248,6 +1250,7 @@
   }
 }
 
+/* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
   .view-btn,
   .schedule-close-btn,
@@ -1272,6 +1275,7 @@
   }
 }
 
+/* Smooth scrolling */
 .calendar-wrapper,
 .event-details-content {
   scroll-behavior: smooth;
@@ -1303,6 +1307,7 @@
   background: #3a6c2a;
 }
 
+/* Prevent text selection on interactive elements */
 .view-btn,
 .schedule-close-btn,
 .cancel-btn,
@@ -1315,6 +1320,7 @@
   -ms-user-select: none;
 }
 
+/* Focus styles for accessibility */
 .view-btn:focus,
 .schedule-close-btn:focus,
 .cancel-btn:focus,
@@ -1325,22 +1331,25 @@
   outline-offset: 2px;
 }
 
+/* Loading state improvements */
 .schedule-loading .loading-spinner {
   width: 50px;
   height: 50px;
   border-width: 4px;
 }
 
+/* Empty state improvements */
 .no-schedule,
 .no-event-selected {
   padding: 40px 20px;
 }
 
-
+/* Ensure calendar is horizontally scrollable on mobile */
 .fc .fc-view-harness-active > .fc-view {
   overflow-x: auto !important;
 }
 
+/* Mobile event tap improvements */
 @media (max-width: 768px) {
   .custom-calendar-event {
     touch-action: manipulation;
@@ -1356,130 +1365,273 @@
   }
 }
 
+.fc-event {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Remove any pointer-events blocking */
 .custom-calendar-event,
-.fc-event,
-.fc-daygrid-event {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+.fc-daygrid-event,
+.fc-timegrid-event {
+  pointer-events: auto !important;
   cursor: pointer !important;
 }
 
-.fc-event {
-  -webkit-touch-callout: none;
-  -webkit-user-drag: none;
+/* Fix event click area */
+.fc-daygrid-day-events > a,
+.fc-timegrid-event-harness > a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
+/* Fix mobile layout - prevent overlap */
 @media (max-width: 768px) {
   .calendar-details-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
     overflow: visible !important;
+    position: relative !important;
+  }
+  
+  .calendar-section {
+    width: 100% !important;
+    flex: 1 0 auto !important;
+    min-height: 400px !important;
+    margin-bottom: 0 !important;
+    position: relative !important;
+    z-index: 1 !important;
   }
   
   .details-section {
-    position: relative !important;
-    z-index: 10 !important;
+    width: 100% !important;
+    flex: 0 0 auto !important;
     min-height: 300px !important;
-    max-height: none !important;
+    max-height: 400px !important;
+    position: relative !important;
+    z-index: 2 !important;
+    margin-top: 0 !important;
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
   }
   
   .details-wrapper {
     position: relative !important;
-    height: auto !important;
+    height: 100% !important;
     min-height: 300px !important;
+    max-height: 400px !important;
     overflow: visible !important;
-    margin-top: 20px;
+    background: white !important;
   }
   
-  .event-details-panel {
-    height: auto !important;
-    max-height: 400px !important;
-    overflow-y: auto !important;
+  /* Ensure no overlap between sections */
+  .schedule-main-content {
     display: flex !important;
     flex-direction: column !important;
+    gap: 20px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
   
+  .calendar-wrapper {
+    min-height: 400px !important;
+    max-height: 500px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Fix event details panel */
+  .event-details-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 400px !important;
+    overflow: hidden !important;
+  }
+  
+  .event-details-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 80px !important; /* Make room for cancel button */
+  }
+  
+  /* Make sure cancel button is visible and not overlapping */
   .event-actions {
     position: sticky !important;
     bottom: 0 !important;
     background: white !important;
     padding: 15px 0 10px 0 !important;
-    margin-top: auto !important;
-    z-index: 100 !important;
+    margin-top: 10px !important;
     border-top: 2px solid #e8efe5 !important;
+    z-index: 100 !important;
   }
   
   .cancel-btn {
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: flex !important;
     position: relative !important;
     z-index: 101 !important;
-  }
-  
-  .calendar-wrapper {
-    margin-bottom: 0 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
 
+/* For very small screens */
 @media (max-width: 480px) {
-  .details-wrapper {
+  .calendar-section {
+    min-height: 350px !important;
+  }
+  
+  .details-section {
     min-height: 280px !important;
     max-height: 350px !important;
   }
   
-  .event-details-panel {
-    max-height: 320px !important;
+  .details-wrapper {
+    min-height: 280px !important;
+    max-height: 350px !important;
   }
-  
-  .event-details-content {
-    padding-bottom: 70px !important;
-  }
+}
+
+/* Fix event selection for better visibility */
+.fc-event-selected {
+  z-index: 1000 !important;
+  position: relative !important;
 }
 
 .fc-event-selected .custom-calendar-event {
   border: 3px solid #ffd166 !important;
-  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 
+    0 0 0 3px rgba(255, 209, 102, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.15) !important;
   transform: translateY(-1px);
-  z-index: 1000 !important;
 }
 
+/* Ensure event content is clickable */
+.fc-event-main {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Fix for FullCalendar's internal event handling */
+.fc-h-event {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Prevent any event blocking */
+.fc-daygrid-day-frame,
+.fc-timegrid-slot-lane {
+  pointer-events: none !important;
+}
+
+.fc-daygrid-day-events,
+.fc-timegrid-event-harness {
+  pointer-events: auto !important;
+}
+
+/* Improve touch targets on mobile */
 @media (hover: none) and (pointer: coarse) {
   .fc-event {
-    min-height: 44px !important;
+    min-height: 50px !important;
+    min-width: 50px !important;
   }
   
   .custom-calendar-event {
     padding: 12px 10px !important;
     min-height: 50px !important;
   }
+  
+  .fc-daygrid-day-events > a {
+    min-height: 50px !important;
+  }
+}
+/* ===== FIXES FOR DESKTOP CLICK AND MOBILE OVERLAP ===== */
+
+/* Fix desktop click - make events truly clickable */
+.fc-event {
+  cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
-.event-details-content {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  padding-right: 10px;
-  margin-right: -10px;
-  padding-bottom: 80px;
+.fc-event .fc-event-main,
+.fc-event .fc-event-main-frame,
+.fc-event-main > div {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
-.calendar-section,
-.details-section {
-  position: relative;
-  z-index: 1;
+/* Fix event click area */
+.fc-daygrid-event,
+.fc-timegrid-event {
+  pointer-events: auto !important;
 }
 
-.details-section {
-  z-index: 2;
+/* Fix mobile layout to prevent overlap */
+@media (max-width: 768px) {
+  .calendar-details-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .calendar-section {
+    width: 100%;
+    flex: 1;
+    min-height: 400px;
+  }
+  
+  .details-section {
+    width: 100%;
+    flex: 1;
+    min-height: 300px;
+    max-height: 400px;
+  }
+  
+  .details-wrapper {
+    height: 100%;
+    min-height: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .event-details-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .event-details-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+  }
+  
+  .event-actions {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 15px 0 10px 0;
+    margin-top: 10px;
+    border-top: 2px solid #e8efe5;
+    z-index: 100;
+  }
+  
+  .cancel-btn {
+    position: relative;
+    z-index: 101;
+  }
 }
 
-button.cancel-btn {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+/* Fix for very small screens */
+@media (max-width: 480px) {
+  .calendar-section {
+    min-height: 350px;
+  }
+  
+  .details-section {
+    min-height: 280px;
+    max-height: 350px;
+  }
 }
