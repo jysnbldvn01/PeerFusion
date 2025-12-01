@@ -159,7 +159,7 @@ router.post("/update-status", async (req, res) => {
   try {
     const db = req.app.get("db");
     const emitToUser = req.app.get("emitToUser");
-    const { meetingId, status, participants } = req.body;
+    const { meetingId, status } = req.body;
 
     if (!meetingId || !status) {
       return res.status(400).json({ error: "Missing meetingId or status" });
@@ -175,7 +175,14 @@ router.post("/update-status", async (req, res) => {
     }
 
     const meeting = meetingRows[0];
-    const meetingParticipants = JSON.parse(meeting.participants);
+    
+    let participants;
+    try {
+      participants = JSON.parse(meeting.participants);
+    } catch (err) {
+      console.error("Error parsing participants:", err);
+      return res.status(500).json({ error: "Invalid participants data" });
+    }
 
     await db.query("UPDATE meetings SET status=? WHERE id=?", [
       status,
@@ -188,8 +195,8 @@ router.post("/update-status", async (req, res) => {
         const [nameRows] = await db.query(
           `SELECT up.user_id, up.username 
           FROM user_profiles up 
-          WHERE up.user_id IN (${meetingParticipants.map(() => '?').join(',')})`,
-          meetingParticipants
+          WHERE up.user_id IN (${participants.map(() => '?').join(',')})`,
+          participants
         );
         nameRows.forEach(r => { 
           nameMap[String(r.user_id)] = r.username;
@@ -197,10 +204,9 @@ router.post("/update-status", async (req, res) => {
       } catch (_) {}
 
       const scheduledLabel = new Date(meeting.scheduled_at).toLocaleString();
-      const currentUserId = req.user?.id || participants?.[0];
 
-      for (const participantId of meetingParticipants) {
-        const others = meetingParticipants.filter(p => p !== participantId);
+      for (const participantId of participants) {
+        const others = participants.filter(p => p !== participantId);
         const otherNames = others.map(id => nameMap[String(id)] || `User ${id}`).join(', ');
         
         const message = otherNames
@@ -211,32 +217,29 @@ router.post("/update-status", async (req, res) => {
           `INSERT INTO notifications (sender_id, receiver_id, message, type, is_read)
            VALUES (?, ?, ?, 'meeting_cancelled', 0)`,
           [
-            currentUserId,
+            participants[0],
             participantId,
             message,
           ]
         );
-
-        console.log(`📨 Sent cancellation notification to user ${participantId}`);
 
         if (emitToUser) {
           emitToUser(participantId, "meetingCancelled", {
             meetingId,
             conversationId: meeting.conversation_id,
             scheduledAt: meeting.scheduled_at,
-            participants: meetingParticipants,
+            participants,
             status: "cancelled",
           });
         }
       }
     }
 
-    if (emitToUser && meetingParticipants?.length) {
-      meetingParticipants.forEach((pId) => {
+    if (emitToUser && participants?.length) {
+      participants.forEach((pId) => {
         emitToUser(pId, "meetingStatusUpdated", { 
           meetingId, 
-          status,
-          message: status === 'cancelled' ? 'Meeting has been cancelled' : `Meeting status updated to ${status}`
+          status
         });
       });
     }
