@@ -24,9 +24,23 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [calendarApi, setCalendarApi] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isCalendarReady, setIsCalendarReady] = useState(false);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const calendarRef = useRef(null);
   const detailsPanelRef = useRef(null);
+
+  // Check if mobile
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -36,6 +50,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     } else {
       setEvents([]);
       setSelectedEvent(null);
+      setShowMobileDetails(false);
       setHasLoaded(false);
       setIsCalendarReady(false);
     }
@@ -168,9 +183,18 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleEventClick = (clickInfo) => {
+    // Clear any existing selection
     if (calendarApi) {
       calendarApi.unselect();
     }
+    
+    // Clear previous event selection
+    document.querySelectorAll('.fc-event-selected').forEach(el => {
+      el.classList.remove('fc-event-selected');
+    });
+    
+    // Mark the clicked event as selected
+    clickInfo.el.classList.add('fc-event-selected');
     
     const meeting = clickInfo.event.extendedProps.originalData;
     const participantNames = clickInfo.event.extendedProps.participantNames || [];
@@ -181,16 +205,28 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       displayParticipants: meeting.participants || []
     });
     
-    if (detailsPanelRef.current) {
-      detailsPanelRef.current.scrollTop = 0;
+    // On mobile, show popup modal
+    if (isMobile) {
+      setShowMobileDetails(true);
+    } else {
+      // On desktop, scroll to top of details panel
+      if (detailsPanelRef.current) {
+        detailsPanelRef.current.scrollTop = 0;
+      }
     }
   };
 
   const handleDateClick = (info) => {
     setSelectedEvent(null);
+    setShowMobileDetails(false);
     if (calendarApi) {
       calendarApi.unselect();
     }
+    
+    // Clear event selection
+    document.querySelectorAll('.fc-event-selected').forEach(el => {
+      el.classList.remove('fc-event-selected');
+    });
   };
 
   const handleDatesSet = (info) => {
@@ -219,6 +255,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       if (response.data.success) {
         await fetchUserMeetings();
         setShowCancelModal(false);
+        setShowMobileDetails(false);
         setSelectedEvent(null);
         alert('Session cancelled successfully!');
       } else {
@@ -279,9 +316,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
   const handleCloseDetails = () => {
     setSelectedEvent(null);
+    setShowMobileDetails(false);
     if (calendarApi) {
       calendarApi.unselect();
     }
+    
+    // Clear event selection
+    document.querySelectorAll('.fc-event-selected').forEach(el => {
+      el.classList.remove('fc-event-selected');
+    });
   };
 
   const handleCalendarReady = (api) => {
@@ -296,9 +339,24 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const handleViewChange = (newViewType) => {
     setViewType(newViewType);
     setSelectedEvent(null);
+    setShowMobileDetails(false);
     if (calendarApi) {
       calendarApi.unselect();
     }
+    
+    // Clear event selection
+    document.querySelectorAll('.fc-event-selected').forEach(el => {
+      el.classList.remove('fc-event-selected');
+    });
+  };
+
+  const closeMobileDetails = () => {
+    setShowMobileDetails(false);
+    
+    // Clear event selection
+    document.querySelectorAll('.fc-event-selected').forEach(el => {
+      el.classList.remove('fc-event-selected');
+    });
   };
 
   if (!isOpen) return null;
@@ -358,247 +416,255 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               </div>
             </div>
 
-            <div className="calendar-wrapper">
-              {isLoading ? (
-                <div className="schedule-loading">
-                  <div className="loading-spinner"></div>
-                  <p>Loading schedule...</p>
-                </div>
-              ) : events.length === 0 && hasLoaded ? (
-                <div className="no-schedule">
-                  <div className="no-schedule-icon">📅</div>
-                  <h3>No Meetings Found</h3>
-                  <p>You don't have any scheduled meetings yet.</p>
-                </div>
-              ) : (
-                <div className="calendar-container" key={`calendar-${viewType}-${isOpen}`}>
-                  {isCalendarReady && (
-                    <FullCalendar
-                      key={`fullcalendar-${viewType}`}
-                      ref={calendarRef}
-                      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                      initialView={viewType}
-                      headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: ''
-                      }}
-                      events={events}
-                      eventClick={handleEventClick}
-                      dateClick={handleDateClick}
-                      datesSet={handleDatesSet}
-                      height="400px"
-                      eventDisplay={viewType === 'timeGridWeek' || viewType === 'timeGridDay' ? 'list-item' : 'block'}
-                      eventTimeFormat={{
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      }}
-                      dayMaxEvents={3}
-                      dayMaxEventRows={3}
-                      slotMinTime="06:00:00"
-                      slotMaxTime="22:00:00"
-                      allDaySlot={false}
-                      nowIndicator={true}
-                      slotDuration="00:30:00"
-                      slotLabelInterval="01:00"
-                      slotLabelFormat={{
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      }}
-                      views={{
-                        dayGridMonth: {
-                          dayMaxEvents: 3,
-                          dayMaxEventRows: 3,
-                          titleFormat: { year: 'numeric', month: 'long' }
-                        },
-                        timeGridWeek: {
-                          dayMaxEvents: 3,
-                          dayMaxEventRows: 3,
-                          allDaySlot: false,
-                          slotMinTime: "06:00:00",
-                          slotMaxTime: "22:00:00",
-                          slotEventOverlap: false,
-                          eventMinHeight: 20
-                        },
-                        timeGridDay: {
-                          dayMaxEvents: 3,
-                          dayMaxEventRows: 3,
-                          allDaySlot: false,
-                          slotMinTime: "06:00:00",
-                          slotMaxTime: "22:00:00",
-                          slotEventOverlap: false,
-                          eventMinHeight: 20
-                        }
-                      }}
-                      eventContent={(eventInfo) => {
-                        if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
-                          return (
-                            <div className="custom-calendar-event simple-event">
-                              <div className="event-time-badge">
-                                {eventInfo.timeText}
+            <div className="calendar-details-container">
+              <div className="calendar-section">
+                <div className="calendar-wrapper">
+                  {isLoading ? (
+                    <div className="schedule-loading">
+                      <div className="loading-spinner"></div>
+                      <p>Loading schedule...</p>
+                    </div>
+                  ) : events.length === 0 && hasLoaded ? (
+                    <div className="no-schedule">
+                      <div className="no-schedule-icon">📅</div>
+                      <h3>No Meetings Found</h3>
+                      <p>You don't have any scheduled meetings yet.</p>
+                    </div>
+                  ) : (
+                    <div className="calendar-container" key={`calendar-${viewType}-${isOpen}`}>
+                      {isCalendarReady && (
+                        <FullCalendar
+                          key={`fullcalendar-${viewType}`}
+                          ref={calendarRef}
+                          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                          initialView={viewType}
+                          headerToolbar={{
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: ''
+                          }}
+                          events={events}
+                          eventClick={handleEventClick}
+                          dateClick={handleDateClick}
+                          datesSet={handleDatesSet}
+                          height="400px"
+                          eventDisplay={viewType === 'timeGridWeek' || viewType === 'timeGridDay' ? 'list-item' : 'block'}
+                          eventTimeFormat={{
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          }}
+                          dayMaxEvents={3}
+                          dayMaxEventRows={3}
+                          slotMinTime="06:00:00"
+                          slotMaxTime="22:00:00"
+                          allDaySlot={false}
+                          nowIndicator={true}
+                          slotDuration="00:30:00"
+                          slotLabelInterval="01:00"
+                          slotLabelFormat={{
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          }}
+                          views={{
+                            dayGridMonth: {
+                              dayMaxEvents: 3,
+                              dayMaxEventRows: 3,
+                              titleFormat: { year: 'numeric', month: 'long' }
+                            },
+                            timeGridWeek: {
+                              dayMaxEvents: 3,
+                              dayMaxEventRows: 3,
+                              allDaySlot: false,
+                              slotMinTime: "06:00:00",
+                              slotMaxTime: "22:00:00",
+                              slotEventOverlap: false,
+                              eventMinHeight: 20
+                            },
+                            timeGridDay: {
+                              dayMaxEvents: 3,
+                              dayMaxEventRows: 3,
+                              allDaySlot: false,
+                              slotMinTime: "06:00:00",
+                              slotMaxTime: "22:00:00",
+                              slotEventOverlap: false,
+                              eventMinHeight: 20
+                            }
+                          }}
+                          eventContent={(eventInfo) => {
+                            if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
+                              return (
+                                <div className="custom-calendar-event simple-event">
+                                  <div className="event-time-badge">
+                                    {eventInfo.timeText}
+                                  </div>
+                                  <div className="event-title">{eventInfo.event.title}</div>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="custom-calendar-event">
+                                <div className="event-title">{eventInfo.event.title}</div>
+                                <div className="event-time">{eventInfo.timeText}</div>
+                                <div className="event-status">
+                                  {getStatusText(eventInfo.event.extendedProps.status)}
+                                </div>
                               </div>
-                              <div className="event-title">{eventInfo.event.title}</div>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="custom-calendar-event">
-                            <div className="event-title">{eventInfo.event.title}</div>
-                            <div className="event-time">{eventInfo.timeText}</div>
-                            <div className="event-status">
-                              {getStatusText(eventInfo.event.extendedProps.status)}
-                            </div>
-                          </div>
-                        );
-                      }}
-                      eventClassNames="custom-fc-event"
-                      eventDidMount={(info) => {
-                        info.el.style.zIndex = '10';
-                        info.el.style.position = 'relative';
-                        info.el.style.margin = '1px 0';
-                        
-                        if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
-                          info.el.classList.add('fc-event-selected');
-                        }
-                      }}
-                      eventOverlap={false}
-                      slotEventOverlap={false}
-                      selectable={false}
-                      editable={false}
-                      droppable={false}
-                      navLinks={true}
-                      navLinkDayClick={(date, jsEvent) => {
-                        handleViewChange('timeGridDay');
-                        if (calendarApi) {
-                          calendarApi.gotoDate(date);
-                        }
-                        jsEvent.preventDefault();
-                      }}
-                      navLinkWeekClick={(weekStart, jsEvent) => {
-                        handleViewChange('timeGridWeek');
-                        if (calendarApi) {
-                          calendarApi.gotoDate(weekStart);
-                        }
-                        jsEvent.preventDefault();
-                      }}
-                      moreLinkClick={(info) => {
-                        // Handle more link click if needed
-                      }}
-                      moreLinkContent={(args) => {
-                        return `+${args.num} more`;
-                      }}
-                      locale="en"
-                      firstDay={0}
-                      weekNumbers={false}
-                      weekText="Week"
-                      buttonText={{
-                        today: 'Today',
-                        month: 'Month',
-                        week: 'Week',
-                        day: 'Day'
-                      }}
-                      dayHeaderFormat={{
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        omitCommas: true
-                      }}
-                      noEventsContent="No events"
-                      eventOrder="start,-duration,allDay,title"
-                      eventOrderStrict={false}
-                      progressiveEventRendering={true}
-                      dragRevertDuration={500}
-                      dragScroll={true}
-                      snapDuration="00:30:00"
-                      scrollTime="09:00:00"
-                      expandRows={false}
-                      stickyHeaderDates={true}
-                      stickyFooterScrollbar={true}
-                      themeSystem="standard"
-                    />
+                            );
+                          }}
+                          eventClassNames="custom-fc-event"
+                          eventDidMount={(info) => {
+                            info.el.style.zIndex = '10';
+                            info.el.style.position = 'relative';
+                            info.el.style.margin = '1px 0';
+                            
+                            if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
+                              info.el.classList.add('fc-event-selected');
+                            }
+                          }}
+                          eventOverlap={false}
+                          slotEventOverlap={false}
+                          selectable={false}
+                          editable={false}
+                          droppable={false}
+                          navLinks={true}
+                          navLinkDayClick={(date, jsEvent) => {
+                            handleViewChange('timeGridDay');
+                            if (calendarApi) {
+                              calendarApi.gotoDate(date);
+                            }
+                            jsEvent.preventDefault();
+                          }}
+                          navLinkWeekClick={(weekStart, jsEvent) => {
+                            handleViewChange('timeGridWeek');
+                            if (calendarApi) {
+                              calendarApi.gotoDate(weekStart);
+                            }
+                            jsEvent.preventDefault();
+                          }}
+                          moreLinkClick={(info) => {
+                            // Handle more link click if needed
+                          }}
+                          moreLinkContent={(args) => {
+                            return `+${args.num} more`;
+                          }}
+                          locale="en"
+                          firstDay={0}
+                          weekNumbers={false}
+                          weekText="Week"
+                          buttonText={{
+                            today: 'Today',
+                            month: 'Month',
+                            week: 'Week',
+                            day: 'Day'
+                          }}
+                          dayHeaderFormat={{
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            omitCommas: true
+                          }}
+                          noEventsContent="No events"
+                          eventOrder="start,-duration,allDay,title"
+                          eventOrderStrict={false}
+                          progressiveEventRendering={true}
+                          dragRevertDuration={500}
+                          dragScroll={true}
+                          snapDuration="00:30:00"
+                          scrollTime="09:00:00"
+                          expandRows={false}
+                          stickyHeaderDates={true}
+                          stickyFooterScrollbar={true}
+                          themeSystem="standard"
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Event Details Panel at the bottom */}
-            <div className="details-wrapper">
-              {selectedEvent ? (
-                <div className="event-details-panel" ref={detailsPanelRef}>
-                  <div className="event-details-header">
-                    <h3>Meeting Details</h3>
-                    <button 
-                      className="close-details-btn"
-                      onClick={handleCloseDetails}
-                    >
-                      <CloseIcon />
-                    </button>
-                  </div>
-                  
-                  <div className="event-details-content">
-                    <div className="detail-item">
-                      <span className="detail-label">Meeting ID:</span>
-                      <span className="detail-value">#{selectedEvent.id}</span>
-                    </div>
-                    
-                    <div className="detail-item">
-                      <span className="detail-label">Status:</span>
-                      <span className={`status-badge status-${selectedEvent.status}`}>
-                        {getStatusText(selectedEvent.status)}
-                      </span>
-                    </div>
-                    
-                    <div className="detail-item">
-                      <span className="detail-label">Date:</span>
-                      <span className="detail-value">
-                        {formatDateTime(selectedEvent.scheduled_at).date}
-                      </span>
-                    </div>
-                    
-                    <div className="detail-item">
-                      <span className="detail-label">Time:</span>
-                      <span className="detail-value">
-                        {formatDateTime(selectedEvent.scheduled_at).time}
-                      </span>
-                    </div>
-                    
-                    <div className="detail-item">
-                      <span className="detail-label">Participants:</span>
-                      <span className="detail-value">
-                        {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
-                      </span>
-                    </div>
-                    
-                    {selectedEvent.conversation_id && (
-                      <div className="detail-item">
-                        <span className="detail-label">Conversation:</span>
-                        <span className="detail-value conversation-id">
-                          #{selectedEvent.conversation_id}
-                        </span>
+              {/* Desktop Details Panel - Only show on desktop */}
+              {!isMobile && (
+                <div className="details-section">
+                  <div className="details-wrapper">
+                    {selectedEvent ? (
+                      <div className="event-details-panel" ref={detailsPanelRef}>
+                        <div className="event-details-header">
+                          <h3>Meeting Details</h3>
+                          <button 
+                            className="close-details-btn"
+                            onClick={handleCloseDetails}
+                          >
+                            <CloseIcon />
+                          </button>
+                        </div>
+                        
+                        <div className="event-details-content">
+                          <div className="detail-item">
+                            <span className="detail-label">Meeting ID:</span>
+                            <span className="detail-value">#{selectedEvent.id}</span>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <span className="detail-label">Status:</span>
+                            <span className={`status-badge status-${selectedEvent.status}`}>
+                              {getStatusText(selectedEvent.status)}
+                            </span>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <span className="detail-label">Date:</span>
+                            <span className="detail-value">
+                              {formatDateTime(selectedEvent.scheduled_at).date}
+                            </span>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <span className="detail-label">Time:</span>
+                            <span className="detail-value">
+                              {formatDateTime(selectedEvent.scheduled_at).time}
+                            </span>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <span className="detail-label">Participants:</span>
+                            <span className="detail-value">
+                              {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
+                            </span>
+                          </div>
+                          
+                          {selectedEvent.conversation_id && (
+                            <div className="detail-item">
+                              <span className="detail-label">Conversation:</span>
+                              <span className="detail-value conversation-id">
+                                #{selectedEvent.conversation_id}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {selectedEvent.status === 'scheduled' && (
+                          <div className="event-actions">
+                            <button 
+                              className="cancel-btn"
+                              onClick={() => setShowCancelModal(true)}
+                              disabled={cancellingMeeting}
+                            >
+                              {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="no-event-selected">
+                        <div className="selection-guide">
+                          <div className="guide-icon">👆</div>
+                          <h4>Select a Meeting</h4>
+                          <p>Click on any meeting in the calendar to view details</p>
+                        </div>
                       </div>
                     )}
-                  </div>
-
-                  {selectedEvent.status === 'scheduled' && (
-                    <div className="event-actions">
-                      <button 
-                        className="cancel-btn"
-                        onClick={() => setShowCancelModal(true)}
-                        disabled={cancellingMeeting}
-                      >
-                        {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="no-event-selected">
-                  <div className="selection-guide">
-                    <div className="guide-icon">👆</div>
-                    <h4>Select a Meeting</h4>
-                    <p>Click on any meeting in the calendar to view details</p>
                   </div>
                 </div>
               )}
@@ -631,6 +697,80 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         </div>
       </div>
 
+      {/* Mobile Event Details Popup */}
+      {showMobileDetails && selectedEvent && (
+        <div className="event-details-mobile-popup" onClick={closeMobileDetails}>
+          <div className="event-details-mobile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="event-details-mobile-header">
+              <h3>Meeting Details</h3>
+              <button 
+                className="event-details-mobile-close"
+                onClick={closeMobileDetails}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            
+            <div className="event-details-mobile-content">
+              <div className="detail-item">
+                <span className="detail-label">Meeting ID:</span>
+                <span className="detail-value">#{selectedEvent.id}</span>
+              </div>
+              
+              <div className="detail-item">
+                <span className="detail-label">Status:</span>
+                <span className={`status-badge status-${selectedEvent.status}`}>
+                  {getStatusText(selectedEvent.status)}
+                </span>
+              </div>
+              
+              <div className="detail-item">
+                <span className="detail-label">Date:</span>
+                <span className="detail-value">
+                  {formatDateTime(selectedEvent.scheduled_at).date}
+                </span>
+              </div>
+              
+              <div className="detail-item">
+                <span className="detail-label">Time:</span>
+                <span className="detail-value">
+                  {formatDateTime(selectedEvent.scheduled_at).time}
+                </span>
+              </div>
+              
+              <div className="detail-item">
+                <span className="detail-label">Participants:</span>
+                <span className="detail-value">
+                  {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
+                </span>
+              </div>
+              
+              {selectedEvent.conversation_id && (
+                <div className="detail-item">
+                  <span className="detail-label">Conversation:</span>
+                  <span className="detail-value conversation-id">
+                    #{selectedEvent.conversation_id}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {selectedEvent.status === 'scheduled' && (
+              <div className="event-details-mobile-actions">
+                <button 
+                  className="cancel-btn"
+                  onClick={() => setShowCancelModal(true)}
+                  disabled={cancellingMeeting}
+                >
+                  {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
       {showCancelModal && (
         <div className="confirm-modal-overlay" onClick={() => setShowCancelModal(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>

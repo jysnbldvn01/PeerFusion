@@ -401,11 +401,10 @@
   min-height: 40px;
 }
 
-.fc .fc-daygrid-event {
-  position: relative !important;
-  z-index: 10 !important;
-  margin: 1px 1px !important;
-  touch-action: manipulation;
+.fc .fc-daygrid-event,
+.fc .fc-timegrid-event {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .fc .fc-daygrid-day-frame {
@@ -476,6 +475,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   height: 100%;
   font-size: 0.8rem;
+  pointer-events: auto !important;
 }
 
 .custom-calendar-event:hover {
@@ -1351,16 +1351,109 @@
 
 /* Mobile event tap improvements */
 @media (max-width: 768px) {
-  .custom-calendar-event {
-    touch-action: manipulation;
+  .details-section {
+    display: none !important;
   }
   
+  .calendar-details-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .calendar-section {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Ensure calendar takes full width on mobile */
+  .calendar-wrapper {
+    width: 100%;
+    min-height: 350px;
+    padding: 10px;
+  }
+  
+  /* Fix calendar scrolling on mobile */
+  .fc .fc-view {
+    min-width: 100% !important;
+  }
+  
+  .fc .fc-scrollgrid {
+    min-width: 100% !important;
+  }
+  
+  /* Mobile event details modal specific styles */
+  .event-details-mobile-header {
+    background: linear-gradient(135deg, #4a7c3a 0%, #6ba84f 100%);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  
+  .event-details-mobile-header h3 {
+    color: white;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  
+  .event-details-mobile-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+  }
+  
+  .event-details-mobile-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .event-details-mobile-actions {
+    padding: 20px;
+    border-top: 2px solid #e8efe5;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Ensure desktop details panel is visible */
+  .details-section {
+    display: flex !important;
+  }
+  
+  /* Fix calendar event click on desktop */
+  .fc .fc-daygrid-event,
   .fc .fc-timegrid-event {
-    margin: 0.5px 1px !important;
+    cursor: pointer !important;
   }
   
-  .event-title {
-    -webkit-line-clamp: 1;
-    line-height: 1.1;
+  .custom-calendar-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 124, 58, 0.35);
   }
+}
+
+/* Fix event selection styling */
+.fc-event-selected {
+  border: 2px solid #ffd166 !important;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3) !important;
+}
+
+/* Ensure cancel button is always visible */
+.cancel-btn {
+  position: relative !important;
+  z-index: 100 !important;
 }
