@@ -3285,23 +3285,23 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
-/* Schedule Management Styles - Green Theme */
-.schedule-modal-overlay {
+/* ===== SCHEDULE MANAGEMENT - Green Theme ===== */
+.peerfusion-schedule-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(74, 124, 58, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
+  background: rgba(45, 90, 39, 0.8);
   backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1002;
+  padding: 1rem;
 }
 
-.schedule-modal-container {
+.peerfusion-schedule-container {
   background: white;
   border-radius: 20px;
   width: 100%;
@@ -3311,101 +3311,106 @@
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(45, 90, 39, 0.3);
   overflow: hidden;
+  border: 1px solid #e8efe5;
+  animation: peerfusion-modalFadeIn 0.3s ease-out;
 }
 
-.schedule-modal-header {
+@keyframes peerfusion-modalFadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+/* Header */
+.peerfusion-schedule-header {
   background: linear-gradient(135deg, #4a7c3a 0%, #6ba84f 100%);
-  padding: 20px 30px;
+  padding: 1.5rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
 }
 
-.schedule-modal-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #ffd166, #06d6a0);
-}
-
-.schedule-header-content {
-  color: white;
-}
-
-.schedule-modal-title {
+.peerfusion-schedule-title {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 700;
+  color: white;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
 }
 
-.schedule-icon {
-  font-size: 1.5rem;
-}
-
-.schedule-modal-subtitle {
-  margin: 5px 0 0 0;
-  opacity: 0.9;
+.peerfusion-schedule-subtitle {
+  margin: 0.25rem 0 0 0;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.95rem;
 }
 
-.schedule-close-btn {
+.peerfusion-schedule-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  color: white;
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   transition: all 0.3s ease;
+  z-index: 10;
 }
 
-.schedule-close-btn:hover {
+.peerfusion-schedule-close:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: rotate(90deg);
 }
 
-.schedule-modal-body {
+/* Body */
+.peerfusion-schedule-body {
   flex: 1;
   display: flex;
   overflow: hidden;
-  position: relative;
+  background: #ffffff;
 }
 
-.calendar-view-controls {
+/* Controls */
+.peerfusion-schedule-controls {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 1.5rem;
+  right: 5rem;
   display: flex;
-  gap: 15px;
+  gap: 1rem;
   align-items: center;
   z-index: 10;
   background: rgba(255, 255, 255, 0.95);
-  padding: 10px 15px;
+  padding: 0.75rem 1rem;
   border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(45, 90, 39, 0.12);
   backdrop-filter: blur(10px);
+  border: 1px solid #e8efe5;
 }
 
-.view-buttons {
+.peerfusion-view-buttons {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   background: #f8faf7;
   padding: 4px;
   border-radius: 12px;
 }
 
-.view-btn {
-  padding: 8px 16px;
+.peerfusion-view-btn {
+  padding: 0.5rem 1rem;
   border: none;
   background: none;
   border-radius: 8px;
@@ -3414,78 +3419,81 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
 }
 
-.view-btn.active {
+.peerfusion-view-btn.active {
   background: #4a7c3a;
   color: white;
   box-shadow: 0 2px 8px rgba(74, 124, 58, 0.3);
 }
 
-.view-btn:hover:not(.active) {
+.peerfusion-view-btn:hover:not(.active) {
   background: #e8efe5;
   color: #4a7c3a;
 }
 
-.calendar-stats {
+.peerfusion-calendar-stats {
   display: flex;
-  gap: 15px;
-  padding-left: 15px;
+  gap: 1rem;
+  padding-left: 1rem;
   border-left: 2px solid #e8efe5;
 }
 
-.stat-badge {
+.peerfusion-stat-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border-radius: 10px;
   min-width: 70px;
   background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
+  border: 2px solid transparent;
 }
 
-.stat-badge.scheduled {
-  border: 2px solid #10b981;
+.peerfusion-stat-badge.scheduled {
+  border-color: #10b981;
 }
 
-.stat-badge.pending {
-  border: 2px solid #f59e0b;
+.peerfusion-stat-badge.pending {
+  border-color: #f59e0b;
 }
 
-.stat-count {
+.peerfusion-stat-count {
   font-size: 1.4rem;
   font-weight: 800;
   line-height: 1;
 }
 
-.stat-badge.scheduled .stat-count {
+.peerfusion-stat-badge.scheduled .peerfusion-stat-count {
   color: #10b981;
 }
 
-.stat-badge.pending .stat-count {
+.peerfusion-stat-badge.pending .peerfusion-stat-count {
   color: #f59e0b;
 }
 
-.stat-label {
-  font-size: 0.8rem;
+.peerfusion-stat-label {
+  font-size: 0.75rem;
   color: #5a7c55;
   font-weight: 600;
-  margin-top: 4px;
+  margin-top: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.calendar-wrapper {
+/* Calendar Wrapper */
+.peerfusion-calendar-wrapper {
   flex: 1;
-  padding: 20px;
+  padding: 1.5rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.schedule-loading,
-.no-schedule {
+.peerfusion-schedule-loading,
+.peerfusion-no-schedule {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -3493,64 +3501,70 @@
   justify-content: center;
   color: #5a7c55;
   text-align: center;
-  padding: 40px;
+  padding: 3rem;
 }
 
-.loading-spinner {
+.peerfusion-loading-spinner {
   width: 50px;
   height: 50px;
   border: 3px solid #e8efe5;
   border-top: 3px solid #4a7c3a;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  animation: peerfusion-spin 1s linear infinite;
+  margin-bottom: 1.5rem;
 }
 
-@keyframes spin {
+@keyframes peerfusion-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-.no-schedule-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
+.peerfusion-no-schedule-icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
   opacity: 0.5;
+  color: #4a7c3a;
 }
 
-.no-schedule h3 {
+.peerfusion-no-schedule h3 {
   color: #2d5a27;
-  margin: 0 0 10px 0;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
-.no-schedule p {
+.peerfusion-no-schedule p {
   margin: 0;
   opacity: 0.8;
+  color: #5a7c55;
 }
 
-.calendar-container {
+/* Calendar Container */
+.peerfusion-calendar-container {
   flex: 1;
   min-height: 500px;
   background: white;
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
+  border: 1px solid #e8efe5;
 }
 
 /* FullCalendar Custom Styling */
 .fc {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   height: 100%;
 }
 
 .fc .fc-toolbar {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 2px solid #e8efe5;
 }
 
 .fc .fc-toolbar-title {
   color: #2d5a27;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
 }
 
@@ -3559,10 +3573,11 @@
   border: 2px solid #e8efe5;
   color: #5a7c55;
   font-weight: 600;
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   border-radius: 10px;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .fc .fc-button:hover {
@@ -3592,7 +3607,7 @@
   color: #2d5a27;
   font-weight: 600;
   text-decoration: none;
-  padding: 8px;
+  padding: 0.5rem;
   transition: all 0.3s ease;
 }
 
@@ -3610,18 +3625,18 @@
 .fc .fc-col-header-cell-cushion {
   color: #2d5a27;
   font-weight: 700;
-  padding: 12px 4px;
+  padding: 0.75rem 0.25rem;
   font-size: 0.9rem;
 }
 
 /* Custom Event Styling */
-.custom-fc-event {
+.peerfusion-fc-event {
   margin: 2px 1px;
   border: none !important;
 }
 
-.custom-calendar-event {
-  padding: 8px 10px;
+.peerfusion-calendar-event {
+  padding: 0.5rem 0.75rem;
   border-radius: 10px;
   background: #4a7c3a;
   color: white;
@@ -3629,94 +3644,97 @@
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(74, 124, 58, 0.25);
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.custom-calendar-event:hover {
+.peerfusion-calendar-event:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(74, 124, 58, 0.35);
 }
 
-.event-title {
+.peerfusion-event-title {
   font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.3;
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.event-time {
+.peerfusion-event-time {
   font-size: 0.75rem;
   opacity: 0.9;
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
   font-weight: 500;
 }
 
-.event-status {
+.peerfusion-event-status {
   font-size: 0.7rem;
   background: rgba(255, 255, 255, 0.2);
-  padding: 2px 6px;
+  padding: 0.125rem 0.5rem;
   border-radius: 4px;
   display: inline-block;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 /* Status-specific event colors */
-.fc-event.scheduled .custom-calendar-event {
+.fc-event.scheduled .peerfusion-calendar-event {
   background: #10b981;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
 }
 
-.fc-event.pending .custom-calendar-event {
+.fc-event.pending .peerfusion-calendar-event {
   background: #f59e0b;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
 }
 
-.fc-event.completed .custom-calendar-event {
+.fc-event.completed .peerfusion-calendar-event {
   background: #6b7280;
   box-shadow: 0 2px 8px rgba(107, 114, 128, 0.25);
 }
 
-.fc-event.cancelled .custom-calendar-event {
+.fc-event.cancelled .peerfusion-calendar-event {
   background: #ef4444;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
 }
 
 /* Event Details Panel */
-.event-details-panel,
-.no-event-selected {
+.peerfusion-event-details-panel,
+.peerfusion-no-event-selected {
   width: 350px;
   background: white;
-  border-left: 2px solid #e8efe5;
-  padding: 25px;
+  border-left: 1px solid #e8efe5;
+  padding: 1.5rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.event-details-header {
+.peerfusion-event-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 2px solid #e8efe5;
 }
 
-.event-details-header h3 {
+.peerfusion-event-header h3 {
   color: #2d5a27;
   margin: 0;
   font-size: 1.3rem;
   font-weight: 700;
 }
 
-.close-details-btn {
+.peerfusion-close-details {
   background: none;
   border: none;
   color: #5a7c55;
   cursor: pointer;
-  padding: 8px;
+  padding: 0.5rem;
   border-radius: 8px;
   transition: all 0.3s ease;
   display: flex;
@@ -3724,25 +3742,25 @@
   justify-content: center;
 }
 
-.close-details-btn:hover {
+.peerfusion-close-details:hover {
   background: #f8faf7;
   color: #4a7c3a;
 }
 
-.event-details-content {
+.peerfusion-event-content {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 1.25rem;
   flex: 1;
 }
 
-.detail-item {
+.peerfusion-detail-item {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.25rem;
 }
 
-.detail-label {
+.peerfusion-detail-label {
   color: #5a7c55;
   font-weight: 600;
   font-size: 0.9rem;
@@ -3750,16 +3768,16 @@
   align-items: center;
 }
 
-.detail-label::before {
+.peerfusion-detail-label::before {
   content: '';
   width: 6px;
   height: 6px;
   background: #4a7c3a;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 0.5rem;
 }
 
-.detail-value {
+.peerfusion-detail-value {
   color: #2d5a27;
   font-weight: 500;
   font-size: 1rem;
@@ -3767,55 +3785,56 @@
   line-height: 1.4;
 }
 
-.conversation-id {
+.peerfusion-conversation-id {
   font-family: monospace;
   background: #f8faf7;
-  padding: 4px 8px;
+  padding: 0.25rem 0.5rem;
   border-radius: 6px;
   border: 1px solid #e8efe5;
+  font-size: 0.9rem;
 }
 
-.status-badge {
+.peerfusion-status-badge {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 0.375rem 0.75rem;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.85rem;
 }
 
-.status-scheduled {
+.peerfusion-status-scheduled {
   background: #d1fae5;
   color: #065f46;
   border: 1px solid #a7f3d0;
 }
 
-.status-pending {
+.peerfusion-status-pending {
   background: #fef3c7;
   color: #92400e;
   border: 1px solid #fde68a;
 }
 
-.status-completed {
+.peerfusion-status-completed {
   background: #f3f4f6;
   color: #4b5563;
   border: 1px solid #e5e7eb;
 }
 
-.status-cancelled {
+.peerfusion-status-cancelled {
   background: #fee2e2;
   color: #991b1b;
   border: 1px solid #fecaca;
 }
 
-.event-actions {
-  margin-top: 30px;
-  padding-top: 20px;
+.peerfusion-event-actions {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
   border-top: 2px solid #e8efe5;
 }
 
-.cancel-btn {
+.peerfusion-cancel-btn {
   width: 100%;
-  padding: 14px;
+  padding: 1rem;
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   border: none;
@@ -3827,206 +3846,219 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 0.5rem;
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+  font-family: 'Inter', sans-serif;
 }
 
-.cancel-btn:hover:not(:disabled) {
+.peerfusion-cancel-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
 }
 
-.cancel-btn:disabled {
+.peerfusion-cancel-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 /* No Event Selected */
-.no-event-selected {
+.peerfusion-no-event-selected {
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 
-.selection-guide {
+.peerfusion-selection-guide {
   max-width: 280px;
 }
 
-.guide-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
+.peerfusion-guide-icon {
+  width: 60px;
+  height: 60px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234a7c3a'%3E%3Cpath d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5zm2 4h10v2H7zm0 4h7v2H7z'/%3E%3C/svg%3E") no-repeat center;
+  margin: 0 auto 1.5rem;
   opacity: 0.6;
 }
 
-.selection-guide h4 {
+.peerfusion-selection-guide h4 {
   color: #2d5a27;
-  margin: 0 0 10px 0;
-  font-size: 1.2rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
-.selection-guide p {
+.peerfusion-selection-guide p {
   color: #5a7c55;
   margin: 0;
   opacity: 0.8;
+  font-size: 0.95rem;
 }
 
-/* Schedule Footer */
-.schedule-modal-footer {
-  padding: 20px 30px;
+/* Footer */
+.peerfusion-schedule-footer {
+  padding: 1.5rem 2rem;
   background: #f8faf7;
   border-top: 2px solid #e8efe5;
 }
 
-.legend-container {
+.peerfusion-legend-container {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 1.5rem;
   flex-wrap: wrap;
 }
 
-.legend-title {
+.peerfusion-legend-title {
   color: #2d5a27;
   font-weight: 600;
   font-size: 0.9rem;
 }
 
-.legend-items {
+.peerfusion-legend-items {
   display: flex;
-  gap: 20px;
+  gap: 1.5rem;
   flex-wrap: wrap;
 }
 
-.legend-item {
+.peerfusion-legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   font-size: 0.85rem;
   color: #5a7c55;
   font-weight: 500;
 }
 
-.legend-dot {
+.peerfusion-legend-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.legend-dot.scheduled {
+.peerfusion-legend-dot.scheduled {
   background: #10b981;
 }
 
-.legend-dot.pending {
+.peerfusion-legend-dot.pending {
   background: #f59e0b;
 }
 
-.legend-dot.completed {
+.peerfusion-legend-dot.completed {
   background: #6b7280;
 }
 
-.legend-dot.cancelled {
+.peerfusion-legend-dot.cancelled {
   background: #ef4444;
 }
 
 /* Cancel Confirmation Modal */
-.confirm-modal-overlay {
+.peerfusion-confirm-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1001;
-  padding: 20px;
+  background: rgba(45, 90, 39, 0.8);
   backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1003;
+  padding: 1rem;
 }
 
-.confirm-modal {
+.peerfusion-confirm-modal {
   background: white;
   border-radius: 20px;
   max-width: 450px;
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(45, 90, 39, 0.3);
+  border: 1px solid #e8efe5;
+  animation: peerfusion-modalFadeIn 0.3s ease-out;
 }
 
-.confirm-modal-header {
-  padding: 30px 30px 20px;
+.peerfusion-confirm-header {
+  padding: 2rem 2rem 1.5rem;
   text-align: center;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-bottom: 1px solid #fecaca;
 }
 
-.warning-icon {
-  font-size: 3rem;
-  margin-bottom: 15px;
+.peerfusion-warning-icon {
+  width: 60px;
+  height: 60px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23dc2626'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E") no-repeat center;
+  margin: 0 auto 1rem;
 }
 
-.confirm-modal-header h3 {
+.peerfusion-confirm-header h3 {
   color: #dc2626;
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
 }
 
-.confirm-modal-body {
-  padding: 30px;
+.peerfusion-confirm-body {
+  padding: 2rem;
 }
 
-.confirm-modal-body p {
+.peerfusion-confirm-body p {
   color: #2d5a27;
   font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
-  margin: 0 0 25px 0;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
 }
 
-.meeting-info {
+.peerfusion-meeting-info {
   background: #f8faf7;
   border: 1px solid #e8efe5;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.info-item {
+.peerfusion-info-item {
   color: #5a7c55;
-  margin-bottom: 10px;
+  margin-bottom: 0.75rem;
   font-size: 0.95rem;
+  line-height: 1.4;
 }
 
-.info-item:last-child {
+.peerfusion-info-item:last-child {
   margin-bottom: 0;
 }
 
-.info-item strong {
+.peerfusion-info-item strong {
   color: #2d5a27;
-  margin-right: 5px;
+  margin-right: 0.25rem;
 }
 
-.warning-note {
+.peerfusion-warning-note {
   background: #fffbeb;
   border: 1px solid #fcd34d;
   border-radius: 10px;
-  padding: 15px;
+  padding: 1rem;
   color: #92400e;
   font-size: 0.9rem;
   font-weight: 500;
   text-align: center;
+  line-height: 1.5;
 }
 
-.confirm-modal-actions {
-  padding: 20px 30px 30px;
+.peerfusion-confirm-actions {
+  padding: 1.5rem 2rem 2rem;
   display: flex;
-  gap: 15px;
+  gap: 1rem;
 }
 
-.confirm-btn {
+.peerfusion-confirm-btn {
   flex: 1;
-  padding: 14px;
+  padding: 1rem;
   border: none;
   border-radius: 12px;
   font-weight: 600;
@@ -4034,34 +4066,35 @@
   cursor: pointer;
   transition: all 0.3s ease;
   min-height: 50px;
+  font-family: 'Inter', sans-serif;
 }
 
-.cancel-confirm-btn {
+.peerfusion-cancel-confirm-btn {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
 }
 
-.cancel-confirm-btn:hover:not(:disabled) {
+.peerfusion-cancel-confirm-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
 }
 
-.keep-session-btn {
+.peerfusion-keep-session-btn {
   background: white;
   color: #5a7c55;
   border: 2px solid #e8efe5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.05);
 }
 
-.keep-session-btn:hover:not(:disabled) {
+.peerfusion-keep-session-btn:hover:not(:disabled) {
   background: #f8faf7;
   border-color: #4a7c3a;
   color: #4a7c3a;
   transform: translateY(-1px);
 }
 
-.confirm-btn:disabled {
+.peerfusion-confirm-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -4070,29 +4103,29 @@
 
 /* Tablets (1024px and below) */
 @media (max-width: 1024px) {
-  .schedule-modal-container {
+  .peerfusion-schedule-container {
     max-width: 95vw;
     max-height: 95vh;
   }
   
-  .event-details-panel,
-  .no-event-selected {
+  .peerfusion-event-details-panel,
+  .peerfusion-no-event-selected {
     width: 300px;
   }
   
-  .calendar-view-controls {
+  .peerfusion-schedule-controls {
+    right: 4rem;
+    top: 1rem;
     flex-direction: column;
-    gap: 10px;
-    right: 10px;
-    top: 10px;
-    padding: 8px 12px;
+    gap: 0.75rem;
+    padding: 0.75rem;
   }
   
-  .calendar-stats {
+  .peerfusion-calendar-stats {
     border-left: none;
     border-top: 2px solid #e8efe5;
     padding-left: 0;
-    padding-top: 10px;
+    padding-top: 0.75rem;
     width: 100%;
     justify-content: center;
   }
@@ -4100,148 +4133,155 @@
 
 /* Small Tablets and Large Phones (768px and below) */
 @media (max-width: 768px) {
-  .schedule-modal-overlay {
-    padding: 10px;
+  .peerfusion-schedule-overlay {
+    padding: 0.5rem;
   }
   
-  .schedule-modal-container {
+  .peerfusion-schedule-container {
     max-height: 95vh;
-    border-radius: 15px;
+    border-radius: 16px;
   }
   
-  .schedule-modal-header {
-    padding: 15px 20px;
+  .peerfusion-schedule-header {
+    padding: 1.25rem 1.5rem;
   }
   
-  .schedule-modal-title {
-    font-size: 1.4rem;
+  .peerfusion-schedule-title {
+    font-size: 1.3rem;
   }
   
-  .schedule-modal-body {
+  .peerfusion-schedule-body {
     flex-direction: column;
   }
   
-  .event-details-panel,
-  .no-event-selected {
+  .peerfusion-event-details-panel,
+  .peerfusion-no-event-selected {
     width: 100%;
     max-height: 300px;
     border-left: none;
     border-top: 2px solid #e8efe5;
+    order: 2;
   }
   
-  .calendar-wrapper {
-    padding: 15px;
+  .peerfusion-calendar-wrapper {
+    padding: 1rem;
     min-height: 400px;
+    order: 1;
   }
   
-  .calendar-container {
+  .peerfusion-calendar-container {
     min-height: 400px;
-    padding: 15px;
+    padding: 1rem;
   }
   
-  .calendar-view-controls {
+  .peerfusion-schedule-controls {
     position: relative;
     top: 0;
     right: 0;
-    margin-bottom: 15px;
+    margin: 0 1rem 1rem;
     flex-direction: row;
     justify-content: space-between;
+    align-self: center;
   }
   
-  .calendar-stats {
+  .peerfusion-calendar-stats {
     border-top: none;
     border-left: 2px solid #e8efe5;
     padding-top: 0;
-    padding-left: 10px;
+    padding-left: 0.75rem;
   }
   
-  .legend-container {
+  .peerfusion-legend-container {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 0.75rem;
   }
   
-  .legend-items {
-    gap: 10px 15px;
+  .peerfusion-legend-items {
+    gap: 1rem;
   }
   
-  .confirm-modal {
+  .peerfusion-confirm-modal {
     max-width: 90vw;
   }
 }
 
 /* Mobile Phones (480px and below) */
 @media (max-width: 480px) {
-  .schedule-modal-overlay {
+  .peerfusion-schedule-overlay {
     padding: 0;
+    align-items: flex-start;
   }
   
-  .schedule-modal-container {
+  .peerfusion-schedule-container {
     max-height: 100vh;
     border-radius: 0;
     width: 100vw;
     height: 100vh;
   }
   
-  .schedule-modal-header {
-    padding: 12px 15px;
+  .peerfusion-schedule-header {
+    padding: 1rem;
   }
   
-  .schedule-modal-title {
+  .peerfusion-schedule-title {
     font-size: 1.2rem;
   }
   
-  .schedule-modal-subtitle {
+  .peerfusion-schedule-subtitle {
     font-size: 0.85rem;
   }
   
-  .schedule-close-btn {
+  .peerfusion-schedule-close {
+    top: 1rem;
+    right: 1rem;
     width: 36px;
     height: 36px;
   }
   
-  .calendar-view-controls {
+  .peerfusion-schedule-controls {
+    margin: 0.5rem;
+    padding: 0.5rem;
     flex-direction: column;
-    padding: 8px;
-    gap: 8px;
+    gap: 0.5rem;
   }
   
-  .view-buttons {
+  .peerfusion-view-buttons {
     width: 100%;
   }
   
-  .view-btn {
+  .peerfusion-view-btn {
     flex: 1;
-    padding: 6px 10px;
+    padding: 0.375rem 0.75rem;
     font-size: 0.85rem;
   }
   
-  .calendar-stats {
+  .peerfusion-calendar-stats {
     width: 100%;
     justify-content: space-around;
     border-left: none;
     padding-left: 0;
   }
   
-  .stat-badge {
+  .peerfusion-stat-badge {
     min-width: 60px;
-    padding: 6px 8px;
+    padding: 0.375rem 0.5rem;
   }
   
-  .stat-count {
+  .peerfusion-stat-count {
     font-size: 1.2rem;
   }
   
-  .stat-label {
-    font-size: 0.75rem;
+  .peerfusion-stat-label {
+    font-size: 0.7rem;
   }
   
-  .calendar-wrapper {
-    padding: 10px;
+  .peerfusion-calendar-wrapper {
+    padding: 0.75rem;
   }
   
-  .calendar-container {
-    padding: 10px;
+  .peerfusion-calendar-container {
+    padding: 0.75rem;
     min-height: 350px;
   }
   
@@ -4250,72 +4290,72 @@
   }
   
   .fc .fc-button {
-    padding: 6px 10px;
+    padding: 0.375rem 0.75rem;
     font-size: 0.85rem;
   }
   
-  .event-title {
+  .peerfusion-event-title {
     font-size: 0.8rem;
   }
   
-  .event-time {
+  .peerfusion-event-time {
     font-size: 0.7rem;
   }
   
-  .event-status {
+  .peerfusion-event-status {
     font-size: 0.65rem;
   }
   
-  .event-details-panel {
-    padding: 15px;
+  .peerfusion-event-details-panel {
+    padding: 1rem;
     max-height: 280px;
   }
   
-  .event-details-header h3 {
+  .peerfusion-event-header h3 {
     font-size: 1.1rem;
   }
   
-  .detail-label {
+  .peerfusion-detail-label {
     font-size: 0.85rem;
   }
   
-  .detail-value {
+  .peerfusion-detail-value {
     font-size: 0.95rem;
   }
   
-  .schedule-modal-footer {
-    padding: 15px;
+  .peerfusion-schedule-footer {
+    padding: 1rem;
   }
   
-  .legend-title {
+  .peerfusion-legend-title {
     font-size: 0.85rem;
   }
   
-  .legend-item {
+  .peerfusion-legend-item {
     font-size: 0.8rem;
   }
   
-  .confirm-modal-header {
-    padding: 20px 20px 15px;
+  .peerfusion-confirm-header {
+    padding: 1.5rem 1.5rem 1rem;
   }
   
-  .confirm-modal-body {
-    padding: 20px;
+  .peerfusion-confirm-body {
+    padding: 1.5rem;
   }
   
-  .confirm-modal-actions {
-    padding: 15px 20px 20px;
+  .peerfusion-confirm-actions {
+    padding: 1rem 1.5rem 1.5rem;
     flex-direction: column;
   }
   
-  .confirm-btn {
+  .peerfusion-confirm-btn {
     width: 100%;
   }
 }
 
 /* Very Small Mobile Phones (360px and below) */
 @media (max-width: 360px) {
-  .calendar-container {
+  .peerfusion-calendar-container {
     min-height: 300px;
   }
   
@@ -4323,24 +4363,24 @@
     min-height: 60px;
   }
   
-  .event-details-panel {
+  .peerfusion-event-details-panel {
     max-height: 250px;
   }
   
-  .detail-item {
-    gap: 3px;
+  .peerfusion-detail-item {
+    gap: 0.125rem;
   }
   
-  .cancel-btn {
-    padding: 12px;
+  .peerfusion-cancel-btn {
+    padding: 0.875rem;
     font-size: 0.95rem;
   }
   
-  .legend-items {
-    gap: 8px;
+  .peerfusion-legend-items {
+    gap: 0.75rem;
   }
   
-  .legend-dot {
+  .peerfusion-legend-dot {
     width: 10px;
     height: 10px;
   }
@@ -4348,26 +4388,26 @@
 
 /* Landscape Mode */
 @media (max-width: 768px) and (orientation: landscape) {
-  .schedule-modal-container {
+  .peerfusion-schedule-container {
     max-height: 95vh;
   }
   
-  .schedule-modal-body {
+  .peerfusion-schedule-body {
     flex-direction: row;
   }
   
-  .event-details-panel {
+  .peerfusion-event-details-panel {
     max-height: none;
     width: 40%;
     border-left: 2px solid #e8efe5;
     border-top: none;
   }
   
-  .calendar-wrapper {
+  .peerfusion-calendar-wrapper {
     height: 100%;
   }
   
-  .calendar-container {
+  .peerfusion-calendar-container {
     min-height: auto;
     height: 100%;
   }
@@ -4375,56 +4415,81 @@
 
 /* iOS Safari Fixes */
 @supports (-webkit-touch-callout: none) {
-  .schedule-modal-container {
+  .peerfusion-schedule-container {
     height: -webkit-fill-available;
   }
   
-  .calendar-wrapper,
-  .event-details-panel {
+  .peerfusion-calendar-wrapper,
+  .peerfusion-event-details-panel {
     -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Prevent text selection */
-.schedule-modal-container,
-.confirm-modal {
-  user-select: none;
-}
-
-.schedule-modal-container:active,
-.confirm-modal:active {
-  user-select: none;
-}
-
 /* Smooth scrolling */
-.calendar-wrapper,
-.event-details-panel {
+.peerfusion-calendar-wrapper,
+.peerfusion-event-details-panel {
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: #4a7c3a #e8efe5;
 }
 
-.calendar-wrapper::-webkit-scrollbar,
-.event-details-panel::-webkit-scrollbar {
+.peerfusion-calendar-wrapper::-webkit-scrollbar,
+.peerfusion-event-details-panel::-webkit-scrollbar {
   width: 6px;
 }
 
-.calendar-wrapper::-webkit-scrollbar-track,
-.event-details-panel::-webkit-scrollbar-track {
+.peerfusion-calendar-wrapper::-webkit-scrollbar-track,
+.peerfusion-event-details-panel::-webkit-scrollbar-track {
   background: #e8efe5;
   border-radius: 3px;
 }
 
-.calendar-wrapper::-webkit-scrollbar-thumb,
-.event-details-panel::-webkit-scrollbar-thumb {
+.peerfusion-calendar-wrapper::-webkit-scrollbar-thumb,
+.peerfusion-event-details-panel::-webkit-scrollbar-thumb {
   background: #4a7c3a;
   border-radius: 3px;
 }
 
-.calendar-wrapper::-webkit-scrollbar-thumb:hover,
-.event-details-panel::-webkit-scrollbar-thumb:hover {
+.peerfusion-calendar-wrapper::-webkit-scrollbar-thumb:hover,
+.peerfusion-event-details-panel::-webkit-scrollbar-thumb:hover {
   background: #3a6c2a;
 }
+
+/* Calendar Button */
+.peerfusion-calendar-button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #4a7c3a, #6ba84f);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(74, 124, 58, 0.25);
+  font-family: 'Inter', sans-serif;
+}
+
+.peerfusion-calendar-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(74, 124, 58, 0.35);
+  background: linear-gradient(135deg, #3a6c2a, #5a984f);
+}
+
+.peerfusion-calendar-button:active {
+  transform: translateY(0);
+}
+
+.peerfusion-calendar-icon {
+  width: 20px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5zm2 4h10v2H7zm0 4h7v2H7z'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+}
+
 .peerfusion-calendar-button {
   padding: 10px 20px;
   background: linear-gradient(135deg, #4a7c3a, #6ba84f);
