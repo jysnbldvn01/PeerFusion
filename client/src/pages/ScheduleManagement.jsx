@@ -402,11 +402,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   <div className="mobile-event-details-panel">
                     <div className="event-details-content">
                       <div className="detail-item">
-                        <span className="detail-label">Meeting ID:</span>
-                        <span className="detail-value">#{selectedEvent.id}</span>
-                      </div>
-                      
-                      <div className="detail-item">
                         <span className="detail-label">Status:</span>
                         <span className={`status-badge status-${selectedEvent.status}`}>
                           {getStatusText(selectedEvent.status)}
@@ -433,15 +428,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                           {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
                         </span>
                       </div>
-                      
-                      {selectedEvent.conversation_id && (
-                        <div className="detail-item">
-                          <span className="detail-label">Conversation:</span>
-                          <span className="detail-value conversation-id">
-                            #{selectedEvent.conversation_id}
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {selectedEvent.status === 'scheduled' && (
@@ -668,11 +654,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                             
                             <div className="event-details-content">
                               <div className="detail-item">
-                                <span className="detail-label">Meeting ID:</span>
-                                <span className="detail-value">#{selectedEvent.id}</span>
-                              </div>
-                              
-                              <div className="detail-item">
                                 <span className="detail-label">Status:</span>
                                 <span className={`status-badge status-${selectedEvent.status}`}>
                                   {getStatusText(selectedEvent.status)}
@@ -699,15 +680,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                                   {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
                                 </span>
                               </div>
-                              
-                              {selectedEvent.conversation_id && (
-                                <div className="detail-item">
-                                  <span className="detail-label">Conversation:</span>
-                                  <span className="detail-value conversation-id">
-                                    #{selectedEvent.conversation_id}
-                                  </span>
-                                </div>
-                              )}
                             </div>
 
                             {selectedEvent.status === 'scheduled' && (
@@ -781,7 +753,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               </div>
               
               <div className="warning-note">
-                All participants will be notified of the cancellation.
+                Your partner will be notified of the cancellation.
               </div>
             </div>
             
