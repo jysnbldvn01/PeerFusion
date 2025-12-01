@@ -18,12 +18,40 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellingMeeting, setCancellingMeeting] = useState(false);
+  const [userProfiles, setUserProfiles] = useState({});
 
   useEffect(() => {
     if (isOpen && userId) {
       fetchUserMeetings();
     }
   }, [isOpen, userId]);
+
+  // Fetch user profiles for participant names
+  const fetchUserProfiles = async (participantIds) => {
+    try {
+      const token = localStorage.getItem('token');
+      const uniqueIds = [...new Set(participantIds)].filter(id => id && !userProfiles[id]);
+      
+      if (uniqueIds.length === 0) return;
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/profile/batch-profiles`,
+        { userIds: uniqueIds },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (response.data.success) {
+        setUserProfiles(prev => ({
+          ...prev,
+          ...response.data.profiles
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching user profiles:', err);
+    }
+  };
 
   const fetchUserMeetings = async () => {
     try {
@@ -37,22 +65,45 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       );
 
       if (response.data.success) {
-        const formattedEvents = response.data.meetings.map(meeting => ({
-          id: meeting.id.toString(),
-          title: `Meeting with Partner`,
-          start: meeting.scheduled_at,
-          end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000),
-          extendedProps: {
-            meetingId: meeting.id,
-            conversationId: meeting.conversation_id,
-            participants: meeting.participants,
-            status: meeting.status,
-            originalData: meeting
-          },
-          backgroundColor: getEventColor(meeting.status),
-          borderColor: getEventColor(meeting.status),
-          textColor: '#ffffff'
-        }));
+        const meetings = response.data.meetings;
+        
+        // Extract all participant IDs for profile fetching
+        const allParticipantIds = meetings.flatMap(meeting => 
+          Array.isArray(meeting.participants) ? meeting.participants : []
+        );
+        
+        if (allParticipantIds.length > 0) {
+          await fetchUserProfiles(allParticipantIds);
+        }
+
+        const formattedEvents = meetings.map(meeting => {
+          const otherParticipants = (meeting.participants || [])
+            .filter(id => String(id) !== String(userId))
+            .map(id => userProfiles[id]?.username || `User ${id}`);
+          
+          const title = otherParticipants.length > 0 
+            ? `Meeting with ${otherParticipants.join(', ')}`
+            : 'Scheduled Meeting';
+
+          return {
+            id: meeting.id.toString(),
+            title: title,
+            start: meeting.scheduled_at,
+            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000),
+            extendedProps: {
+              meetingId: meeting.id,
+              conversationId: meeting.conversation_id,
+              participants: meeting.participants,
+              participantNames: otherParticipants,
+              status: meeting.status,
+              originalData: meeting
+            },
+            backgroundColor: getEventColor(meeting.status),
+            borderColor: getEventColor(meeting.status),
+            textColor: '#ffffff'
+          };
+        });
+        
         setEvents(formattedEvents);
       }
     } catch (err) {
@@ -80,7 +131,12 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
   const handleEventClick = (clickInfo) => {
     const meeting = clickInfo.event.extendedProps.originalData;
-    setSelectedEvent(meeting);
+    const participantNames = clickInfo.event.extendedProps.participantNames || [];
+    
+    setSelectedEvent({
+      ...meeting,
+      participantNames: participantNames
+    });
   };
 
   const handleCancelMeeting = async () => {
@@ -105,7 +161,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       await fetchUserMeetings();
       setShowCancelModal(false);
       setSelectedEvent(null);
-      alert('Meeting cancelled successfully! Your partner has been notified.');
+      alert('Meeting cancelled successfully! All participants have been notified.');
     } catch (err) {
       console.error('Error cancelling meeting:', err);
       alert('Failed to cancel meeting');
@@ -114,9 +170,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   };
 
-  const formatParticipants = (participants) => {
+  const formatParticipants = (participants, participantNames = []) => {
     if (!participants || !Array.isArray(participants)) return 'Unknown';
-    return participants.map(p => `User ${p}`).join(', ');
+    
+    return participants.map(p => {
+      const userName = userProfiles[p]?.username || 
+                      participantNames.find(name => name.includes(`User ${p}`)) || 
+                      `User ${p}`;
+      return userName;
+    }).join(', ');
   };
 
   const getStatusText = (status) => {
@@ -127,6 +189,32 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       case 'cancelled': return 'Cancelled';
       default: return status;
     }
+  };
+
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      time: date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+      full: date.toLocaleString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    };
   };
 
   return (
@@ -170,6 +258,18 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       hour12: true
                     }}
                     dayMaxEvents={true}
+                    // Mobile responsiveness
+                    views={{
+                      dayGridMonth: {
+                        titleFormat: { year: 'numeric', month: 'long' }
+                      },
+                      timeGridWeek: {
+                        titleFormat: { year: 'numeric', month: 'short', day: 'numeric' }
+                      },
+                      timeGridDay: {
+                        titleFormat: { year: 'numeric', month: 'long', day: 'numeric' }
+                      }
+                    }}
                   />
                 )}
               </div>
@@ -193,23 +293,25 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       </span>
                     </div>
                     <div className="peerfusion-event-item">
-                      <span className="peerfusion-event-label">Scheduled:</span>
+                      <span className="peerfusion-event-label">Date & Time:</span>
                       <span className="peerfusion-event-value">
-                        {new Date(selectedEvent.scheduled_at).toLocaleString()}
+                        {formatDateTime(selectedEvent.scheduled_at).full}
                       </span>
                     </div>
                     <div className="peerfusion-event-item">
                       <span className="peerfusion-event-label">Participants:</span>
                       <span className="peerfusion-event-value">
-                        {formatParticipants(selectedEvent.participants)}
+                        {formatParticipants(selectedEvent.participants, selectedEvent.participantNames)}
                       </span>
                     </div>
-                    <div className="peerfusion-event-item">
-                      <span className="peerfusion-event-label">Conversation ID:</span>
-                      <span className="peerfusion-event-value">
-                        {selectedEvent.conversation_id}
-                      </span>
-                    </div>
+                    {selectedEvent.conversation_id && (
+                      <div className="peerfusion-event-item">
+                        <span className="peerfusion-event-label">Conversation ID:</span>
+                        <span className="peerfusion-event-value">
+                          {selectedEvent.conversation_id}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {selectedEvent.status === 'scheduled' && (
@@ -267,11 +369,21 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               <div className="peerfusion-confirm-message">
                 <p>Are you sure you want to cancel this session?</p>
                 <div className="peerfusion-meeting-details">
-                  <strong>Session Time:</strong><br />
-                  {selectedEvent && new Date(selectedEvent.scheduled_at).toLocaleString()}
+                  <strong>Session Details:</strong>
+                  <div className="peerfusion-meeting-time">
+                    {selectedEvent && formatDateTime(selectedEvent.scheduled_at).date}
+                  </div>
+                  <div className="peerfusion-meeting-time">
+                    {selectedEvent && formatDateTime(selectedEvent.scheduled_at).time}
+                  </div>
+                  {selectedEvent?.participantNames && selectedEvent.participantNames.length > 0 && (
+                    <div className="peerfusion-meeting-participants">
+                      With: {selectedEvent.participantNames.join(', ')}
+                    </div>
+                  )}
                 </div>
                 <div className="peerfusion-confirm-warning">
-                  This action cannot be undone. Your partner will be notified of the cancellation.
+                  This action cannot be undone. All participants will be notified of the cancellation.
                 </div>
               </div>
 

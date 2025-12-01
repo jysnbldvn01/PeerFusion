@@ -2415,4 +2415,39 @@ router.get('/has-subject-details/:subjectName', authenticateToken, async (req, r
   }
 });
 
+router.post('/batch-profiles', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { userIds } = req.body;
+
+    if (!userIds || !Array.isArray(userIds)) {
+      return res.status(400).json({ error: 'User IDs array is required' });
+    }
+
+    if (userIds.length === 0) {
+      return res.json({ success: true, profiles: {} });
+    }
+
+    const placeholders = userIds.map(() => '?').join(',');
+    const [rows] = await db.query(
+      `SELECT user_id, username, avatar FROM user_profiles 
+       WHERE user_id IN (${placeholders})`,
+      userIds
+    );
+
+    const profiles = {};
+    rows.forEach(row => {
+      profiles[row.user_id] = {
+        username: row.username,
+        avatar: row.avatar
+      };
+    });
+
+    res.json({ success: true, profiles });
+  } catch (err) {
+    console.error('Error fetching batch profiles:', err);
+    res.status(500).json({ error: 'Failed to fetch profiles' });
+  }
+});
+
 module.exports = router;

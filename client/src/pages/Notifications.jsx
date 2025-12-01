@@ -125,7 +125,8 @@ useEffect(() => {
           n.type === 'session_request' || 
           n.type === 'session_accept' || 
           n.type === 'meeting' ||
-          n.type === 'meeting_reminder'
+          n.type === 'meeting_reminder' ||
+          n.type === 'meeting_cancelled'
         ).length 
       },
       { 
@@ -735,7 +736,8 @@ const getNotificationBadge = (notification) => {
           notification.type === 'session_request' || 
           notification.type === 'session_accept' || 
           notification.type === 'meeting' ||
-          notification.type === 'meeting_reminder';
+          notification.type === 'meeting_reminder' ||
+          notification.type === 'meeting_cancelled';
         break;
       case 'feedbacks':
         categoryMatch = notification.type === 'feedback';
