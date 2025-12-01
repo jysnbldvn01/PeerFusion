@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../css/profile.css';
+import ScheduleManagement from './ScheduleManagement';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 const CloseIcon = () => (
@@ -1573,6 +1574,7 @@ const Profile = () => {
   const [subjectDetails, setSubjectDetails] = useState({});
   const [editingSubjects, setEditingSubjects] = useState({});
   const [subjectForms, setSubjectForms] = useState({});
+  const [showSchedule, setShowSchedule] = useState(false);
   const [form, setForm] = useState({
     username: '',
     bio: '',
@@ -2228,6 +2230,14 @@ const removeLearningObjective = (subjectName, index) => {
       <div className="peerfusion-profile-header">
         <h1 className="peerfusion-profile-title">Profile Settings</h1>
         <div className="peerfusion-header-actions">
+          <button 
+            className="peerfusion-calendar-button"
+            onClick={() => setShowSchedule(true)}
+            title="View Schedule"
+          >
+            <span className="peerfusion-calendar-icon"></span>
+            Schedule
+          </button>
           <SettingsDropdown 
             setEditMode={setEditMode}
             editMode={editMode}
@@ -2905,7 +2915,13 @@ const removeLearningObjective = (subjectName, index) => {
         onReactivate={handleReactivate}
         onCancelDeletion={handleCancelDeletion}
       />
+      <ScheduleManagement 
+        isOpen={showSchedule}
+        onClose={() => setShowSchedule(false)}
+        userId={profile?.user_id || profile?.id} // Use appropriate user ID field
+      />
     </div>
+    
   );
 };
 

@@ -173,7 +173,11 @@ router.post("/update-status", async (req, res) => {
     // Emit status update to both users
     if (emitToUser && participants?.length) {
       participants.forEach((pId) => {
-        emitToUser(pId, "meetingStatusUpdated", { meetingId, status });
+        emitToUser(pId, "meetingStatusUpdated", { 
+          meetingId, 
+          status,
+          message: status === 'cancelled' ? 'Meeting has been cancelled' : `Meeting status updated to ${status}`
+        });
       });
     }
 
