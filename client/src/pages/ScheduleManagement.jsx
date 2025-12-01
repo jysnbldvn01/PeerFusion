@@ -18,42 +18,12 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellingMeeting, setCancellingMeeting] = useState(false);
-  const [userProfiles, setUserProfiles] = useState({});
 
   useEffect(() => {
     if (isOpen && userId) {
       fetchUserMeetings();
     }
   }, [isOpen, userId]);
-
-  const fetchUserProfiles = async (participantIds) => {
-    try {
-      const token = localStorage.getItem('token');
-      const uniqueIds = [...new Set(participantIds)].filter(id => id && !userProfiles[id]);
-      
-      if (uniqueIds.length === 0) return;
-
-      console.log('Fetching profiles for user IDs:', uniqueIds);
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/profile/batch-profiles`,
-        { userIds: uniqueIds },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        console.log('Received profiles:', response.data.profiles);
-        setUserProfiles(prev => ({
-          ...prev,
-          ...response.data.profiles
-        }));
-      }
-    } catch (err) {
-      console.error('Error fetching user profiles:', err);
-    }
-  };
 
   const fetchUserMeetings = async () => {
     try {
@@ -72,55 +42,14 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
       if (response.data.success) {
         const meetings = response.data.meetings;
-        console.log('Raw meetings data:', meetings);
+        console.log('Enhanced meetings data:', meetings);
         
-        // Filter out completed meetings and only show scheduled/pending
-        const activeMeetings = meetings.filter(meeting => 
-          meeting.status === 'scheduled' || meeting.status === 'pending'
-        );
-        
-        console.log('Active meetings:', activeMeetings);
-
-        // Collect all participant IDs for batch profile fetching
-        const allParticipantIds = activeMeetings.flatMap(meeting => {
-          let participants = [];
-          try {
-            if (typeof meeting.participants === 'string') {
-              participants = JSON.parse(meeting.participants);
-            } else if (Array.isArray(meeting.participants)) {
-              participants = meeting.participants;
-            }
-          } catch (err) {
-            console.error('Error parsing participants:', err);
-          }
-          return participants.filter(id => id && String(id) !== String(userId));
-        });
-
-        console.log('Participant IDs to fetch:', allParticipantIds);
-
-        if (allParticipantIds.length > 0) {
-          await fetchUserProfiles(allParticipantIds);
-        }
-
-        // Format events after profiles are fetched
-        const formattedEvents = activeMeetings.map(meeting => {
-          let participants = [];
-          try {
-            if (typeof meeting.participants === 'string') {
-              participants = JSON.parse(meeting.participants);
-            } else if (Array.isArray(meeting.participants)) {
-              participants = meeting.participants;
-            }
-          } catch (err) {
-            console.error('Error parsing participants for meeting:', meeting.id, err);
-          }
-
-          const otherParticipants = participants
-            .filter(id => id && String(id) !== String(userId))
-            .map(id => {
-              const profile = userProfiles[id];
-              return profile?.username || `User ${id}`;
-            });
+        // Format events with participant names from backend
+        const formattedEvents = meetings.map(meeting => {
+          // Use the enhanced participant data from backend
+          const otherParticipants = meeting.participants
+            .filter(p => p.id && String(p.id) !== String(userId))
+            .map(p => p.username);
 
           const title = otherParticipants.length > 0 
             ? `Meeting with ${otherParticipants.join(', ')}`
@@ -132,11 +61,11 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             id: meeting.id.toString(),
             title: title,
             start: meeting.scheduled_at,
-            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000), // 1 hour duration
+            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000),
             extendedProps: {
               meetingId: meeting.id,
               conversationId: meeting.conversation_id,
-              participants: participants,
+              participants: meeting.rawParticipants || meeting.participants.map(p => p.id),
               participantNames: otherParticipants,
               status: meeting.status,
               originalData: meeting
@@ -183,7 +112,9 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     
     setSelectedEvent({
       ...meeting,
-      participantNames: participantNames
+      participantNames: participantNames,
+      // Use the enhanced participant data for display
+      displayParticipants: meeting.participants || []
     });
   };
 
@@ -197,8 +128,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         `${API_BASE_URL}/api/meeting/update-status`,
         {
           meetingId: selectedEvent.id,
-          status: 'cancelled',
-          participants: selectedEvent.participants
+          status: 'cancelled'
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -222,16 +152,16 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   };
 
-  const formatParticipants = (participants, participantNames = []) => {
-    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+  const formatParticipants = (participants = []) => {
+    if (!participants || participants.length === 0) {
       return 'No participants';
     }
     
     return participants.map(p => {
-      const userName = userProfiles[p]?.username || 
-                      participantNames.find(name => name.includes(`User ${p}`)) || 
-                      `User ${p}`;
-      return userName;
+      if (typeof p === 'object' && p.username) {
+        return p.username;
+      }
+      return `User ${p}`;
     }).join(', ');
   };
 
@@ -270,18 +200,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       })
     };
   };
-
-  // Refresh user profiles when selected event changes
-  useEffect(() => {
-    if (selectedEvent && selectedEvent.participants) {
-      const participantIds = selectedEvent.participants.filter(id => 
-        id && String(id) !== String(userId) && !userProfiles[id]
-      );
-      if (participantIds.length > 0) {
-        fetchUserProfiles(participantIds);
-      }
-    }
-  }, [selectedEvent]);
 
   if (!isOpen) return null;
 
@@ -385,7 +303,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   <div className="peerfusion-event-item">
                     <span className="peerfusion-event-label">Participants:</span>
                     <span className="peerfusion-event-value">
-                      {formatParticipants(selectedEvent.participants, selectedEvent.participantNames)}
+                      {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
                     </span>
                   </div>
                   {selectedEvent.conversation_id && (
@@ -482,9 +400,9 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   <div className="peerfusion-meeting-time">
                     {selectedEvent && formatDateTime(selectedEvent.scheduled_at).time}
                   </div>
-                  {selectedEvent?.participantNames && selectedEvent.participantNames.length > 0 && (
+                  {selectedEvent && (
                     <div className="peerfusion-meeting-participants">
-                      With: {selectedEvent.participantNames.join(', ')}
+                      With: {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
                     </div>
                   )}
                 </div>
