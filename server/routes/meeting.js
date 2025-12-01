@@ -165,6 +165,7 @@ router.post("/update-status", async (req, res) => {
       return res.status(400).json({ error: "Missing meetingId or status" });
     }
 
+    // First get the meeting details
     const [meetingRows] = await db.query(
       "SELECT * FROM meetings WHERE id = ?",
       [meetingId]
@@ -177,11 +178,10 @@ router.post("/update-status", async (req, res) => {
     const meeting = meetingRows[0];
     
     let participants;
-    try {
+    if (typeof meeting.participants === 'string') {
       participants = JSON.parse(meeting.participants);
-    } catch (err) {
-      console.error("Error parsing participants:", err);
-      return res.status(500).json({ error: "Invalid participants data" });
+    } else {
+      participants = meeting.participants;
     }
 
     await db.query("UPDATE meetings SET status=? WHERE id=?", [
@@ -195,13 +195,15 @@ router.post("/update-status", async (req, res) => {
         const [nameRows] = await db.query(
           `SELECT up.user_id, up.username 
           FROM user_profiles up 
-          WHERE up.user_id IN (${participants.map(() => '?').join(',')})`,
+          WHERE up.user_id IN (?, ?)`,
           participants
         );
         nameRows.forEach(r => { 
           nameMap[String(r.user_id)] = r.username;
         });
-      } catch (_) {}
+      } catch (err) {
+        console.error("Error fetching user names:", err);
+      }
 
       const scheduledLabel = new Date(meeting.scheduled_at).toLocaleString();
 
@@ -223,15 +225,19 @@ router.post("/update-status", async (req, res) => {
           ]
         );
 
-        if (emitToUser) {
-          emitToUser(participantId, "meetingCancelled", {
+        console.log(`📨 Sent cancellation notification to user ${participantId}`);
+      }
+
+      if (emitToUser) {
+        participants.forEach((pId) => {
+          emitToUser(pId, "meetingCancelled", {
             meetingId,
             conversationId: meeting.conversation_id,
             scheduledAt: meeting.scheduled_at,
             participants,
             status: "cancelled",
           });
-        }
+        });
       }
     }
 
