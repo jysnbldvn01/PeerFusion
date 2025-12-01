@@ -1617,7 +1617,6 @@
   cursor: not-allowed;
 }
 
-/* Mobile Details Overlay */
 .mobile-details-overlay {
   position: absolute;
   top: 0;
@@ -1629,6 +1628,18 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mobile-details-wrapper {
@@ -1636,7 +1647,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 15px;
+  padding: 0;
 }
 
 .mobile-event-details-panel {
@@ -1644,6 +1655,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 20px;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Back button styling */
@@ -1660,6 +1675,7 @@
   justify-content: center;
   transition: all 0.3s ease;
   touch-action: manipulation;
+  flex-shrink: 0;
 }
 
 .back-to-calendar-btn:hover {
@@ -1669,6 +1685,15 @@
 .schedule-modal-title {
   display: flex;
   align-items: center;
+  flex: 1;
+  overflow: hidden;
+}
+
+.schedule-modal-title .back-to-calendar-btn + span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Mobile-specific adjustments */
@@ -1676,25 +1701,30 @@
   .calendar-details-container {
     flex-direction: column;
     gap: 0;
+    position: relative;
+    height: 100%;
   }
   
   .calendar-section {
     width: 100%;
     flex: 1;
     min-height: 500px;
+    height: 100%;
   }
   
   .details-section {
-    display: none !important;
+    display: none !important; /* Hide desktop details panel on mobile */
   }
   
   .calendar-wrapper {
     height: 100%;
     min-height: 500px;
+    padding: 10px;
   }
   
   .calendar-container {
     min-height: 450px;
+    height: 100%;
   }
   
   /* Adjust footer for mobile */
@@ -1703,43 +1733,136 @@
     bottom: 0;
     background: #f8faf7;
     z-index: 50;
+    padding: 12px 15px;
   }
   
-  /* Mobile event details styling */
+  /* Mobile event details styling - Improved readability */
   .mobile-details-overlay .event-details-content {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 20px 0;
+    padding: 15px 0 30px 0;
     margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
   
   .mobile-details-overlay .detail-item {
-    margin-bottom: 20px;
-    padding: 0;
+    margin: 0;
+    padding: 15px;
+    background: #f8faf7;
+    border-radius: 12px;
+    border: 1px solid #e8efe5;
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
   
+  .mobile-details-overlay .detail-label {
+    font-size: 0.9rem;
+    color: #4a7c3a;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: block;
+  }
+  
+  .mobile-details-overlay .detail-label::before {
+    width: 6px;
+    height: 6px;
+    margin-right: 8px;
+    margin-top: 1px;
+  }
+  
+  .mobile-details-overlay .detail-value {
+    font-size: 1rem;
+    color: #2d5a27;
+    font-weight: 600;
+    line-height: 1.5;
+    word-break: break-word;
+    width: 100%;
+    display: block;
+  }
+  
+  .mobile-details-overlay .status-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    min-width: 100px;
+    text-align: center;
+  }
+  
+  .mobile-details-overlay .conversation-id {
+    display: inline-block;
+    padding: 6px 10px;
+    font-size: 0.95rem;
+    background: white;
+    border: 2px solid #e8efe5;
+  }
+  
+  /* Event actions for mobile */
   .mobile-details-overlay .event-actions {
     position: sticky;
     bottom: 0;
     background: white;
     padding: 20px 0;
-    margin-top: 20px;
+    margin-top: auto;
     border-top: 2px solid #e8efe5;
     z-index: 10;
+    width: 100%;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   }
   
   .mobile-details-overlay .cancel-btn {
     width: 100%;
-    padding: 16px;
-    font-size: 1rem;
-    min-height: 50px;
-    border-radius: 12px;
+    padding: 18px;
+    font-size: 1.1rem;
+    min-height: 56px;
+    border-radius: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Mobile header adjustments */
+  .schedule-modal-header {
+    padding: 15px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .schedule-main-content {
+    padding: 0;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  /* Improve calendar container spacing */
+  .schedule-main-content > .calendar-view-controls {
+    padding: 15px 20px 10px 20px;
+    margin-bottom: 0;
+    background: white;
+    border-bottom: 1px solid #e8efe5;
   }
   
   /* Hide calendar stats on mobile when in details view */
   .schedule-modal-header .schedule-header-content {
     flex: 1;
+    min-width: 0;
+  }
+  
+  /* Make the modal container full height on mobile */
+  .schedule-modal-container {
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .schedule-modal-overlay {
+    padding: 0;
+    align-items: stretch;
   }
 }
 
@@ -1751,18 +1874,37 @@
   
   .calendar-wrapper {
     min-height: 450px;
+    padding: 8px;
   }
   
   .calendar-container {
     min-height: 400px;
   }
   
+  .mobile-details-overlay .mobile-event-details-panel {
+    padding: 15px;
+  }
+  
   .mobile-details-overlay .event-details-content {
-    padding: 15px 0;
+    padding: 10px 0 25px 0;
+    gap: 15px;
   }
   
   .mobile-details-overlay .detail-item {
-    margin-bottom: 15px;
+    padding: 12px;
+  }
+  
+  .mobile-details-overlay .detail-label {
+    font-size: 0.85rem;
+  }
+  
+  .mobile-details-overlay .detail-value {
+    font-size: 0.95rem;
+  }
+  
+  .mobile-details-overlay .status-badge {
+    padding: 7px 14px;
+    font-size: 0.85rem;
   }
   
   .mobile-details-overlay .event-actions {
@@ -1770,8 +1912,43 @@
   }
   
   .mobile-details-overlay .cancel-btn {
+    padding: 16px;
+    font-size: 1rem;
+    min-height: 52px;
+    border-radius: 12px;
+  }
+  
+  .schedule-modal-header {
+    padding: 12px 15px;
+  }
+  
+  .schedule-main-content > .calendar-view-controls {
+    padding: 12px 15px 8px 15px;
+  }
+}
+
+/* For extra small screens */
+@media (max-width: 360px) {
+  .mobile-details-overlay .mobile-event-details-panel {
+    padding: 12px;
+  }
+  
+  .mobile-details-overlay .detail-item {
+    padding: 10px;
+  }
+  
+  .mobile-details-overlay .detail-label {
+    font-size: 0.8rem;
+  }
+  
+  .mobile-details-overlay .detail-value {
+    font-size: 0.9rem;
+  }
+  
+  .mobile-details-overlay .cancel-btn {
     padding: 14px;
     font-size: 0.95rem;
+    min-height: 48px;
   }
 }
 
@@ -1789,11 +1966,113 @@
     min-height: 280px;
   }
   
+  .mobile-details-overlay .mobile-event-details-panel {
+    padding: 15px;
+  }
+  
   .mobile-details-overlay .event-details-content {
-    padding: 10px 0;
+    padding: 8px 0 20px 0;
+    gap: 10px;
+  }
+  
+  .mobile-details-overlay .detail-item {
+    padding: 10px;
   }
   
   .mobile-details-overlay .event-actions {
-    padding: 10px 0;
+    padding: 12px 0;
+  }
+  
+  .mobile-details-overlay .cancel-btn {
+    padding: 12px;
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .mobile-details-overlay .mobile-event-details-panel {
+    padding: 25px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .mobile-details-overlay .event-details-content {
+    padding: 20px 0 40px 0;
+    gap: 25px;
+  }
+  
+  .mobile-details-overlay .detail-item {
+    padding: 20px;
+  }
+  
+  .mobile-details-overlay .detail-label {
+    font-size: 1rem;
+  }
+  
+  .mobile-details-overlay .detail-value {
+    font-size: 1.1rem;
+  }
+  
+  .mobile-details-overlay .event-actions {
+    padding: 25px 0;
+  }
+  
+  .mobile-details-overlay .cancel-btn {
+    padding: 20px;
+    font-size: 1.2rem;
+    min-height: 60px;
+  }
+}
+
+/* Ensure proper touch targets */
+@media (hover: none) and (pointer: coarse) {
+  .mobile-details-overlay .detail-item {
+    padding: 16px;
+  }
+  
+  .mobile-details-overlay .cancel-btn {
+    min-height: 56px;
+  }
+  
+  .back-to-calendar-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Smooth scrolling for details */
+.mobile-details-overlay .event-details-content {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #4a7c3a #e8efe5;
+}
+
+.mobile-details-overlay .event-details-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mobile-details-overlay .event-details-content::-webkit-scrollbar-track {
+  background: #e8efe5;
+  border-radius: 3px;
+}
+
+.mobile-details-overlay .event-details-content::-webkit-scrollbar-thumb {
+  background: #4a7c3a;
+  border-radius: 3px;
+}
+
+/* Animation for better UX */
+.mobile-details-overlay {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
