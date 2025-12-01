@@ -25,113 +25,98 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   }, [isOpen, userId]);
 
-  const fetchUserMeetings = async () => {
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      console.log('🔄 Fetching meetings for user ID:', userId);
-      
-      const response = await axios.get(
-        `${API_BASE_URL}/api/meeting/user/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      console.log('📊 Meetings API response:', response.data);
-
-      if (response.data.success) {
-        const meetings = response.data.meetings || [];
-        console.log(`📅 Found ${meetings.length} total meetings:`, meetings);
-        
-        // Format ALL meetings including cancelled/completed
-        const formattedEvents = meetings.map(meeting => {
-          console.log('Processing meeting:', meeting);
-          
-          // Handle participant data - support both new and old format
-          let participants = [];
-          let participantNames = [];
-          
-          if (meeting.participants && Array.isArray(meeting.participants)) {
-            // New format with participant objects
-            participants = meeting.participants.map(p => {
-              if (typeof p === 'object' && p.id) {
-                return {
-                  id: p.id,
-                  username: p.username || `User ${p.id}`
-                };
-              }
-              return {
-                id: p,
-                username: `User ${p}`
-              };
-            });
-            
-            participantNames = participants
-              .filter(p => p.id && String(p.id) !== String(userId))
-              .map(p => p.username);
-          } else {
-            // Fallback to rawParticipants or parse JSON
-            let rawParts = meeting.rawParticipants;
-            if (!rawParts && typeof meeting.participants === 'string') {
-              try {
-                rawParts = JSON.parse(meeting.participants);
-              } catch (e) {
-                console.error('Error parsing participants:', e);
-                rawParts = [];
-              }
-            }
-            
-            if (rawParts && Array.isArray(rawParts)) {
-              participantNames = rawParts
-                .filter(id => id && String(id) !== String(userId))
-                .map(id => `User ${id}`);
-            }
-          }
-
-          const title = participantNames.length > 0 
-            ? `Meeting with ${participantNames.join(', ')}`
-            : 'Scheduled Meeting';
-
-          const eventColor = getEventColor(meeting.status);
-          
-          const eventData = {
-            id: meeting.id.toString(),
-            title: title,
-            start: meeting.scheduled_at,
-            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000), // 1 hour duration
-            extendedProps: {
-              meetingId: meeting.id,
-              conversationId: meeting.conversation_id,
-              participants: meeting.rawParticipants || (meeting.participants ? meeting.participants.map(p => p.id || p) : []),
-              participantNames: participantNames,
-              status: meeting.status,
-              originalData: meeting
-            },
-            backgroundColor: eventColor,
-            borderColor: eventColor,
-            textColor: '#ffffff',
-            classNames: [meeting.status]
-          };
-          
-          console.log('Formatted event:', eventData);
-          return eventData;
-        });
-
-        console.log('🎉 Final formatted events:', formattedEvents);
-        setEvents(formattedEvents);
-      } else {
-        console.error('❌ API returned success: false');
-        alert('Failed to load meetings: ' + (response.data.error || 'Unknown error'));
+const fetchUserMeetings = async () => {
+  try {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+    console.log('🔄 Fetching meetings for user ID:', userId);
+    
+    const response = await axios.get(
+      `${API_BASE_URL}/api/meeting/user/${userId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
       }
-    } catch (err) {
-      console.error('❌ Error fetching meetings:', err);
-      console.error('Error details:', err.response?.data);
-      alert('Failed to load schedule: ' + (err.response?.data?.error || err.message));
-    } finally {
-      setIsLoading(false);
+    );
+
+    console.log('📊 Meetings API response:', response.data);
+
+    if (response.data.success) {
+      const meetings = response.data.meetings || [];
+      console.log(`📅 Found ${meetings.length} total meetings:`, meetings);
+      
+      // Format ALL meetings including cancelled/completed
+      const formattedEvents = meetings.map(meeting => {
+        console.log('Processing meeting:', meeting);
+        
+        // Extract participants from JSON
+        let participants = [];
+        try {
+          if (typeof meeting.participants === 'string') {
+            participants = JSON.parse(meeting.participants);
+          } else if (Array.isArray(meeting.participants)) {
+            participants = meeting.participants;
+          }
+        } catch (e) {
+          console.error('Error parsing participants:', e);
+          participants = [];
+        }
+
+        // Get other participant names (excluding current user)
+        const participantNames = participants
+          .filter(p => {
+            const participantId = typeof p === 'object' ? p.id : p;
+            return participantId && String(participantId) !== String(userId);
+          })
+          .map(p => {
+            if (typeof p === 'object' && p.username) {
+              return p.username;
+            }
+            return `User ${p}`;
+          });
+
+        const title = participantNames.length > 0 
+          ? `Session with ${participantNames.join(', ')}`
+          : 'Scheduled Session';
+
+        const eventColor = getEventColor(meeting.status);
+        
+        const eventData = {
+          id: meeting.id.toString(),
+          title: title,
+          start: meeting.scheduled_at,
+          end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000), // 1 hour duration
+          extendedProps: {
+            meetingId: meeting.id,
+            conversationId: meeting.conversation_id,
+            participants: participants,
+            participantNames: participantNames,
+            status: meeting.status,
+            originalData: meeting
+          },
+          backgroundColor: eventColor,
+          borderColor: eventColor,
+          textColor: '#ffffff',
+          classNames: [meeting.status]
+        };
+        
+        console.log('Formatted event:', eventData);
+        return eventData;
+      });
+
+      console.log('🎉 Final formatted events:', formattedEvents);
+      setEvents(formattedEvents);
+    } else {
+      console.error('❌ API returned success: false');
+      alert('Failed to load meetings: ' + (response.data.error || 'Unknown error'));
     }
-  };
+  } catch (err) {
+    console.error('❌ Error fetching meetings:', err);
+    console.error('Error details:', err.response?.data);
+    alert('Failed to load schedule: ' + (err.response?.data?.error || err.message));
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const getEventColor = (status) => {
     switch (status) {
@@ -160,53 +145,51 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     });
   };
 
-  const handleCancelMeeting = async () => {
+    const handleCancelMeeting = async () => {
     if (!selectedEvent) return;
 
     setCancellingMeeting(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
+        const token = localStorage.getItem('token');
+        const response = await axios.post(
         `${API_BASE_URL}/api/meeting/update-status`,
         {
-          meetingId: selectedEvent.id,
-          status: 'cancelled'
+            meetingId: selectedEvent.id,
+            status: 'cancelled'
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` }
         }
-      );
+        );
 
-      if (response.data.success) {
+        if (response.data.success) {
         // Refresh events
         await fetchUserMeetings();
         setShowCancelModal(false);
         setSelectedEvent(null);
-        alert('Meeting cancelled successfully! All participants have been notified.');
-      } else {
+        alert('Session cancelled successfully! All participants have been notified.');
+        } else {
         throw new Error(response.data.error);
-      }
+        }
     } catch (err) {
-      console.error('Error cancelling meeting:', err);
-      alert('Failed to cancel meeting: ' + (err.response?.data?.error || err.message));
+        console.error('Error cancelling meeting:', err);
+        alert('Failed to cancel session: ' + (err.response?.data?.error || err.message));
     } finally {
-      setCancellingMeeting(false);
+        setCancellingMeeting(false);
     }
-  };
-
-  const formatParticipants = (participants = []) => {
-    if (!participants || participants.length === 0) {
-      return 'No participants';
-    }
+    };
     
-    return participants.map(p => {
-      if (typeof p === 'object' && p.username) {
-        return p.username;
-      }
-      return `User ${p}`;
-    }).join(', ');
-  };
 
+    const formatParticipants = (participants = []) => {
+    if (!participants || participants.length === 0) {
+        return 'No participants';
+    }
+    if (participants[0] && typeof participants[0] === 'object') {
+        return participants.map(p => p.username || `User ${p.id}`).join(', ');
+    }
+    return participants.map(p => `User ${p}`).join(', ');
+    };
+    
   const getStatusText = (status) => {
     switch (status) {
       case 'scheduled': return 'Scheduled';

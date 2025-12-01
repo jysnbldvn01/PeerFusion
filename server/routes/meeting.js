@@ -114,86 +114,62 @@ router.get("/user/:userId", async (req, res) => {
     const db = req.app.get("db");
     const { userId } = req.params;
 
-    const [rows] = await db.query(
+    const [meetings] = await db.query(
       `SELECT * FROM meetings
        WHERE JSON_CONTAINS(participants, JSON_ARRAY(?))
        ORDER BY scheduled_at DESC`,
       [userId]
     );
 
-    console.log(`Found ${rows.length} meetings for user ${userId}`);
-
-    const allParticipantIds = [...new Set(
-      rows.flatMap(meeting => {
-        let participants = [];
+    // Enrich meetings with participant details
+    const enrichedMeetings = await Promise.all(
+      meetings.map(async (meeting) => {
+        let participants;
         try {
-          if (typeof meeting.participants === 'string') {
-            participants = JSON.parse(meeting.participants);
-          } else if (Array.isArray(meeting.participants)) {
-            participants = meeting.participants;
-          }
-        } catch (err) {
-          console.error('Error parsing participants:', err);
+          participants = typeof meeting.participants === 'string' 
+            ? JSON.parse(meeting.participants) 
+            : meeting.participants;
+        } catch (e) {
+          participants = [];
         }
-        return participants;
-      }).filter(id => id)
-    )];
 
-    console.log('All participant IDs:', allParticipantIds);
+        // Get usernames for all participants
+        const participantDetails = [];
+        if (participants && participants.length > 0) {
+          const placeholders = participants.map(() => '?').join(',');
+          const [userRows] = await db.query(
+            `SELECT user_id, username, avatar FROM user_profiles 
+             WHERE user_id IN (${placeholders})`,
+            participants
+          );
 
-    // Fetch profiles in batch
-    let profiles = {};
-    if (allParticipantIds.length > 0) {
-      const placeholders = allParticipantIds.map(() => '?').join(',');
-      const [profileRows] = await db.query(
-        `SELECT user_id, username, avatar FROM user_profiles 
-         WHERE user_id IN (${placeholders})`,
-        allParticipantIds
-      );
-      
-      profileRows.forEach(row => {
-        profiles[row.user_id] = {
-          username: row.username,
-          avatar: row.avatar
+          // Map user details
+          const userMap = {};
+          userRows.forEach(row => {
+            userMap[row.user_id] = {
+              id: row.user_id,
+              username: row.username,
+              avatar: row.avatar
+            };
+          });
+
+          // Create array of participant objects
+          participants.forEach(id => {
+            participantDetails.push(
+              userMap[id] || { id, username: `User ${id}` }
+            );
+          });
+        }
+
+        return {
+          ...meeting,
+          participants: participantDetails,
+          rawParticipants: participants // Keep original IDs
         };
-      });
-      console.log(`Fetched ${profileRows.length} user profiles`);
-    }
+      })
+    );
 
-    // Enhance meetings with participant names
-    const enhancedMeetings = rows.map(meeting => {
-      let participants = [];
-      let rawParticipants = [];
-      try {
-        if (typeof meeting.participants === 'string') {
-          participants = JSON.parse(meeting.participants);
-          rawParticipants = participants;
-        } else if (Array.isArray(meeting.participants)) {
-          participants = meeting.participants;
-          rawParticipants = participants;
-        }
-      } catch (err) {
-        console.error('Error parsing participants for meeting:', meeting.id, err);
-      }
-
-      const participantDetails = participants.map(id => ({
-        id,
-        username: profiles[id]?.username || `User ${id}`,
-        avatar: profiles[id]?.avatar || null
-      }));
-
-      return {
-        ...meeting,
-        participants: participantDetails,
-        rawParticipants: rawParticipants
-      };
-    });
-
-    res.json({ 
-      success: true, 
-      meetings: enhancedMeetings,
-      total: enhancedMeetings.length
-    });
+    res.json({ success: true, meetings: enrichedMeetings });
   } catch (err) {
     console.error("Error fetching user meetings:", err);
     res.status(500).json({ error: "Failed to fetch meetings" });
@@ -312,6 +288,7 @@ router.post("/update-status", async (req, res) => {
         });
       }
     }
+
 
     if (emitToUser && participants?.length) {
       participants.forEach((pId) => {
