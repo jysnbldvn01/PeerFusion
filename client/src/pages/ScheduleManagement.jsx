@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import axios from 'axios';
+import './ScheduleManagement.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const CloseIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -19,12 +21,32 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellingMeeting, setCancellingMeeting] = useState(false);
   const [viewType, setViewType] = useState('dayGridMonth');
+  const [calendarApi, setCalendarApi] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  
+  const calendarRef = useRef(null);
+  const detailsPanelRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && userId) {
       fetchUserMeetings();
+      setHasLoaded(true);
+    } else {
+      setEvents([]);
+      setSelectedEvent(null);
+      setHasLoaded(false);
     }
   }, [isOpen, userId]);
+
+  useEffect(() => {
+    if (calendarApi && viewType) {
+      try {
+        calendarApi.changeView(viewType);
+      } catch (error) {
+        console.error('Error changing view:', error);
+      }
+    }
+  }, [viewType, calendarApi]);
 
   const fetchUserMeetings = async () => {
     try {
@@ -70,12 +92,14 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             : 'Scheduled Session';
 
           const eventColor = getEventColor(meeting.status);
+          const endTime = new Date(meeting.scheduled_at);
+          endTime.setHours(endTime.getHours() + 1); // Add 1 hour duration
           
           return {
             id: meeting.id.toString(),
             title: title,
             start: meeting.scheduled_at,
-            end: new Date(new Date(meeting.scheduled_at).getTime() + 60 * 60 * 1000),
+            end: endTime.toISOString(),
             extendedProps: {
               meetingId: meeting.id,
               conversationId: meeting.conversation_id,
@@ -87,11 +111,18 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             backgroundColor: eventColor,
             borderColor: eventColor,
             textColor: '#ffffff',
-            classNames: [meeting.status]
+            classNames: [`fc-event-${meeting.id}`, meeting.status],
+            allDay: false
           };
         });
 
         setEvents(formattedEvents);
+        
+        // Force calendar refresh
+        if (calendarApi) {
+          calendarApi.refetchEvents();
+          calendarApi.updateSize();
+        }
       } else {
         alert('Failed to load meetings');
       }
@@ -106,15 +137,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const getEventColor = (status) => {
     switch (status) {
       case 'scheduled':
-        return '#10B981'; // green
+        return '#10B981';
       case 'pending':
-        return '#F59E0B'; // yellow
+        return '#F59E0B';
       case 'completed':
-        return '#6B7280'; // gray
+        return '#6B7280';
       case 'cancelled':
-        return '#EF4444'; // red
+        return '#EF4444';
       default:
-        return '#4a7c3a'; // primary green
+        return '#4a7c3a';
     }
   };
 
@@ -127,6 +158,20 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       participantNames: participantNames,
       displayParticipants: meeting.participants || []
     });
+    
+    if (detailsPanelRef.current) {
+      detailsPanelRef.current.scrollTop = 0;
+    }
+  };
+
+  const handleDateClick = (info) => {
+    setSelectedEvent(null);
+  };
+
+  const handleDatesSet = (info) => {
+    if (calendarApi) {
+      calendarApi.refetchEvents();
+    }
   };
 
   const handleCancelMeeting = async () => {
@@ -207,6 +252,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     };
   };
 
+  const handleCloseDetails = () => {
+    setSelectedEvent(null);
+  };
+
+  // Handle calendar ready
+  const handleCalendarReady = (api) => {
+    setCalendarApi(api);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -217,7 +271,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
           <div className="schedule-modal-header">
             <div className="schedule-header-content">
               <h2 className="schedule-modal-title">
-                <span className="schedule-icon">📅</span>
+                <span className="schedule-icon"></span>
                 My Schedule
               </h2>
               <p className="schedule-modal-subtitle">Manage your upcoming sessions</p>
@@ -272,7 +326,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   <div className="loading-spinner"></div>
                   <p>Loading schedule...</p>
                 </div>
-              ) : events.length === 0 ? (
+              ) : events.length === 0 && hasLoaded ? (
                 <div className="no-schedule">
                   <div className="no-schedule-icon">📅</div>
                   <h3>No Meetings Found</h3>
@@ -281,11 +335,18 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               ) : (
                 <div className="calendar-container">
                   <FullCalendar
+                    ref={calendarRef}
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     initialView={viewType}
-                    headerToolbar={false}
+                    headerToolbar={{
+                      left: 'prev,next today',
+                      center: 'title',
+                      right: ''
+                    }}
                     events={events}
                     eventClick={handleEventClick}
+                    dateClick={handleDateClick}
+                    datesSet={handleDatesSet}
                     height="auto"
                     eventDisplay="block"
                     eventTimeFormat={{
@@ -294,6 +355,18 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       hour12: true
                     }}
                     dayMaxEvents={3}
+                    dayMaxEventRows={3}
+                    slotMinTime="06:00:00"
+                    slotMaxTime="22:00:00"
+                    allDaySlot={false}
+                    nowIndicator={true}
+                    slotDuration="01:00:00"
+                    slotLabelInterval="01:00"
+                    slotLabelFormat={{
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    }}
                     views={{
                       dayGridMonth: {
                         dayMaxEvents: 3,
@@ -301,11 +374,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                         titleFormat: { year: 'numeric', month: 'long' }
                       },
                       timeGridWeek: {
+                        dayMaxEvents: 3,
+                        dayMaxEventRows: 3,
                         allDaySlot: false,
                         slotMinTime: "06:00:00",
                         slotMaxTime: "22:00:00"
                       },
                       timeGridDay: {
+                        dayMaxEvents: 3,
+                        dayMaxEventRows: 3,
                         allDaySlot: false,
                         slotMinTime: "06:00:00",
                         slotMaxTime: "22:00:00"
@@ -315,10 +392,70 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       <div className="custom-calendar-event">
                         <div className="event-title">{eventInfo.event.title}</div>
                         <div className="event-time">{eventInfo.timeText}</div>
-                        <div className="event-status">{getStatusText(eventInfo.event.extendedProps.status)}</div>
+                        <div className="event-status">
+                          {getStatusText(eventInfo.event.extendedProps.status)}
+                        </div>
                       </div>
                     )}
                     eventClassNames="custom-fc-event"
+                    eventDidMount={(info) => {
+                      info.el.style.zIndex = '10';
+                      info.el.style.position = 'relative';
+                    }}
+                    eventOverlap={false}
+                    slotEventOverlap={false}
+                    selectable={false}
+                    editable={false}
+                    droppable={false}
+                    navLinks={true}
+                    navLinkDayClick={(date, jsEvent) => {
+                      setViewType('timeGridDay');
+                      if (calendarApi) {
+                        calendarApi.gotoDate(date);
+                      }
+                      jsEvent.preventDefault();
+                    }}
+                    navLinkWeekClick={(weekStart, jsEvent) => {
+                      setViewType('timeGridWeek');
+                      if (calendarApi) {
+                        calendarApi.gotoDate(weekStart);
+                      }
+                      jsEvent.preventDefault();
+                    }}
+                    moreLinkClick={(info) => {
+                      // Handle more link click if needed
+                    }}
+                    moreLinkContent={(args) => {
+                      return `+${args.num} more`;
+                    }}
+                    locale="en"
+                    firstDay={0}
+                    weekNumbers={false}
+                    weekText="Week"
+                    buttonText={{
+                      today: 'Today',
+                      month: 'Month',
+                      week: 'Week',
+                      day: 'Day'
+                    }}
+                    dayHeaderFormat={{
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      omitCommas: true
+                    }}
+                    noEventsContent="No events"
+                    eventOrder="start,-duration,allDay,title"
+                    eventOrderStrict={false}
+                    progressiveEventRendering={false}
+                    dragRevertDuration={500}
+                    dragScroll={true}
+                    snapDuration="00:30:00"
+                    scrollTime="09:00:00"
+                    expandRows={false}
+                    stickyHeaderDates={true}
+                    stickyFooterScrollbar={true}
+                    themeSystem="standard"
                   />
                 </div>
               )}
@@ -326,12 +463,12 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
             {/* Event Details Panel */}
             {selectedEvent ? (
-              <div className="event-details-panel">
+              <div className="event-details-panel" ref={detailsPanelRef}>
                 <div className="event-details-header">
                   <h3>Meeting Details</h3>
                   <button 
                     className="close-details-btn"
-                    onClick={() => setSelectedEvent(null)}
+                    onClick={handleCloseDetails}
                   >
                     <CloseIcon />
                   </button>
@@ -386,8 +523,9 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     <button 
                       className="cancel-btn"
                       onClick={() => setShowCancelModal(true)}
+                      disabled={cancellingMeeting}
                     >
-                      Cancel Meeting
+                      {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
                     </button>
                   </div>
                 )}
