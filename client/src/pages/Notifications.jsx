@@ -710,6 +710,13 @@ const getNotificationBadge = (notification) => {
         </span>
       );
     }
+    case 'meeting_cancelled': {
+    return (
+      <span className="peerfusion-notification-badge peerfusion-badge-cancelled">
+        <InternetIcons.Rejected /> Cancelled
+      </span>
+    );
+  }
     default:
       return null;
   }

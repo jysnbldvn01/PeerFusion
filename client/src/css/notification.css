@@ -1166,3 +1166,8 @@
   width: 3px;
   border-radius: 3px 0 0 3px;
 }
+.peerfusion-badge-cancelled {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}

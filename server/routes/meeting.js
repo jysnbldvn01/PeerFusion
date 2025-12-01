@@ -165,14 +165,74 @@ router.post("/update-status", async (req, res) => {
       return res.status(400).json({ error: "Missing meetingId or status" });
     }
 
+    const [meetingRows] = await db.query(
+      "SELECT * FROM meetings WHERE id = ?",
+      [meetingId]
+    );
+
+    if (!meetingRows.length) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    const meeting = meetingRows[0];
+    const meetingParticipants = JSON.parse(meeting.participants);
+
     await db.query("UPDATE meetings SET status=? WHERE id=?", [
       status,
       meetingId,
     ]);
 
-    // Emit status update to both users
-    if (emitToUser && participants?.length) {
-      participants.forEach((pId) => {
+    if (status === 'cancelled') {
+      let nameMap = {};
+      try {
+        const [nameRows] = await db.query(
+          `SELECT up.user_id, up.username 
+          FROM user_profiles up 
+          WHERE up.user_id IN (${meetingParticipants.map(() => '?').join(',')})`,
+          meetingParticipants
+        );
+        nameRows.forEach(r => { 
+          nameMap[String(r.user_id)] = r.username;
+        });
+      } catch (_) {}
+
+      const scheduledLabel = new Date(meeting.scheduled_at).toLocaleString();
+      const currentUserId = req.user?.id || participants?.[0];
+
+      for (const participantId of meetingParticipants) {
+        const others = meetingParticipants.filter(p => p !== participantId);
+        const otherNames = others.map(id => nameMap[String(id)] || `User ${id}`).join(', ');
+        
+        const message = otherNames
+          ? `Meeting with ${otherNames} at ${scheduledLabel} has been cancelled.`
+          : `The meeting scheduled for ${scheduledLabel} has been cancelled.`;
+
+        await db.query(
+          `INSERT INTO notifications (sender_id, receiver_id, message, type, is_read)
+           VALUES (?, ?, ?, 'meeting_cancelled', 0)`,
+          [
+            currentUserId,
+            participantId,
+            message,
+          ]
+        );
+
+        console.log(`📨 Sent cancellation notification to user ${participantId}`);
+
+        if (emitToUser) {
+          emitToUser(participantId, "meetingCancelled", {
+            meetingId,
+            conversationId: meeting.conversation_id,
+            scheduledAt: meeting.scheduled_at,
+            participants: meetingParticipants,
+            status: "cancelled",
+          });
+        }
+      }
+    }
+
+    if (emitToUser && meetingParticipants?.length) {
+      meetingParticipants.forEach((pId) => {
         emitToUser(pId, "meetingStatusUpdated", { 
           meetingId, 
           status,
