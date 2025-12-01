@@ -149,6 +149,11 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleEventClick = (clickInfo) => {
+    // Close any existing selection first
+    if (calendarApi) {
+      calendarApi.unselect();
+    }
+    
     const meeting = clickInfo.event.extendedProps.originalData;
     const participantNames = clickInfo.event.extendedProps.participantNames || [];
     
@@ -164,7 +169,11 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleDateClick = (info) => {
+    // Clear selection when clicking on empty date
     setSelectedEvent(null);
+    if (calendarApi) {
+      calendarApi.unselect();
+    }
   };
 
   const handleDatesSet = (info) => {
@@ -253,11 +262,23 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
   const handleCloseDetails = () => {
     setSelectedEvent(null);
+    if (calendarApi) {
+      calendarApi.unselect();
+    }
   };
 
   // Handle calendar ready
   const handleCalendarReady = (api) => {
     setCalendarApi(api);
+  };
+
+  // Handle view change
+  const handleViewChange = (newViewType) => {
+    setViewType(newViewType);
+    setSelectedEvent(null); // Clear selection when view changes
+    if (calendarApi) {
+      calendarApi.unselect();
+    }
   };
 
   if (!isOpen) return null;
@@ -270,7 +291,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
           <div className="schedule-modal-header">
             <div className="schedule-header-content">
               <h2 className="schedule-modal-title">
-                <span className="schedule-icon"></span>
+                <span className="schedule-icon">📅</span>
                 My Schedule
               </h2>
               <p className="schedule-modal-subtitle">Manage your upcoming sessions</p>
@@ -285,19 +306,19 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               <div className="view-buttons">
                 <button 
                   className={`view-btn ${viewType === 'dayGridMonth' ? 'active' : ''}`}
-                  onClick={() => setViewType('dayGridMonth')}
+                  onClick={() => handleViewChange('dayGridMonth')}
                 >
                   Month
                 </button>
                 <button 
                   className={`view-btn ${viewType === 'timeGridWeek' ? 'active' : ''}`}
-                  onClick={() => setViewType('timeGridWeek')}
+                  onClick={() => handleViewChange('timeGridWeek')}
                 >
                   Week
                 </button>
                 <button 
                   className={`view-btn ${viewType === 'timeGridDay' ? 'active' : ''}`}
-                  onClick={() => setViewType('timeGridDay')}
+                  onClick={() => handleViewChange('timeGridDay')}
                 >
                   Day
                 </button>
@@ -347,7 +368,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     dateClick={handleDateClick}
                     datesSet={handleDatesSet}
                     height="auto"
-                    eventDisplay="block"
+                    eventDisplay={viewType === 'timeGridWeek' || viewType === 'timeGridDay' ? 'list-item' : 'block'}
                     eventTimeFormat={{
                       hour: '2-digit',
                       minute: '2-digit',
@@ -359,7 +380,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     slotMaxTime="22:00:00"
                     allDaySlot={false}
                     nowIndicator={true}
-                    slotDuration="01:00:00"
+                    slotDuration="00:30:00"
                     slotLabelInterval="01:00"
                     slotLabelFormat={{
                       hour: '2-digit',
@@ -377,29 +398,51 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                         dayMaxEventRows: 3,
                         allDaySlot: false,
                         slotMinTime: "06:00:00",
-                        slotMaxTime: "22:00:00"
+                        slotMaxTime: "22:00:00",
+                        slotEventOverlap: false,
+                        eventMinHeight: 20
                       },
                       timeGridDay: {
                         dayMaxEvents: 3,
                         dayMaxEventRows: 3,
                         allDaySlot: false,
                         slotMinTime: "06:00:00",
-                        slotMaxTime: "22:00:00"
+                        slotMaxTime: "22:00:00",
+                        slotEventOverlap: false,
+                        eventMinHeight: 20
                       }
                     }}
-                    eventContent={(eventInfo) => (
-                      <div className="custom-calendar-event">
-                        <div className="event-title">{eventInfo.event.title}</div>
-                        <div className="event-time">{eventInfo.timeText}</div>
-                        <div className="event-status">
-                          {getStatusText(eventInfo.event.extendedProps.status)}
+                    eventContent={(eventInfo) => {
+                      if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
+                        return (
+                          <div className="custom-calendar-event simple-event">
+                            <div className="event-time-badge">
+                              {eventInfo.timeText}
+                            </div>
+                            <div className="event-title">{eventInfo.event.title}</div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="custom-calendar-event">
+                          <div className="event-title">{eventInfo.event.title}</div>
+                          <div className="event-time">{eventInfo.timeText}</div>
+                          <div className="event-status">
+                            {getStatusText(eventInfo.event.extendedProps.status)}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    }}
                     eventClassNames="custom-fc-event"
                     eventDidMount={(info) => {
                       info.el.style.zIndex = '10';
                       info.el.style.position = 'relative';
+                      info.el.style.margin = '1px 0';
+                      
+                      // Add selection styling
+                      if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
+                        info.el.classList.add('fc-event-selected');
+                      }
                     }}
                     eventOverlap={false}
                     slotEventOverlap={false}
@@ -408,14 +451,14 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     droppable={false}
                     navLinks={true}
                     navLinkDayClick={(date, jsEvent) => {
-                      setViewType('timeGridDay');
+                      handleViewChange('timeGridDay');
                       if (calendarApi) {
                         calendarApi.gotoDate(date);
                       }
                       jsEvent.preventDefault();
                     }}
                     navLinkWeekClick={(weekStart, jsEvent) => {
-                      setViewType('timeGridWeek');
+                      handleViewChange('timeGridWeek');
                       if (calendarApi) {
                         calendarApi.gotoDate(weekStart);
                       }
@@ -446,7 +489,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     noEventsContent="No events"
                     eventOrder="start,-duration,allDay,title"
                     eventOrderStrict={false}
-                    progressiveEventRendering={false}
+                    progressiveEventRendering={true}
                     dragRevertDuration={500}
                     dragScroll={true}
                     snapDuration="00:30:00"
