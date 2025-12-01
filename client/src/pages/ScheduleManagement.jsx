@@ -24,10 +24,23 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [calendarApi, setCalendarApi] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isCalendarReady, setIsCalendarReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const calendarRef = useRef(null);
   const detailsPanelRef = useRef(null);
   const selectedEventRef = useRef(null);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isOpen && userId) {
