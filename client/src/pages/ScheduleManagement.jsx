@@ -310,7 +310,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
           <div className="schedule-modal-header">
             <div className="schedule-header-content">
               <h2 className="schedule-modal-title">
-                <span className="schedule-icon">📅</span>
                 My Schedule
               </h2>
               <p className="schedule-modal-subtitle">Manage your upcoming sessions</p>
