@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import axios from 'axios';
+import '../css/schedulemanagement.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -22,6 +23,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   const [viewType, setViewType] = useState('dayGridMonth');
   const [calendarApi, setCalendarApi] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isCalendarReady, setIsCalendarReady] = useState(false);
   
   const calendarRef = useRef(null);
   const detailsPanelRef = useRef(null);
@@ -30,22 +32,38 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     if (isOpen && userId) {
       fetchUserMeetings();
       setHasLoaded(true);
+      setIsCalendarReady(false);
     } else {
       setEvents([]);
       setSelectedEvent(null);
       setHasLoaded(false);
+      setIsCalendarReady(false);
     }
   }, [isOpen, userId]);
 
   useEffect(() => {
-    if (calendarApi && viewType) {
+    if (isOpen && !isCalendarReady) {
+      const timer = setTimeout(() => {
+        setIsCalendarReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isCalendarReady]);
+
+  useEffect(() => {
+    if (calendarApi && viewType && isOpen) {
       try {
-        calendarApi.changeView(viewType);
+        setTimeout(() => {
+          calendarApi.changeView(viewType);
+          setTimeout(() => {
+            calendarApi.updateSize();
+          }, 50);
+        }, 50);
       } catch (error) {
         console.error('Error changing view:', error);
       }
     }
-  }, [viewType, calendarApi]);
+  }, [viewType, calendarApi, isOpen]);
 
   const fetchUserMeetings = async () => {
     try {
@@ -92,7 +110,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
           const eventColor = getEventColor(meeting.status);
           const endTime = new Date(meeting.scheduled_at);
-          endTime.setHours(endTime.getHours() + 1); // Add 1 hour duration
+          endTime.setHours(endTime.getHours() + 1);
           
           return {
             id: meeting.id.toString(),
@@ -117,10 +135,11 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
         setEvents(formattedEvents);
         
-        // Force calendar refresh
-        if (calendarApi) {
-          calendarApi.refetchEvents();
-          calendarApi.updateSize();
+        if (calendarApi && isOpen) {
+          setTimeout(() => {
+            calendarApi.refetchEvents();
+            calendarApi.updateSize();
+          }, 100);
         }
       } else {
         alert('Failed to load meetings');
@@ -149,7 +168,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleEventClick = (clickInfo) => {
-    // Close any existing selection first
     if (calendarApi) {
       calendarApi.unselect();
     }
@@ -169,7 +187,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
   };
 
   const handleDateClick = (info) => {
-    // Clear selection when clicking on empty date
     setSelectedEvent(null);
     if (calendarApi) {
       calendarApi.unselect();
@@ -267,15 +284,18 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   };
 
-  // Handle calendar ready
   const handleCalendarReady = (api) => {
     setCalendarApi(api);
+    setIsCalendarReady(true);
+    
+    setTimeout(() => {
+      api.updateSize();
+    }, 100);
   };
 
-  // Handle view change
   const handleViewChange = (newViewType) => {
     setViewType(newViewType);
-    setSelectedEvent(null); // Clear selection when view changes
+    setSelectedEvent(null);
     if (calendarApi) {
       calendarApi.unselect();
     }
@@ -285,7 +305,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
 
   return (
     <>
-      {/* Main Schedule Modal */}
       <div className="schedule-modal-overlay" onClick={onClose}>
         <div className="schedule-modal-container" onClick={(e) => e.stopPropagation()}>
           <div className="schedule-modal-header">
@@ -301,7 +320,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             </button>
           </div>
 
-          <div className="schedule-modal-body">
+          <div className="schedule-main-content">
             <div className="calendar-view-controls">
               <div className="view-buttons">
                 <button 
@@ -353,234 +372,238 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   <p>You don't have any scheduled meetings yet.</p>
                 </div>
               ) : (
-                <div className="calendar-container">
-                  <FullCalendar
-                    ref={calendarRef}
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                    initialView={viewType}
-                    headerToolbar={{
-                      left: 'prev,next today',
-                      center: 'title',
-                      right: ''
-                    }}
-                    events={events}
-                    eventClick={handleEventClick}
-                    dateClick={handleDateClick}
-                    datesSet={handleDatesSet}
-                    height="auto"
-                    eventDisplay={viewType === 'timeGridWeek' || viewType === 'timeGridDay' ? 'list-item' : 'block'}
-                    eventTimeFormat={{
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    }}
-                    dayMaxEvents={3}
-                    dayMaxEventRows={3}
-                    slotMinTime="06:00:00"
-                    slotMaxTime="22:00:00"
-                    allDaySlot={false}
-                    nowIndicator={true}
-                    slotDuration="00:30:00"
-                    slotLabelInterval="01:00"
-                    slotLabelFormat={{
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    }}
-                    views={{
-                      dayGridMonth: {
-                        dayMaxEvents: 3,
-                        dayMaxEventRows: 3,
-                        titleFormat: { year: 'numeric', month: 'long' }
-                      },
-                      timeGridWeek: {
-                        dayMaxEvents: 3,
-                        dayMaxEventRows: 3,
-                        allDaySlot: false,
-                        slotMinTime: "06:00:00",
-                        slotMaxTime: "22:00:00",
-                        slotEventOverlap: false,
-                        eventMinHeight: 20
-                      },
-                      timeGridDay: {
-                        dayMaxEvents: 3,
-                        dayMaxEventRows: 3,
-                        allDaySlot: false,
-                        slotMinTime: "06:00:00",
-                        slotMaxTime: "22:00:00",
-                        slotEventOverlap: false,
-                        eventMinHeight: 20
-                      }
-                    }}
-                    eventContent={(eventInfo) => {
-                      if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
-                        return (
-                          <div className="custom-calendar-event simple-event">
-                            <div className="event-time-badge">
-                              {eventInfo.timeText}
+                <div className="calendar-container" key={`calendar-${viewType}-${isOpen}`}>
+                  {isCalendarReady && (
+                    <FullCalendar
+                      key={`fullcalendar-${viewType}`}
+                      ref={calendarRef}
+                      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                      initialView={viewType}
+                      headerToolbar={{
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: ''
+                      }}
+                      events={events}
+                      eventClick={handleEventClick}
+                      dateClick={handleDateClick}
+                      datesSet={handleDatesSet}
+                      height="400px"
+                      eventDisplay={viewType === 'timeGridWeek' || viewType === 'timeGridDay' ? 'list-item' : 'block'}
+                      eventTimeFormat={{
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      }}
+                      dayMaxEvents={3}
+                      dayMaxEventRows={3}
+                      slotMinTime="06:00:00"
+                      slotMaxTime="22:00:00"
+                      allDaySlot={false}
+                      nowIndicator={true}
+                      slotDuration="00:30:00"
+                      slotLabelInterval="01:00"
+                      slotLabelFormat={{
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      }}
+                      views={{
+                        dayGridMonth: {
+                          dayMaxEvents: 3,
+                          dayMaxEventRows: 3,
+                          titleFormat: { year: 'numeric', month: 'long' }
+                        },
+                        timeGridWeek: {
+                          dayMaxEvents: 3,
+                          dayMaxEventRows: 3,
+                          allDaySlot: false,
+                          slotMinTime: "06:00:00",
+                          slotMaxTime: "22:00:00",
+                          slotEventOverlap: false,
+                          eventMinHeight: 20
+                        },
+                        timeGridDay: {
+                          dayMaxEvents: 3,
+                          dayMaxEventRows: 3,
+                          allDaySlot: false,
+                          slotMinTime: "06:00:00",
+                          slotMaxTime: "22:00:00",
+                          slotEventOverlap: false,
+                          eventMinHeight: 20
+                        }
+                      }}
+                      eventContent={(eventInfo) => {
+                        if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
+                          return (
+                            <div className="custom-calendar-event simple-event">
+                              <div className="event-time-badge">
+                                {eventInfo.timeText}
+                              </div>
+                              <div className="event-title">{eventInfo.event.title}</div>
                             </div>
+                          );
+                        }
+                        return (
+                          <div className="custom-calendar-event">
                             <div className="event-title">{eventInfo.event.title}</div>
+                            <div className="event-time">{eventInfo.timeText}</div>
+                            <div className="event-status">
+                              {getStatusText(eventInfo.event.extendedProps.status)}
+                            </div>
                           </div>
                         );
-                      }
-                      return (
-                        <div className="custom-calendar-event">
-                          <div className="event-title">{eventInfo.event.title}</div>
-                          <div className="event-time">{eventInfo.timeText}</div>
-                          <div className="event-status">
-                            {getStatusText(eventInfo.event.extendedProps.status)}
-                          </div>
-                        </div>
-                      );
-                    }}
-                    eventClassNames="custom-fc-event"
-                    eventDidMount={(info) => {
-                      info.el.style.zIndex = '10';
-                      info.el.style.position = 'relative';
-                      info.el.style.margin = '1px 0';
-                      
-                      // Add selection styling
-                      if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
-                        info.el.classList.add('fc-event-selected');
-                      }
-                    }}
-                    eventOverlap={false}
-                    slotEventOverlap={false}
-                    selectable={false}
-                    editable={false}
-                    droppable={false}
-                    navLinks={true}
-                    navLinkDayClick={(date, jsEvent) => {
-                      handleViewChange('timeGridDay');
-                      if (calendarApi) {
-                        calendarApi.gotoDate(date);
-                      }
-                      jsEvent.preventDefault();
-                    }}
-                    navLinkWeekClick={(weekStart, jsEvent) => {
-                      handleViewChange('timeGridWeek');
-                      if (calendarApi) {
-                        calendarApi.gotoDate(weekStart);
-                      }
-                      jsEvent.preventDefault();
-                    }}
-                    moreLinkClick={(info) => {
-                      // Handle more link click if needed
-                    }}
-                    moreLinkContent={(args) => {
-                      return `+${args.num} more`;
-                    }}
-                    locale="en"
-                    firstDay={0}
-                    weekNumbers={false}
-                    weekText="Week"
-                    buttonText={{
-                      today: 'Today',
-                      month: 'Month',
-                      week: 'Week',
-                      day: 'Day'
-                    }}
-                    dayHeaderFormat={{
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      omitCommas: true
-                    }}
-                    noEventsContent="No events"
-                    eventOrder="start,-duration,allDay,title"
-                    eventOrderStrict={false}
-                    progressiveEventRendering={true}
-                    dragRevertDuration={500}
-                    dragScroll={true}
-                    snapDuration="00:30:00"
-                    scrollTime="09:00:00"
-                    expandRows={false}
-                    stickyHeaderDates={true}
-                    stickyFooterScrollbar={true}
-                    themeSystem="standard"
-                  />
+                      }}
+                      eventClassNames="custom-fc-event"
+                      eventDidMount={(info) => {
+                        info.el.style.zIndex = '10';
+                        info.el.style.position = 'relative';
+                        info.el.style.margin = '1px 0';
+                        
+                        if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
+                          info.el.classList.add('fc-event-selected');
+                        }
+                      }}
+                      eventOverlap={false}
+                      slotEventOverlap={false}
+                      selectable={false}
+                      editable={false}
+                      droppable={false}
+                      navLinks={true}
+                      navLinkDayClick={(date, jsEvent) => {
+                        handleViewChange('timeGridDay');
+                        if (calendarApi) {
+                          calendarApi.gotoDate(date);
+                        }
+                        jsEvent.preventDefault();
+                      }}
+                      navLinkWeekClick={(weekStart, jsEvent) => {
+                        handleViewChange('timeGridWeek');
+                        if (calendarApi) {
+                          calendarApi.gotoDate(weekStart);
+                        }
+                        jsEvent.preventDefault();
+                      }}
+                      moreLinkClick={(info) => {
+                        // Handle more link click if needed
+                      }}
+                      moreLinkContent={(args) => {
+                        return `+${args.num} more`;
+                      }}
+                      locale="en"
+                      firstDay={0}
+                      weekNumbers={false}
+                      weekText="Week"
+                      buttonText={{
+                        today: 'Today',
+                        month: 'Month',
+                        week: 'Week',
+                        day: 'Day'
+                      }}
+                      dayHeaderFormat={{
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        omitCommas: true
+                      }}
+                      noEventsContent="No events"
+                      eventOrder="start,-duration,allDay,title"
+                      eventOrderStrict={false}
+                      progressiveEventRendering={true}
+                      dragRevertDuration={500}
+                      dragScroll={true}
+                      snapDuration="00:30:00"
+                      scrollTime="09:00:00"
+                      expandRows={false}
+                      stickyHeaderDates={true}
+                      stickyFooterScrollbar={true}
+                      themeSystem="standard"
+                    />
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Event Details Panel */}
-            {selectedEvent ? (
-              <div className="event-details-panel" ref={detailsPanelRef}>
-                <div className="event-details-header">
-                  <h3>Meeting Details</h3>
-                  <button 
-                    className="close-details-btn"
-                    onClick={handleCloseDetails}
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-                
-                <div className="event-details-content">
-                  <div className="detail-item">
-                    <span className="detail-label">Meeting ID:</span>
-                    <span className="detail-value">#{selectedEvent.id}</span>
+            {/* Event Details Panel at the bottom */}
+            <div className="details-wrapper">
+              {selectedEvent ? (
+                <div className="event-details-panel" ref={detailsPanelRef}>
+                  <div className="event-details-header">
+                    <h3>Meeting Details</h3>
+                    <button 
+                      className="close-details-btn"
+                      onClick={handleCloseDetails}
+                    >
+                      <CloseIcon />
+                    </button>
                   </div>
                   
-                  <div className="detail-item">
-                    <span className="detail-label">Status:</span>
-                    <span className={`status-badge status-${selectedEvent.status}`}>
-                      {getStatusText(selectedEvent.status)}
-                    </span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Date:</span>
-                    <span className="detail-value">
-                      {formatDateTime(selectedEvent.scheduled_at).date}
-                    </span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Time:</span>
-                    <span className="detail-value">
-                      {formatDateTime(selectedEvent.scheduled_at).time}
-                    </span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Participants:</span>
-                    <span className="detail-value">
-                      {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
-                    </span>
-                  </div>
-                  
-                  {selectedEvent.conversation_id && (
+                  <div className="event-details-content">
                     <div className="detail-item">
-                      <span className="detail-label">Conversation:</span>
-                      <span className="detail-value conversation-id">
-                        #{selectedEvent.conversation_id}
+                      <span className="detail-label">Meeting ID:</span>
+                      <span className="detail-value">#{selectedEvent.id}</span>
+                    </div>
+                    
+                    <div className="detail-item">
+                      <span className="detail-label">Status:</span>
+                      <span className={`status-badge status-${selectedEvent.status}`}>
+                        {getStatusText(selectedEvent.status)}
                       </span>
+                    </div>
+                    
+                    <div className="detail-item">
+                      <span className="detail-label">Date:</span>
+                      <span className="detail-value">
+                        {formatDateTime(selectedEvent.scheduled_at).date}
+                      </span>
+                    </div>
+                    
+                    <div className="detail-item">
+                      <span className="detail-label">Time:</span>
+                      <span className="detail-value">
+                        {formatDateTime(selectedEvent.scheduled_at).time}
+                      </span>
+                    </div>
+                    
+                    <div className="detail-item">
+                      <span className="detail-label">Participants:</span>
+                      <span className="detail-value">
+                        {formatParticipants(selectedEvent.displayParticipants || selectedEvent.participants)}
+                      </span>
+                    </div>
+                    
+                    {selectedEvent.conversation_id && (
+                      <div className="detail-item">
+                        <span className="detail-label">Conversation:</span>
+                        <span className="detail-value conversation-id">
+                          #{selectedEvent.conversation_id}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedEvent.status === 'scheduled' && (
+                    <div className="event-actions">
+                      <button 
+                        className="cancel-btn"
+                        onClick={() => setShowCancelModal(true)}
+                        disabled={cancellingMeeting}
+                      >
+                        {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
+                      </button>
                     </div>
                   )}
                 </div>
-
-                {selectedEvent.status === 'scheduled' && (
-                  <div className="event-actions">
-                    <button 
-                      className="cancel-btn"
-                      onClick={() => setShowCancelModal(true)}
-                      disabled={cancellingMeeting}
-                    >
-                      {cancellingMeeting ? 'Processing...' : 'Cancel Meeting'}
-                    </button>
+              ) : (
+                <div className="no-event-selected">
+                  <div className="selection-guide">
+                    <div className="guide-icon">👆</div>
+                    <h4>Select a Meeting</h4>
+                    <p>Click on any meeting in the calendar to view details</p>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="no-event-selected">
-                <div className="selection-guide">
-                  <div className="guide-icon">👆</div>
-                  <h4>Select a Meeting</h4>
-                  <p>Click on any meeting in the calendar to view details</p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="schedule-modal-footer">
@@ -609,7 +632,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
         </div>
       </div>
 
-      {/* Cancel Confirmation Modal */}
       {showCancelModal && (
         <div className="confirm-modal-overlay" onClick={() => setShowCancelModal(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
