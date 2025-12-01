@@ -471,55 +471,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                             );
                           }}
                           eventClassNames="custom-fc-event"
-                          eventDidMount={(info) => {
-                            info.el.style.zIndex = '10';
-                            info.el.style.position = 'relative';
-                            info.el.style.margin = '1px 0';
-                            
-                            // Make event clickable on desktop
-                            info.el.style.pointerEvents = 'auto';
-                            info.el.style.cursor = 'pointer';
-                            
-                            const handleDirectClick = (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              
-                              if (calendarApi) {
-                                const event = calendarApi.getEventById(info.event.id);
-                                if (event) {
-                                  const clickInfo = {
-                                    event: event,
-                                    jsEvent: e,
-                                    view: calendarApi.view
-                                  };
-                                  handleEventClick(clickInfo);
-                                }
-                              }
-                            };
-                            
-                            info.el.addEventListener('click', handleDirectClick);
-                            
-                            const eventContent = info.el.querySelector('.fc-event-main');
-                            if (eventContent) {
-                              eventContent.addEventListener('click', handleDirectClick);
-                            }
-                            
-                            info.el.addEventListener('contextmenu', (e) => {
-                              e.preventDefault();
-                              return false;
-                            });
-                            
-                            if (selectedEvent && selectedEvent.id === parseInt(info.event.id)) {
-                              info.el.classList.add('fc-event-selected');
-                            }
-                            
-                            return () => {
-                              info.el.removeEventListener('click', handleDirectClick);
-                              if (eventContent) {
-                                eventContent.removeEventListener('click', handleDirectClick);
-                              }
-                            };
-                          }}
                           eventOverlap={false}
                           slotEventOverlap={false}
                           selectable={false}
