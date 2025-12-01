@@ -26,7 +26,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   }, [isOpen, userId]);
 
-  // Fetch user profiles for participant names
   const fetchUserProfiles = async (participantIds) => {
     try {
       const token = localStorage.getItem('token');
@@ -67,7 +66,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       if (response.data.success) {
         const meetings = response.data.meetings;
         
-        // Extract all participant IDs for profile fetching
         const allParticipantIds = meetings.flatMap(meeting => 
           Array.isArray(meeting.participants) ? meeting.participants : []
         );
@@ -100,7 +98,8 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
             },
             backgroundColor: getEventColor(meeting.status),
             borderColor: getEventColor(meeting.status),
-            textColor: '#ffffff'
+            textColor: '#ffffff',
+            classNames: [meeting.status]
           };
         });
         
@@ -125,7 +124,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
       case 'cancelled':
         return '#EF4444'; // red
       default:
-        return '#3B82F6'; // blue
+        return '#4a7c3a'; // primary green
     }
   };
 
@@ -250,7 +249,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     }}
                     events={events}
                     eventClick={handleEventClick}
-                    height="600px"
+                    height="auto"
                     eventDisplay="block"
                     eventTimeFormat={{
                       hour: '2-digit',
@@ -258,18 +257,28 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       hour12: true
                     }}
                     dayMaxEvents={true}
-                    // Mobile responsiveness
                     views={{
                       dayGridMonth: {
+                        dayMaxEvents: 3,
                         titleFormat: { year: 'numeric', month: 'long' }
                       },
                       timeGridWeek: {
-                        titleFormat: { year: 'numeric', month: 'short', day: 'numeric' }
+                        titleFormat: { year: 'numeric', month: 'short', day: 'numeric' },
+                        allDaySlot: false
                       },
                       timeGridDay: {
-                        titleFormat: { year: 'numeric', month: 'long', day: 'numeric' }
+                        titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
+                        allDaySlot: false
                       }
                     }}
+                    eventContent={(eventInfo) => (
+                      <div className="peerfusion-calendar-event">
+                        <div className="peerfusion-event-title">{eventInfo.event.title}</div>
+                        <div className="peerfusion-event-time">
+                          {eventInfo.timeText}
+                        </div>
+                      </div>
+                    )}
                   />
                 )}
               </div>
@@ -277,7 +286,15 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
               {/* Event Details Panel */}
               {selectedEvent && (
                 <div className="peerfusion-event-details">
-                  <h4>Meeting Details</h4>
+                  <div className="peerfusion-event-details-header">
+                    <h4>Meeting Details</h4>
+                    <button 
+                      className="peerfusion-close-details"
+                      onClick={() => setSelectedEvent(null)}
+                    >
+                      <CloseIcon />
+                    </button>
+                  </div>
                   <div className="peerfusion-event-info">
                     <div className="peerfusion-event-item">
                       <span className="peerfusion-event-label">Meeting ID:</span>
@@ -287,7 +304,6 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                       <span className="peerfusion-event-label">Status:</span>
                       <span 
                         className={`peerfusion-event-status peerfusion-status-${selectedEvent.status}`}
-                        style={{ color: getEventColor(selectedEvent.status) }}
                       >
                         {getStatusText(selectedEvent.status)}
                       </span>
@@ -328,24 +344,57 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                   )}
                 </div>
               )}
+
+              {!selectedEvent && (
+                <div className="peerfusion-event-details-placeholder">
+                  <div className="peerfusion-placeholder-content">
+                    <div className="peerfusion-placeholder-icon">📅</div>
+                    <h4>No Meeting Selected</h4>
+                    <p>Click on a meeting in the calendar to view details and manage your session.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="peerfusion-schedule-legend">
-              <div className="peerfusion-legend-item">
-                <span className="peerfusion-legend-color" style={{ backgroundColor: '#10B981' }}></span>
-                <span>Scheduled</span>
+            <div className="peerfusion-schedule-footer">
+              <div className="peerfusion-schedule-stats">
+                <div className="peerfusion-stat-item">
+                  <span className="peerfusion-stat-number">
+                    {events.filter(e => e.extendedProps.status === 'scheduled').length}
+                  </span>
+                  <span className="peerfusion-stat-label">Upcoming</span>
+                </div>
+                <div className="peerfusion-stat-item">
+                  <span className="peerfusion-stat-number">
+                    {events.filter(e => e.extendedProps.status === 'completed').length}
+                  </span>
+                  <span className="peerfusion-stat-label">Completed</span>
+                </div>
+                <div className="peerfusion-stat-item">
+                  <span className="peerfusion-stat-number">
+                    {events.filter(e => e.extendedProps.status === 'cancelled').length}
+                  </span>
+                  <span className="peerfusion-stat-label">Cancelled</span>
+                </div>
               </div>
-              <div className="peerfusion-legend-item">
-                <span className="peerfusion-legend-color" style={{ backgroundColor: '#F59E0B' }}></span>
-                <span>Pending</span>
-              </div>
-              <div className="peerfusion-legend-item">
-                <span className="peerfusion-legend-color" style={{ backgroundColor: '#6B7280' }}></span>
-                <span>Completed</span>
-              </div>
-              <div className="peerfusion-legend-item">
-                <span className="peerfusion-legend-color" style={{ backgroundColor: '#EF4444' }}></span>
-                <span>Cancelled</span>
+
+              <div className="peerfusion-schedule-legend">
+                <div className="peerfusion-legend-item">
+                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#10B981' }}></span>
+                  <span>Scheduled</span>
+                </div>
+                <div className="peerfusion-legend-item">
+                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#F59E0B' }}></span>
+                  <span>Pending</span>
+                </div>
+                <div className="peerfusion-legend-item">
+                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#6B7280' }}></span>
+                  <span>Completed</span>
+                </div>
+                <div className="peerfusion-legend-item">
+                  <span className="peerfusion-legend-color" style={{ backgroundColor: '#EF4444' }}></span>
+                  <span>Cancelled</span>
+                </div>
               </div>
             </div>
           </div>
@@ -358,7 +407,7 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
           <div className="peerfusion-modal-content peerfusion-confirm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="peerfusion-confirm-header">
               <div className="peerfusion-confirm-warning-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="#e74c3c">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#dc2626">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
               </div>
