@@ -133,8 +133,6 @@ router.get("/user/:userId", async (req, res) => {
           participants = meeting.participants;
         }
         
-        // Check if participants array contains the user ID
-        // Convert both to numbers for comparison
         const userIdNum = Number(userId);
         return participants.some(p => {
           const participantId = typeof p === 'object' ? p.id : p;

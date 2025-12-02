@@ -1389,7 +1389,6 @@
 .fc .fc-button:focus,
 .custom-calendar-event:focus {
   outline: 2px solid #4a7c3a;
-  outline-offset: 2px;
 }
 
 /* Loading state improvements */

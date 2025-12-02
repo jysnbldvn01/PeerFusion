@@ -99,92 +99,101 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
     }
   }, [viewType]);
 
-  const fetchUserMeetings = async () => {
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(
-        `${API_BASE_URL}/api/meeting/user/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        const meetings = response.data.meetings || [];
-        
-        const formattedEvents = meetings.map(meeting => {
-          let participants = [];
-          try {
-            if (typeof meeting.participants === 'string') {
-              participants = JSON.parse(meeting.participants);
-            } else if (Array.isArray(meeting.participants)) {
-              participants = meeting.participants;
-            }
-          } catch (e) {
-            participants = [];
-          }
-
-          const participantNames = participants
-            .filter(p => {
-              const participantId = typeof p === 'object' ? p.id : p;
-              return participantId && String(participantId) !== String(userId);
-            })
-            .map(p => {
-              if (typeof p === 'object' && p.username) {
-                return p.username;
-              }
-              return `User ${p}`;
-            });
-
-          const title = participantNames.length > 0 
-            ? `Session with ${participantNames.join(', ')}`
-            : 'Scheduled Session';
-
-          const eventColor = getEventColor(meeting.status);
-          const endTime = new Date(meeting.scheduled_at);
-          endTime.setHours(endTime.getHours() + 1);
-          
-          return {
-            id: meeting.id.toString(),
-            title: title,
-            start: meeting.scheduled_at,
-            end: endTime.toISOString(),
-            extendedProps: {
-              meetingId: meeting.id,
-              conversationId: meeting.conversation_id,
-              participants: participants,
-              participantNames: participantNames,
-              status: meeting.status,
-              originalData: meeting
-            },
-            backgroundColor: eventColor,
-            borderColor: eventColor,
-            textColor: '#ffffff',
-            classNames: [meeting.status],
-            allDay: false
-          };
-        });
-
-        setEvents(formattedEvents);
-        
-        if (calendarApi && isOpen) {
-          setTimeout(() => {
-            calendarApi.refetchEvents();
-            calendarApi.updateSize();
-          }, 100);
-        }
-      } else {
-        alert('Failed to load meetings');
+const fetchUserMeetings = async () => {
+  try {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+    
+    const response = await axios.get(
+      `${API_BASE_URL}/api/meeting/user/${userId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
       }
-    } catch (err) {
-      console.error('Error fetching meetings:', err);
-      alert('Failed to load schedule');
-    } finally {
-      setIsLoading(false);
+    );
+
+    if (response.data.success) {
+      const meetings = response.data.meetings || [];
+      
+      const now = new Date();
+      const relevantMeetings = meetings.filter(meeting => {
+        const meetingTime = new Date(meeting.scheduled_at);
+        const isFuture = meetingTime >= now;
+        const isCancelled = meeting.status === 'cancelled';
+        
+        return isCancelled || isFuture;
+      });
+      
+      const formattedEvents = relevantMeetings.map(meeting => {
+        let participants = [];
+        try {
+          if (typeof meeting.participants === 'string') {
+            participants = JSON.parse(meeting.participants);
+          } else if (Array.isArray(meeting.participants)) {
+            participants = meeting.participants;
+          }
+        } catch (e) {
+          participants = [];
+        }
+
+        const participantNames = participants
+          .filter(p => {
+            const participantId = typeof p === 'object' ? p.id : p;
+            return participantId && String(participantId) !== String(userId);
+          })
+          .map(p => {
+            if (typeof p === 'object' && p.username) {
+              return p.username;
+            }
+            return `User ${p}`;
+          });
+
+        const title = participantNames.length > 0 
+          ? `Session with ${participantNames.join(', ')}`
+          : 'Scheduled Session';
+
+        const eventColor = getEventColor(meeting.status);
+        const endTime = new Date(meeting.scheduled_at);
+        endTime.setHours(endTime.getHours() + 1);
+        
+        return {
+          id: meeting.id.toString(),
+          title: title,
+          start: meeting.scheduled_at,
+          end: endTime.toISOString(),
+          extendedProps: {
+            meetingId: meeting.id,
+            conversationId: meeting.conversation_id,
+            participants: participants,
+            participantNames: participantNames,
+            status: meeting.status,
+            originalData: meeting
+          },
+          backgroundColor: eventColor,
+          borderColor: eventColor,
+          textColor: '#ffffff',
+          classNames: [meeting.status],
+          allDay: false
+        };
+      });
+
+      setEvents(formattedEvents);
+      
+      if (calendarApi && isOpen) {
+        setTimeout(() => {
+          calendarApi.refetchEvents();
+          calendarApi.updateSize();
+        }, 100);
+      }
+    } else {
+      alert('Failed to load meetings');
     }
-  };
+  } catch (err) {
+    console.error('Error fetching meetings:', err);
+    alert('Failed to load schedule');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const getEventColor = (status) => {
     switch (status) {
@@ -469,14 +478,19 @@ const ScheduleManagement = ({ isOpen, onClose, userId }) => {
                     </button>
                   </div>
                   
-                  <div className="calendar-stats">
-                    <div className="stat-badge scheduled">
-                      <span className="stat-count">
-                        {events.filter(e => e.extendedProps.status === 'scheduled').length}
-                      </span>
-                      <span className="stat-label">Upcoming</span>
+                    <div className="calendar-stats">
+                      <div className="stat-badge scheduled">
+                        <span className="stat-count">
+                          {events.filter(e => {
+                            const isScheduled = e.extendedProps.status === 'scheduled';
+                            const eventTime = new Date(e.start);
+                            const now = new Date();
+                            return isScheduled && eventTime >= now;
+                          }).length}
+                        </span>
+                        <span className="stat-label">Upcoming</span>
+                      </div>
                     </div>
-                  </div>
                 </div>
 
                 {/* Desktop Layout */}
