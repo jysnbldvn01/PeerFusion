@@ -224,6 +224,32 @@ const handleConversationSelect = (conversation) => {
     );
   }
 
+   const buildLastMessagePreview = (conversation) => {
+    if (!conversation) return "";
+
+    const userId = currentUser?.user_id || currentUser?.id;
+    const baseLastMessage = conversation.lastMessage || "";
+    const senderId = conversation.lastSenderId;
+    const senderName = conversation.lastSenderName || "";
+    const otherName = conversation.otherUser?.username || "";
+
+    if (conversation.lastMessageUnsentForEveryone) {
+      const unsentByName = conversation.lastMessageUnsentByName || senderName || otherName || "Someone";
+      const isMe = userId && String(senderId) === String(userId);
+      if (isMe) {
+        return "You unsent a message";
+      }
+      return `${unsentByName} unsent a message`;
+    }
+
+    if (!baseLastMessage) return "No messages yet";
+
+    const isMe = userId && String(senderId) === String(userId);
+    const label = isMe ? "You" : (otherName || senderName || "Someone");
+
+    return `${label}: ${baseLastMessage}`;
+  };
+
   return (
     <div className="peerfusion-chat-left">
       {/* Mobile Controls - Only show back button when in chat view */}
@@ -310,7 +336,7 @@ const handleConversationSelect = (conversation) => {
                   {c.otherUser.username}
                 </div>
                 <div className={`peerfusion-chat-peer-message ${c.hasUnread ? "unread" : ""}`}>
-                  {c.lastMessage || "No messages yet"}
+                   {buildLastMessagePreview(c)}
                 </div>
                 <div className="peerfusion-chat-peer-time">
                   {formatTime(c.lastMessageTime)}

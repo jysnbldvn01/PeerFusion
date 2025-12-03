@@ -725,7 +725,6 @@ const getNotificationBadge = (notification) => {
 
   // Filter notifications based on category and search term
   const filteredNotifications = notifications.filter((notification) => {
-    // First apply category filter
     let categoryMatch = true;
     switch (filterCategory) {
       case 'pending':

@@ -702,6 +702,10 @@ const ChatWindow = ({ conversationId, currentUser, searchTerm, onBackToList, onS
           ? "📄 File"
           : payload.content,
         lastMessageTime: serverTimestamp(),
+        lastSenderId: currentUser.user_id,
+        lastSenderName: currentUser.username || "",
+        lastMessageUnsentForEveryone: false,
+        lastMessageUnsentByName: "",
       });
 
       window.dispatchEvent(new Event('chatsUpdated'));
@@ -1030,6 +1034,7 @@ const handleUnsendForYou = async (message) => {
   
   try {
     const msgRef = doc(db, "conversations", conversationId, "messages", message.id);
+    const unsentByName = message.senderName || currentUser.username || "Someone";
     await updateDoc(msgRef, {
       hiddenFor: arrayUnion(currentUser.user_id),
     });
@@ -1057,8 +1062,23 @@ const handleUnsendForEveryone = async (message) => {
     const msgRef = doc(db, "conversations", conversationId, "messages", message.id);
     await updateDoc(msgRef, {
       unsentForEveryone: true,
-      unsentByName: message.senderName || currentUser.username || "Someone",
+      unsentByName,
     });
+    const convRef = doc(db, "conversations", conversationId);
+    const convSnap = await getDoc(convRef);
+    if (convSnap.exists()) {
+      const convData = convSnap.data();
+      const currentLastSenderId = convData.lastSenderId;
+      const currentLastMessageTime = convData.lastMessageTime?.toDate?.();
+      if (!currentLastSenderId || String(currentLastSenderId) === String(message.senderId)) {
+        await updateDoc(convRef, {
+          lastMessageUnsentForEveryone: true,
+          lastMessageUnsentByName: unsentByName,
+          lastSenderId: message.senderId,
+          lastSenderName: unsentByName,
+        });
+      }
+    }
     window.pfToast?.success?.('Message unsent.');
   } catch (err) {
     console.error("Failed to unsend message:", err);
