@@ -1034,7 +1034,6 @@ const handleUnsendForYou = async (message) => {
   
   try {
     const msgRef = doc(db, "conversations", conversationId, "messages", message.id);
-    const unsentByName = message.senderName || currentUser.username || "Someone";
     await updateDoc(msgRef, {
       hiddenFor: arrayUnion(currentUser.user_id),
     });
@@ -1060,6 +1059,7 @@ const handleUnsendForEveryone = async (message) => {
   
   try {
     const msgRef = doc(db, "conversations", conversationId, "messages", message.id);
+    const unsentByName = message.senderName || currentUser.username || "Someone";
     await updateDoc(msgRef, {
       unsentForEveryone: true,
       unsentByName,
