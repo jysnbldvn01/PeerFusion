@@ -172,6 +172,33 @@ useEffect(() => {
     }
   }, [searchQuery, conversations]);
 
+  const buildLastMessagePreview = (conversation) => {
+    if (!conversation) return "";
+
+    const userId = currentUser?.user_id || currentUser?.id;
+    const baseLastMessage = conversation.lastMessage || "";
+    const senderId = conversation.lastSenderId;
+    const senderName = conversation.lastSenderName || "";
+    const otherName = conversation.otherUser?.username || "";
+
+    // Unsent summary at conversation level
+    if (conversation.lastMessageUnsentForEveryone) {
+      const unsentByName = conversation.lastMessageUnsentByName || senderName || otherName || "Someone";
+      const isMe = userId && String(senderId) === String(userId);
+      if (isMe) {
+        return "You unsent a message";
+      }
+      return `${unsentByName} unsent a message`;
+    }
+
+    if (!baseLastMessage) return "No messages yet";
+
+    const isMe = userId && String(senderId) === String(userId);
+    const label = isMe ? "You" : (otherName || senderName || "Someone");
+
+    return `${label}: ${baseLastMessage}`;
+  };
+
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
     const now = new Date();
@@ -310,7 +337,7 @@ const handleConversationSelect = (conversation) => {
                   {c.otherUser.username}
                 </div>
                 <div className={`peerfusion-chat-peer-message ${c.hasUnread ? "unread" : ""}`}>
-                  {c.lastMessage || "No messages yet"}
+                  {buildLastMessagePreview(c)}
                 </div>
                 <div className="peerfusion-chat-peer-time">
                   {formatTime(c.lastMessageTime)}
