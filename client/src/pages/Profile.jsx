@@ -1593,7 +1593,8 @@ const Profile = () => {
     'Third Year',
     'Fourth Year',
     'Masteral Degree',
-    'Professor'
+    'Professor',
+    'Doctoral'
   ];
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

@@ -43,7 +43,8 @@ const SetupAccount = () => {
     'Third Year',
     'Fourth Year',
     'Masteral Degree',
-    'Professor'
+    'Professor',
+    'Doctoral',
   ];
 
   const daysOfWeek = [
