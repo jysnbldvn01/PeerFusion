@@ -1,6 +1,7 @@
 // pages/LandingPage.js
 import React, { useEffect, useState, useRef } from 'react';
 import '../css/landingpage.css';
+import { Helmet } from 'react-helmet-async';
 
 // SVG Icons
 const UsersIcon = () => (
@@ -160,14 +161,18 @@ useEffect(() => {
 
   return (
     <div className="peerfusion-landing-page">
+      <Helmet>
+        <title>PeerFusion Skill Share - Peer-to-Peer Learning Platform</title>
+        <meta name="description" content="Connect, learn, and share skills with others on PeerFusion." />
+      </Helmet>
+      
       {/* Navigation */}
       <nav className={`peerfusion-landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="nav-container">
           <div className="nav-logo">
             <img src="/Logos.png" alt="PeerFusion" className="logo-image" />
-            <span>PeerFusion</span>
+            <span>PeerFusion Skill Share</span>
           </div>
-          
           {/* Desktop Navigation Links */}
           <div className="nav-links">
             <a 
